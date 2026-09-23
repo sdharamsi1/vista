@@ -2,13 +2,25 @@
   "scan": {
     "account_id": "123456789012",
     "caller_arn": "arn:aws:sts::123456789012:assumed-role/vista-scanner/session",
-    "regions": ["us-east-1"],
+    "regions": [
+      "us-east-1"
+    ],
     "started_at": "2026-01-15T18:04:11+00:00",
     "completed_at": "2026-01-15T18:04:19+00:00",
     "collector_status_by_region": {
       "us-east-1": {
-        "identity": { "status": "SUCCESS", "source_apis": ["sts:GetCallerIdentity"] },
-        "inventory": { "status": "SUCCESS", "source_apis": ["ec2:DescribeInstances"] },
+        "identity": {
+          "status": "SUCCESS",
+          "source_apis": [
+            "sts:GetCallerIdentity"
+          ]
+        },
+        "inventory": {
+          "status": "SUCCESS",
+          "source_apis": [
+            "ec2:DescribeInstances"
+          ]
+        },
         "network": {
           "status": "SUCCESS",
           "source_apis": [
@@ -18,10 +30,20 @@
             "ec2:DescribeNetworkAcls"
           ]
         },
-        "storage": { "status": "SUCCESS", "source_apis": ["ec2:DescribeVolumes"] },
+        "storage": {
+          "status": "SUCCESS",
+          "source_apis": [
+            "ec2:DescribeVolumes"
+          ]
+        },
         "iam": {
           "status": "SUCCESS",
-          "source_apis": ["iam:GetInstanceProfile", "iam:GetRole", "iam:GetPolicy", "iam:GetPolicyVersion"]
+          "source_apis": [
+            "iam:GetInstanceProfile",
+            "iam:GetRole",
+            "iam:GetPolicy",
+            "iam:GetPolicyVersion"
+          ]
         },
         "load_balancers": {
           "status": "SUCCESS",
@@ -34,6 +56,350 @@
       }
     }
   },
+  "shared": {
+    "security_groups": {
+      "sg-0aaaa1111bbbb2222": {
+        "group_id": "sg-0aaaa1111bbbb2222",
+        "group_name": "example-api-sg",
+        "description": "App tier, accepts traffic from the ALB only",
+        "vpc_id": "vpc-0aa11bb22cc33dd44",
+        "tags": {},
+        "ingress_rules": [
+          {
+            "protocol": "tcp",
+            "from_port": 8080,
+            "to_port": 8080,
+            "peer": {
+              "type": "security_group",
+              "value": "sg-0ffff9999eeee8888",
+              "account_id": "123456789012",
+              "description": "From ALB security group"
+            }
+          }
+        ],
+        "egress_rules": [
+          {
+            "protocol": "all",
+            "from_port": null,
+            "to_port": null,
+            "peer": {
+              "type": "ipv4_cidr",
+              "value": "0.0.0.0/0",
+              "description": null
+            }
+          }
+        ]
+      },
+      "sg-0ffff9999eeee8888": {
+        "group_id": "sg-0ffff9999eeee8888",
+        "group_name": "example-alb-sg",
+        "description": "Public HTTPS",
+        "vpc_id": "vpc-0aa11bb22cc33dd44",
+        "tags": {},
+        "ingress_rules": [
+          {
+            "protocol": "tcp",
+            "from_port": 443,
+            "to_port": 443,
+            "peer": {
+              "type": "ipv4_cidr",
+              "value": "203.0.113.10/32",
+              "description": "Corp egress"
+            }
+          }
+        ],
+        "egress_rules": []
+      }
+    },
+    "subnets": {
+      "subnet-0aaa1111bbbb2222c": {
+        "subnet_id": "subnet-0aaa1111bbbb2222c",
+        "vpc_id": "vpc-0aa11bb22cc33dd44",
+        "availability_zone": "us-east-1a",
+        "availability_zone_id": "use1-az1",
+        "ipv4_cidr": "10.0.1.0/24",
+        "ipv6_cidrs": [],
+        "map_public_ip_on_launch": false,
+        "assign_ipv6_on_creation": false,
+        "default_for_availability_zone": false,
+        "tags": {
+          "Name": "private-1a"
+        }
+      }
+    },
+    "route_tables": {
+      "rtb-0123456789abcdef0": {
+        "route_table_id": "rtb-0123456789abcdef0",
+        "vpc_id": "vpc-0aa11bb22cc33dd44",
+        "tags": {},
+        "routes": [
+          {
+            "destination": "10.0.0.0/16",
+            "state": "active",
+            "origin": "CreateRouteTable",
+            "target": {
+              "type": "gateway",
+              "id": "local"
+            }
+          },
+          {
+            "destination": "0.0.0.0/0",
+            "state": "active",
+            "origin": "CreateRoute",
+            "target": {
+              "type": "nat_gateway",
+              "id": "nat-0123456789abcdef0"
+            }
+          }
+        ]
+      },
+      "rtb-0public0123456789": {
+        "route_table_id": "rtb-0public0123456789",
+        "vpc_id": "vpc-0aa11bb22cc33dd44",
+        "tags": {},
+        "routes": [
+          {
+            "destination": "0.0.0.0/0",
+            "state": "active",
+            "origin": "CreateRoute",
+            "target": {
+              "type": "internet_gateway",
+              "id": "igw-0123456789abcdef0"
+            }
+          }
+        ]
+      }
+    },
+    "network_acls": {
+      "acl-0123456789abcdef0": {
+        "network_acl_id": "acl-0123456789abcdef0",
+        "vpc_id": "vpc-0aa11bb22cc33dd44",
+        "is_default": true,
+        "tags": {},
+        "associations": [
+          {
+            "association_id": "aclassoc-0123456789abcdef0",
+            "subnet_id": "subnet-0aaa1111bbbb2222c"
+          }
+        ],
+        "entries": [
+          {
+            "rule_number": 100,
+            "direction": "ingress",
+            "action": "allow",
+            "protocol": "-1",
+            "ipv4_cidr": "0.0.0.0/0",
+            "ipv6_cidr": null,
+            "port_range": null,
+            "icmp": null
+          }
+        ]
+      }
+    },
+    "instance_profiles": {
+      "arn:aws:iam::123456789012:instance-profile/example-api-profile": {
+        "name": "example-api-profile",
+        "arn": "arn:aws:iam::123456789012:instance-profile/example-api-profile",
+        "id": "AIPAEXAMPLE0000000000",
+        "path": "/",
+        "roles": [
+          {
+            "role_name": "example-api-role",
+            "arn": "arn:aws:iam::123456789012:role/example-api-role",
+            "role_id": "AROAEXAMPLE0000000000",
+            "path": "/",
+            "permissions_boundary_arn": null,
+            "trust_policy": {
+              "version": "2012-10-17",
+              "statements": [
+                {
+                  "statement_index": 0,
+                  "sid": null,
+                  "effect": "Allow",
+                  "actions": [
+                    "sts:AssumeRole"
+                  ],
+                  "not_actions": [],
+                  "resources": [],
+                  "not_resources": [],
+                  "principal": {
+                    "Service": "ec2.amazonaws.com"
+                  },
+                  "not_principal": null,
+                  "conditions": {}
+                }
+              ]
+            },
+            "last_used": {
+              "date": "2026-01-15T17:00:00+00:00",
+              "region": "us-east-1"
+            },
+            "policies": [
+              {
+                "type": "managed",
+                "name": "AmazonSSMManagedInstanceCore",
+                "arn": "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+                "default_version_id": "v1"
+              },
+              {
+                "type": "inline",
+                "name": "read-app-config",
+                "arn": null,
+                "document": {
+                  "version": "2012-10-17",
+                  "statements": [
+                    {
+                      "statement_index": 0,
+                      "sid": "ReadConfigBucket",
+                      "effect": "Allow",
+                      "actions": [
+                        "s3:GetObject"
+                      ],
+                      "not_actions": [],
+                      "resources": [
+                        "arn:aws:s3:::example-app-config/*"
+                      ],
+                      "not_resources": [],
+                      "principal": null,
+                      "not_principal": null,
+                      "conditions": {
+                        "StringEquals": {
+                          "aws:PrincipalTag/Environment": "dev"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "managed_policies": {
+      "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore": {
+        "type": "managed",
+        "name": "AmazonSSMManagedInstanceCore",
+        "arn": "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+        "default_version_id": "v1",
+        "document": {
+          "version": "2012-10-17",
+          "statements": [
+            {
+              "statement_index": 0,
+              "sid": null,
+              "effect": "Allow",
+              "actions": [
+                "ssm:UpdateInstanceInformation",
+                "ssmmessages:CreateControlChannel"
+              ],
+              "not_actions": [],
+              "resources": [
+                "*"
+              ],
+              "not_resources": [],
+              "principal": null,
+              "not_principal": null,
+              "conditions": {}
+            }
+          ]
+        }
+      }
+    },
+    "load_balancers": {
+      "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/example-public-alb/abc123": {
+        "arn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/example-public-alb/abc123",
+        "name": "example-public-alb",
+        "dns_name": "example-public-alb-123456789.us-east-1.elb.amazonaws.com",
+        "canonical_hosted_zone_id": "Z35SXDOTRQ7X7K",
+        "created_time": "2025-12-20T14:00:00+00:00",
+        "scheme": "internet-facing",
+        "type": "application",
+        "ip_address_type": "ipv4",
+        "state": "active",
+        "vpc_id": "vpc-0aa11bb22cc33dd44",
+        "security_group_ids": [
+          "sg-0ffff9999eeee8888"
+        ],
+        "subnet_ids": [
+          "subnet-0public11111aaaa",
+          "subnet-0public22222bbbb"
+        ],
+        "subnet_route_tables": [
+          {
+            "subnet_id": "subnet-0public11111aaaa",
+            "route_table_id": "rtb-0public0123456789",
+            "route_table_association_type": "explicit_subnet_association"
+          }
+        ],
+        "listeners": [
+          {
+            "listener_arn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/example-public-alb/abc123/def456",
+            "protocol": "HTTPS",
+            "port": 443,
+            "ssl_policy": "ELBSecurityPolicy-TLS13-1-2-2021-06",
+            "certificate_arns": [
+              "arn:aws:acm:us-east-1:123456789012:certificate/cert-0123"
+            ],
+            "default_actions": [
+              {
+                "type": "authenticate-oidc",
+                "order": 1,
+                "forward_targets": [],
+                "authenticate_oidc": {
+                  "Issuer": "https://idp.example.com",
+                  "AuthorizationEndpoint": "https://idp.example.com/authorize",
+                  "ClientId": "example-client-id"
+                },
+                "authenticate_cognito": null,
+                "redirect": null,
+                "fixed_response": null
+              },
+              {
+                "type": "forward",
+                "order": 2,
+                "forward_targets": [
+                  {
+                    "arn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/example-tg/aaa111",
+                    "weight": 1
+                  }
+                ],
+                "authenticate_oidc": null,
+                "authenticate_cognito": null,
+                "redirect": null,
+                "fixed_response": null
+              }
+            ],
+            "rules": []
+          }
+        ]
+      }
+    },
+    "target_groups": {
+      "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/example-tg/aaa111": {
+        "arn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/example-tg/aaa111",
+        "name": "example-tg",
+        "target_type": "instance",
+        "protocol": "HTTP",
+        "protocol_version": "HTTP1",
+        "port": 8080,
+        "vpc_id": "vpc-0aa11bb22cc33dd44",
+        "health_check": {
+          "enabled": true,
+          "protocol": "HTTP",
+          "port": "traffic-port",
+          "path": "/health",
+          "interval_seconds": 30,
+          "timeout_seconds": 5,
+          "healthy_threshold": 3,
+          "unhealthy_threshold": 3,
+          "matcher": {
+            "HttpCode": "200"
+          }
+        }
+      }
+    }
+  },
   "instances": [
     {
       "instance_id": "i-0123456789abcdef0",
@@ -41,7 +407,10 @@
       "account_id": "123456789012",
       "region": "us-east-1",
       "name": "example-api",
-      "tags": { "Name": "example-api", "Environment": "dev" },
+      "tags": {
+        "Name": "example-api",
+        "Environment": "dev"
+      },
       "lifecycle": {
         "state": "running",
         "state_transition_reason": "",
@@ -57,7 +426,11 @@
         "key_name": "example-key",
         "source_dest_check": true,
         "monitoring_state": "disabled",
-        "launch_template": { "id": null, "name": null, "version": null }
+        "launch_template": {
+          "id": null,
+          "name": null,
+          "version": null
+        }
       },
       "network": {
         "vpc_id": "vpc-0aa11bb22cc33dd44",
@@ -72,217 +445,38 @@
             "vpc_id": "vpc-0aa11bb22cc33dd44",
             "subnet_id": "subnet-0aaa1111bbbb2222c",
             "private_ipv4_addresses": [
-              { "address": "10.0.1.50", "primary": true, "public_ipv4": null }
+              {
+                "address": "10.0.1.50",
+                "primary": true,
+                "public_ipv4": null
+              }
             ],
             "public_ipv4_addresses": [],
             "ipv6_addresses": [],
-            "security_group_ids": ["sg-0aaaa1111bbbb2222"],
+            "security_group_ids": [
+              "sg-0aaaa1111bbbb2222"
+            ],
             "attachment": {
               "attachment_id": "eni-attach-0123456789abcdef0",
               "device_index": 0,
               "status": "attached",
               "delete_on_termination": true
             },
-            "subnet": {
-              "subnet_id": "subnet-0aaa1111bbbb2222c",
-              "vpc_id": "vpc-0aa11bb22cc33dd44",
-              "availability_zone": "us-east-1a",
-              "availability_zone_id": "use1-az1",
-              "ipv4_cidr": "10.0.1.0/24",
-              "ipv6_cidrs": [],
-              "map_public_ip_on_launch": false,
-              "assign_ipv6_on_creation": false,
-              "default_for_availability_zone": false,
-              "tags": { "Name": "private-1a" }
-            },
-            "effective_route_table": {
-              "route_table_id": "rtb-0123456789abcdef0",
-              "vpc_id": "vpc-0aa11bb22cc33dd44",
-              "association_type": "explicit_subnet_association",
-              "tags": {},
-              "routes": [
-                {
-                  "destination": "10.0.0.0/16",
-                  "state": "active",
-                  "origin": "CreateRouteTable",
-                  "target": { "type": "gateway", "id": "local" }
-                },
-                {
-                  "destination": "0.0.0.0/0",
-                  "state": "active",
-                  "origin": "CreateRoute",
-                  "target": { "type": "nat_gateway", "id": "nat-0123456789abcdef0" }
-                }
-              ]
-            },
-            "network_acl": {
-              "network_acl_id": "acl-0123456789abcdef0",
-              "vpc_id": "vpc-0aa11bb22cc33dd44",
-              "is_default": true,
-              "tags": {},
-              "associations": [
-                { "association_id": "aclassoc-0123456789abcdef0", "subnet_id": "subnet-0aaa1111bbbb2222c" }
-              ],
-              "entries": [
-                {
-                  "rule_number": 100,
-                  "direction": "ingress",
-                  "action": "allow",
-                  "protocol": "-1",
-                  "ipv4_cidr": "0.0.0.0/0",
-                  "ipv6_cidr": null,
-                  "port_range": null,
-                  "icmp": null
-                }
-              ]
-            }
-          }
-        ],
-        "security_groups": [
-          {
-            "group_id": "sg-0aaaa1111bbbb2222",
-            "group_name": "example-api-sg",
-            "description": "App tier, accepts traffic from the ALB only",
-            "vpc_id": "vpc-0aa11bb22cc33dd44",
-            "tags": {},
-            "ingress_rules": [
-              {
-                "protocol": "tcp",
-                "from_port": 8080,
-                "to_port": 8080,
-                "peer": {
-                  "type": "security_group",
-                  "value": "sg-0ffff9999eeee8888",
-                  "account_id": "123456789012",
-                  "description": "From ALB security group"
-                }
-              }
-            ],
-            "egress_rules": [
-              {
-                "protocol": "all",
-                "from_port": null,
-                "to_port": null,
-                "peer": { "type": "ipv4_cidr", "value": "0.0.0.0/0", "description": null }
-              }
-            ]
+            "route_table_id": "rtb-0123456789abcdef0",
+            "route_table_association_type": "explicit_subnet_association",
+            "network_acl_id": "acl-0123456789abcdef0"
           }
         ],
         "load_balancer_relationships": [
           {
-            "load_balancer": {
-              "arn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/example-public-alb/abc123",
-              "name": "example-public-alb",
-              "dns_name": "example-public-alb-123456789.us-east-1.elb.amazonaws.com",
-              "canonical_hosted_zone_id": "Z35SXDOTRQ7X7K",
-              "created_time": "2025-12-20T14:00:00+00:00",
-              "scheme": "internet-facing",
-              "type": "application",
-              "ip_address_type": "ipv4",
-              "state": "active",
-              "vpc_id": "vpc-0aa11bb22cc33dd44",
-              "security_group_ids": ["sg-0ffff9999eeee8888"],
-              "subnet_ids": ["subnet-0public11111aaaa", "subnet-0public22222bbbb"],
-              "security_groups": [
-                {
-                  "group_id": "sg-0ffff9999eeee8888",
-                  "group_name": "example-alb-sg",
-                  "description": "Public HTTPS",
-                  "vpc_id": "vpc-0aa11bb22cc33dd44",
-                  "tags": {},
-                  "ingress_rules": [
-                    {
-                      "protocol": "tcp",
-                      "from_port": 443,
-                      "to_port": 443,
-                      "peer": { "type": "ipv4_cidr", "value": "203.0.113.10/32", "description": "Corp egress" }
-                    }
-                  ],
-                  "egress_rules": []
-                }
-              ],
-              "subnet_route_tables": [
-                {
-                  "subnet_id": "subnet-0public11111aaaa",
-                  "route_table": {
-                    "route_table_id": "rtb-0public0123456789",
-                    "vpc_id": "vpc-0aa11bb22cc33dd44",
-                    "association_type": "explicit_subnet_association",
-                    "tags": {},
-                    "routes": [
-                      {
-                        "destination": "0.0.0.0/0",
-                        "state": "active",
-                        "origin": "CreateRoute",
-                        "target": { "type": "internet_gateway", "id": "igw-0123456789abcdef0" }
-                      }
-                    ]
-                  }
-                }
-              ],
-              "listeners": [
-                {
-                  "listener_arn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/example-public-alb/abc123/def456",
-                  "protocol": "HTTPS",
-                  "port": 443,
-                  "ssl_policy": "ELBSecurityPolicy-TLS13-1-2-2021-06",
-                  "certificate_arns": ["arn:aws:acm:us-east-1:123456789012:certificate/cert-0123"],
-                  "default_actions": [
-                    {
-                      "type": "authenticate-oidc",
-                      "order": 1,
-                      "forward_targets": [],
-                      "authenticate_oidc": {
-                        "Issuer": "https://idp.example.com",
-                        "AuthorizationEndpoint": "https://idp.example.com/authorize",
-                        "ClientId": "example-client-id"
-                      },
-                      "authenticate_cognito": null,
-                      "redirect": null,
-                      "fixed_response": null
-                    },
-                    {
-                      "type": "forward",
-                      "order": 2,
-                      "forward_targets": [
-                        { "arn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/example-tg/aaa111", "weight": 1 }
-                      ],
-                      "authenticate_oidc": null,
-                      "authenticate_cognito": null,
-                      "redirect": null,
-                      "fixed_response": null
-                    }
-                  ],
-                  "rules": []
-                }
-              ]
-            },
             "listener_arn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/example-public-alb/abc123/def456",
             "rule_arn": null,
             "rule_priority": "default",
             "rule_conditions": [],
-            "authentication_actions": ["authenticate-oidc"],
+            "authentication_actions": [
+              "authenticate-oidc"
+            ],
             "forward_weight": 1,
-            "target_group": {
-              "arn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/example-tg/aaa111",
-              "name": "example-tg",
-              "target_type": "instance",
-              "protocol": "HTTP",
-              "protocol_version": "HTTP1",
-              "port": 8080,
-              "vpc_id": "vpc-0aa11bb22cc33dd44",
-              "health_check": {
-                "enabled": true,
-                "protocol": "HTTP",
-                "port": "traffic-port",
-                "path": "/health",
-                "interval_seconds": 30,
-                "timeout_seconds": 5,
-                "healthy_threshold": 3,
-                "unhealthy_threshold": 3,
-                "matcher": { "HttpCode": "200" }
-              }
-            },
             "target": {
               "registered_id": "i-0123456789abcdef0",
               "resolved_instance_id": "i-0123456789abcdef0",
@@ -291,8 +485,13 @@
               "health_state": "healthy",
               "health_reason": null,
               "health_description": null
-            }
+            },
+            "load_balancer_arn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/example-public-alb/abc123",
+            "target_group_arn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/example-tg/aaa111"
           }
+        ],
+        "security_group_ids": [
+          "sg-0aaaa1111bbbb2222"
         ]
       },
       "instance_metadata": {
@@ -305,87 +504,7 @@
       },
       "iam": {
         "instance_profile_arn": "arn:aws:iam::123456789012:instance-profile/example-api-profile",
-        "instance_profile_id": "AIPAEXAMPLE0000000000",
-        "instance_profile": {
-          "name": "example-api-profile",
-          "arn": "arn:aws:iam::123456789012:instance-profile/example-api-profile",
-          "id": "AIPAEXAMPLE0000000000",
-          "path": "/",
-          "roles": [
-            {
-              "role_name": "example-api-role",
-              "arn": "arn:aws:iam::123456789012:role/example-api-role",
-              "role_id": "AROAEXAMPLE0000000000",
-              "path": "/",
-              "permissions_boundary_arn": null,
-              "trust_policy": {
-                "version": "2012-10-17",
-                "statements": [
-                  {
-                    "statement_index": 0,
-                    "sid": null,
-                    "effect": "Allow",
-                    "actions": ["sts:AssumeRole"],
-                    "not_actions": [],
-                    "resources": [],
-                    "not_resources": [],
-                    "principal": { "Service": "ec2.amazonaws.com" },
-                    "not_principal": null,
-                    "conditions": {}
-                  }
-                ]
-              },
-              "last_used": { "date": "2026-01-15T17:00:00+00:00", "region": "us-east-1" },
-              "policies": [
-                {
-                  "type": "managed",
-                  "name": "AmazonSSMManagedInstanceCore",
-                  "arn": "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
-                  "default_version_id": "v1",
-                  "document": {
-                    "version": "2012-10-17",
-                    "statements": [
-                      {
-                        "statement_index": 0,
-                        "sid": null,
-                        "effect": "Allow",
-                        "actions": ["ssm:UpdateInstanceInformation", "ssmmessages:CreateControlChannel"],
-                        "not_actions": [],
-                        "resources": ["*"],
-                        "not_resources": [],
-                        "principal": null,
-                        "not_principal": null,
-                        "conditions": {}
-                      }
-                    ]
-                  }
-                },
-                {
-                  "type": "inline",
-                  "name": "read-app-config",
-                  "arn": null,
-                  "document": {
-                    "version": "2012-10-17",
-                    "statements": [
-                      {
-                        "statement_index": 0,
-                        "sid": "ReadConfigBucket",
-                        "effect": "Allow",
-                        "actions": ["s3:GetObject"],
-                        "not_actions": [],
-                        "resources": ["arn:aws:s3:::example-app-config/*"],
-                        "not_resources": [],
-                        "principal": null,
-                        "not_principal": null,
-                        "conditions": { "StringEquals": { "aws:PrincipalTag/Environment": "dev" } }
-                      }
-                    ]
-                  }
-                }
-              ]
-            }
-          ]
-        }
+        "instance_profile_id": "AIPAEXAMPLE0000000000"
       },
       "storage": {
         "root_device_name": "/dev/xvda",

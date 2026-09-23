@@ -28,6 +28,15 @@ span one or more regions. The JSON contains real resource identities and exact A
 every non-terminated instance in the account. Each instance record includes its own "region" field.
 Make all security judgments yourself; no local security conclusions are included.
 
+To avoid duplication, resources shared by multiple instances are de-duplicated into a top-level
+"shared" object and referenced by ID from each instance. Resolve every reference before reasoning,
+and treat the referenced data as if it were inline on the instance:
+- instance.network.security_group_ids and each load balancer's security_group_ids -> shared.security_groups[id]
+- each interface's subnet_id -> shared.subnets[id]; route_table_id -> shared.route_tables[id]; network_acl_id -> shared.network_acls[id]
+- instance.iam.instance_profile_arn -> shared.instance_profiles[arn]; within a profile, a role's managed policy references shared.managed_policies[arn] (the policy document lives there)
+- each load_balancer_relationship's load_balancer_arn -> shared.load_balancers[arn]; target_group_arn -> shared.target_groups[arn]
+A missing reference means the collector did not return that object, exactly as if it were absent.
+
 Your task: identify the account's most significant EC2 security risks, whether they arise from
 Internet exposure or from security configuration, and report only the ones that genuinely matter.
 Return at most 10 findings, and fewer when fewer real risks exist. Never manufacture findings to
