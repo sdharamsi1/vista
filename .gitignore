@@ -3,4 +3,5 @@ __pycache__/
 *.py[cod]
 .DS_Store
 *.json
-!ec2/examples/sample-payload.json
+!vista/ec2/examples/sample-payload.json
+*.egg-info/

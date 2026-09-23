@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ec2.inventory import isoformat, normalize_tags
+from vista.ec2.inventory import isoformat, normalize_tags
 
 SOURCE_API = "ec2:DescribeVolumes"
 

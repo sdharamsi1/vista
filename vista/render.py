@@ -20,26 +20,21 @@ BLUE = "34"
 MAGENTA = "35"
 CYAN = "36"
 
-IDENTITY_PATTERN = re.compile(
-    r"^- \*\*(?P<name>.+)\*\* \(`(?P<instance_id>[^`]+)`\)$"
-)
+HEADING_PATTERN = re.compile(r"^#\s+EC2 Security Review$")
+SECTION_PATTERN = re.compile(r"^##\s+(?P<name>.+)$")
+FINDING_PATTERN = re.compile(r"^###\s+(?P<title>.+)$")
 FIELD_PATTERN = re.compile(
-    r"^\s*- \*\*(?P<label>Assessment|Internet exposure|Why this assessment|"
-    r"Protective controls|Security concerns|Recommended investigation):\*\*\s*"
-    r"(?P<value>.*)$"
+    r"^\s*- \*\*(?P<label>Severity|Category|Affected instances|Evidence|"
+    r"Why it matters|Remediation):\*\*\s*(?P<value>.*)$"
 )
-ASSESSMENT_STYLES = {
-    "NO_IMMEDIATE_ACTION": ("✓", GREEN),
-    "INVESTIGATE": ("!", YELLOW),
+SEVERITY_STYLES = {
     "HIGH_PRIORITY": ("!!", RED),
+    "INVESTIGATE": ("!", YELLOW),
     "INSUFFICIENT_DATA": ("?", MAGENTA),
 }
-EXPOSURE_STYLES = {
-    "NONE": ("○", GREEN),
-    "DIRECT": ("●", YELLOW),
-    "LOAD_BALANCER": ("●", YELLOW),
-    "BOTH": ("●", RED),
-    "UNKNOWN": ("?", MAGENTA),
+CATEGORY_STYLES = {
+    "INTERNET_EXPOSURE": ("●", YELLOW),
+    "SECURITY_CONFIGURATION": ("▲", BLUE),
 }
 SPINNER_FRAMES = ("◐", "◓", "◑", "◒")
 
@@ -127,27 +122,41 @@ def _plain(text: str) -> str:
     return text.replace("`", "").strip()
 
 
-# Parse the Bedrock Markdown into per-instance field blocks plus any leading preamble lines.
-def _parse_blocks(text: str) -> tuple[list[dict[str, Any]], list[str]]:
-    blocks: list[dict[str, Any]] = []
-    preamble: list[str] = []
+# Parse the review into summary and findings.
+def _parse_review(
+    text: str,
+) -> tuple[list[str], list[dict[str, Any]]]:
+    summary: list[str] = []
+    findings: list[dict[str, Any]] = []
+    section: str | None = None
     current: dict[str, Any] | None = None
     current_field: str | None = None
 
     for raw_line in text.splitlines():
         line = raw_line.strip()
-        if not line or line == "# EC2 Security Review":
+        if not line or HEADING_PATTERN.match(line):
             continue
 
-        identity = IDENTITY_PATTERN.match(line)
-        if identity:
+        section_match = SECTION_PATTERN.match(line)
+        if section_match:
             if current is not None:
-                blocks.append(current)
-            current = {
-                "name": identity.group("name"),
-                "instance_id": identity.group("instance_id"),
-                "fields": {},
-            }
+                findings.append(current)
+                current = None
+                current_field = None
+            name = section_match.group("name").casefold()
+            if name.startswith("account risk summary"):
+                section = "summary"
+            elif name.startswith("top findings"):
+                section = "findings"
+            else:
+                section = None
+            continue
+
+        finding = FINDING_PATTERN.match(line)
+        if finding and section == "findings":
+            if current is not None:
+                findings.append(current)
+            current = {"title": finding.group("title").strip(), "fields": {}}
             current_field = None
             continue
 
@@ -157,14 +166,14 @@ def _parse_blocks(text: str) -> tuple[list[dict[str, Any]], list[str]]:
             current["fields"][current_field] = field.group("value").strip()
             continue
 
-        if current is None:
-            preamble.append(line)
-        elif current_field is not None:
+        if section == "summary":
+            summary.append(line)
+        elif current is not None and current_field is not None:
             current["fields"][current_field] += " " + line
 
     if current is not None:
-        blocks.append(current)
-    return blocks, preamble
+        findings.append(current)
+    return summary, findings
 
 
 # Word-wrap a value to the available width and apply a left indent to each line.
@@ -207,113 +216,105 @@ def _section(
     lines.extend(_wrap(value, width))
 
 
-# Turn validated Bedrock Markdown into compact, color-coded terminal cards per instance.
+# Render one finding card.
+def _render_finding(
+    lines: list[str],
+    position: int,
+    finding: dict[str, Any],
+    rule: str,
+    width: int,
+    use_color: bool,
+) -> None:
+    fields = finding["fields"]
+    severity = _plain(fields.get("Severity", "INSUFFICIENT_DATA"))
+    category = _plain(fields.get("Category", ""))
+
+    title = finding["title"]
+    if not re.match(r"^\d+\.", title):
+        title = f"{position}. {title}"
+    lines.append("")
+    for part in textwrap.wrap(
+        title, width=width, break_long_words=True, break_on_hyphens=False
+    ) or [title]:
+        lines.append(_style(part, use_color, BOLD, CYAN))
+    lines.append(_style(rule, use_color, DIM))
+    lines.append(_status_row("Severity", severity, SEVERITY_STYLES, use_color))
+    if category:
+        lines.append(_status_row("Category", category, CATEGORY_STYLES, use_color))
+
+    _section(
+        lines,
+        "Affected instances",
+        fields.get("Affected instances", "Not supplied."),
+        "▪",
+        CYAN,
+        width,
+        use_color,
+    )
+    _section(
+        lines,
+        "Evidence",
+        fields.get("Evidence", "Not supplied."),
+        "◆",
+        CYAN,
+        width,
+        use_color,
+    )
+    _section(
+        lines,
+        "Why it matters",
+        fields.get("Why it matters", "Not supplied."),
+        "!",
+        YELLOW,
+        width,
+        use_color,
+    )
+    _section(
+        lines,
+        "Remediation",
+        fields.get("Remediation", "Not supplied."),
+        "→",
+        BLUE,
+        width,
+        use_color,
+    )
+
+
+# Render the full review for the terminal.
 def render_review(text: str, *, use_color: bool = True, width: int | None = None) -> str:
     """Return a compact terminal rendering of validated Bedrock Markdown."""
     terminal_width = width or shutil.get_terminal_size((100, 24)).columns
     terminal_width = max(40, min(terminal_width, 120))
     rule = "─" * terminal_width
-    blocks, preamble = _parse_blocks(text)
+    summary, findings = _parse_review(text)
 
     lines = [
         _style("EC2 Security Review", use_color, BOLD, CYAN),
         _style("═" * min(terminal_width, 80), use_color, CYAN),
     ]
-    if not blocks:
-        lines.extend(["", *(preamble or ["No review content returned."])])
-        return "\n".join(lines)
 
-    if preamble:
-        lines.extend(["", _style("Additional model output", use_color, BOLD, MAGENTA)])
-        for message in preamble:
+    if summary:
+        lines.append("")
+        for message in summary:
             lines.extend(_wrap(message, terminal_width, indent=2))
 
-    for index, block in enumerate(blocks):
-        if index:
-            lines.append("")
-        fields = block["fields"]
-        assessment = _plain(fields.get("Assessment", "UNKNOWN"))
-        exposure = _plain(fields.get("Internet exposure", "UNKNOWN"))
-
-        name = block["name"]
-        raw_instance_id = block["instance_id"]
-        identity = _style(name, use_color, BOLD, CYAN)
-        instance_id = _style(raw_instance_id, use_color, DIM)
-        if len(name) + len(raw_instance_id) + 2 <= terminal_width:
-            identity_lines = [f"{identity}  {instance_id}"]
-        else:
-            name_parts = textwrap.wrap(
-                name,
-                width=terminal_width,
-                break_long_words=True,
-                break_on_hyphens=False,
-            ) or [name]
-            identity_lines = [
-                _style(part, use_color, BOLD, CYAN) for part in name_parts
-            ]
-            identity_lines.append(f"  {instance_id}")
+    if findings:
+        for position, finding in enumerate(findings, start=1):
+            _render_finding(lines, position, finding, rule, terminal_width, use_color)
+    else:
         lines.extend(
             [
                 "",
-                *identity_lines,
-                _style(rule, use_color, DIM),
-                _status_row(
-                    "Assessment", assessment, ASSESSMENT_STYLES, use_color
-                ),
-                _status_row(
-                    "Internet exposure", exposure, EXPOSURE_STYLES, use_color
+                _style(
+                    "  ✓ No noteworthy EC2 risks identified in supplied facts.",
+                    use_color,
+                    BOLD,
+                    GREEN,
                 ),
             ]
         )
-        _section(
-            lines,
-            "Why this assessment",
-            fields.get("Why this assessment", "Not supplied."),
-            "◆",
-            CYAN,
-            terminal_width,
-            use_color,
-        )
-        _section(
-            lines,
-            "Protective controls",
-            fields.get("Protective controls", "None identified in supplied facts."),
-            "+",
-            GREEN,
-            terminal_width,
-            use_color,
-        )
 
-        concerns = fields.get(
-            "Security concerns", "None identified in supplied facts."
-        )
-        no_concerns = concerns.casefold().rstrip(".") == (
-            "none identified in supplied facts"
-        )
-        _section(
-            lines,
-            "Security concerns",
-            concerns,
-            "✓" if no_concerns else "!",
-            GREEN if no_concerns else YELLOW,
-            terminal_width,
-            use_color,
-        )
-
-        recommendation = fields.get(
-            "Recommended investigation", "None based on supplied facts."
-        )
-        no_recommendation = recommendation.casefold().rstrip(".") == (
-            "none based on supplied facts"
-        )
-        _section(
-            lines,
-            "Recommended investigation",
-            recommendation,
-            "—" if no_recommendation else "→",
-            GREEN if no_recommendation else BLUE,
-            terminal_width,
-            use_color,
-        )
+    if not summary and not findings:
+        lines.extend(["", "No review content returned."])
 
     return "\n".join(lines)

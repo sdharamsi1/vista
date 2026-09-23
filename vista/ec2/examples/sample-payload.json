@@ -2,33 +2,35 @@
   "scan": {
     "account_id": "123456789012",
     "caller_arn": "arn:aws:sts::123456789012:assumed-role/vista-scanner/session",
-    "region": "us-east-1",
+    "regions": ["us-east-1"],
     "started_at": "2026-01-15T18:04:11+00:00",
     "completed_at": "2026-01-15T18:04:19+00:00",
-    "collector_status": {
-      "identity": { "status": "SUCCESS", "source_apis": ["sts:GetCallerIdentity"] },
-      "inventory": { "status": "SUCCESS", "source_apis": ["ec2:DescribeInstances"] },
-      "network": {
-        "status": "SUCCESS",
-        "source_apis": [
-          "ec2:DescribeSecurityGroups",
-          "ec2:DescribeSubnets",
-          "ec2:DescribeRouteTables",
-          "ec2:DescribeNetworkAcls"
-        ]
-      },
-      "storage": { "status": "SUCCESS", "source_apis": ["ec2:DescribeVolumes"] },
-      "iam": {
-        "status": "SUCCESS",
-        "source_apis": ["iam:GetInstanceProfile", "iam:GetRole", "iam:GetPolicy", "iam:GetPolicyVersion"]
-      },
-      "load_balancers": {
-        "status": "SUCCESS",
-        "source_apis": [
-          "elasticloadbalancing:DescribeLoadBalancers",
-          "elasticloadbalancing:DescribeListeners",
-          "elasticloadbalancing:DescribeTargetHealth"
-        ]
+    "collector_status_by_region": {
+      "us-east-1": {
+        "identity": { "status": "SUCCESS", "source_apis": ["sts:GetCallerIdentity"] },
+        "inventory": { "status": "SUCCESS", "source_apis": ["ec2:DescribeInstances"] },
+        "network": {
+          "status": "SUCCESS",
+          "source_apis": [
+            "ec2:DescribeSecurityGroups",
+            "ec2:DescribeSubnets",
+            "ec2:DescribeRouteTables",
+            "ec2:DescribeNetworkAcls"
+          ]
+        },
+        "storage": { "status": "SUCCESS", "source_apis": ["ec2:DescribeVolumes"] },
+        "iam": {
+          "status": "SUCCESS",
+          "source_apis": ["iam:GetInstanceProfile", "iam:GetRole", "iam:GetPolicy", "iam:GetPolicyVersion"]
+        },
+        "load_balancers": {
+          "status": "SUCCESS",
+          "source_apis": [
+            "elasticloadbalancing:DescribeLoadBalancers",
+            "elasticloadbalancing:DescribeListeners",
+            "elasticloadbalancing:DescribeTargetHealth"
+          ]
+        }
       }
     }
   },

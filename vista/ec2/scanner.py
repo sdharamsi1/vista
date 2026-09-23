@@ -8,16 +8,16 @@ from typing import Any, Callable
 
 from botocore.exceptions import BotoCoreError, ClientError
 
-from ec2.iam import SOURCE_APIS as IAM_APIS
-from ec2.iam import enrich_iam
-from ec2.inventory import SOURCE_API as INVENTORY_API
-from ec2.inventory import discover_instances
-from ec2.load_balancers import SOURCE_APIS as LOAD_BALANCER_APIS
-from ec2.load_balancers import enrich_load_balancers
-from ec2.network import SOURCE_APIS as NETWORK_APIS
-from ec2.network import enrich_network
-from ec2.storage import SOURCE_API as STORAGE_API
-from ec2.storage import enrich_storage
+from vista.ec2.iam import SOURCE_APIS as IAM_APIS
+from vista.ec2.iam import enrich_iam
+from vista.ec2.inventory import SOURCE_API as INVENTORY_API
+from vista.ec2.inventory import discover_instances
+from vista.ec2.load_balancers import SOURCE_APIS as LOAD_BALANCER_APIS
+from vista.ec2.load_balancers import enrich_load_balancers
+from vista.ec2.network import SOURCE_APIS as NETWORK_APIS
+from vista.ec2.network import enrich_network
+from vista.ec2.storage import SOURCE_API as STORAGE_API
+from vista.ec2.storage import enrich_storage
 
 
 # Normalize a boto exception into a structured dict recording the failure details.

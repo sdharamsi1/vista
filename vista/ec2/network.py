@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ec2.inventory import normalize_tags
+from vista.ec2.inventory import normalize_tags
 
 SOURCE_APIS = [
     "ec2:DescribeSecurityGroups",
