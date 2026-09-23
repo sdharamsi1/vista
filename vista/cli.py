@@ -13,10 +13,12 @@ import boto3
 from botocore.exceptions import (
     BotoCoreError,
     ClientError,
+    ConnectTimeoutError,
     NoCredentialsError,
     NoRegionError,
     PartialCredentialsError,
     ProfileNotFound,
+    ReadTimeoutError,
 )
 
 from vista import ui
@@ -153,7 +155,17 @@ def run_scan(
         stream=sys.stderr,
         enabled=spinner_enabled,
     ):
-        analysis = service.analyze(session, bedrock_region, model_id, facts, save_json)
+        analysis, usage = service.analyze(session, bedrock_region, model_id, facts, save_json)
+
+    if usage.get("input"):
+        note = f"  ({usage['attempts']} attempts)" if usage["attempts"] > 1 else ""
+        ui.info(
+            ui.style(
+                f"Tokens  input={usage['input']}  output={usage['output']}  "
+                f"total={usage['input'] + usage['output']}{note}",
+                "dim",
+            )
+        )
     print(format_analysis(analysis, plain))
     return 0
 
@@ -369,6 +381,13 @@ def main() -> int:
     except NoRegionError:
         print(
             "No AWS region configured; pass --region/--all-regions or set AWS_REGION.",
+            file=sys.stderr,
+        )
+        return 1
+    except (ReadTimeoutError, ConnectTimeoutError) as error:
+        print(
+            f"Bedrock request timed out: {error}\n"
+            "The model may be slow on a large payload; try a faster model or a smaller region scope.",
             file=sys.stderr,
         )
         return 1

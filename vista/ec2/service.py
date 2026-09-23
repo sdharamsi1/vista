@@ -11,6 +11,7 @@ from typing import Any, Callable
 
 from vista import bedrock
 from vista.ec2 import review
+from vista.ec2.normalize import normalize
 from vista.ec2.scanner import scan_region
 
 NAME = "ec2"
@@ -61,20 +62,21 @@ def count(facts: dict[str, Any]) -> int:
     return len(facts.get("instances", []))
 
 
-# Run the Bedrock review for the merged EC2 facts.
+# Run the Bedrock review for the merged EC2 facts. Returns (markdown, usage).
 def analyze(
     session: Any,
     bedrock_region: str,
     model_id: str,
     facts: dict[str, Any],
     json_path: Path | None = None,
-) -> str:
+) -> tuple[str, dict[str, int]]:
     instances = facts.get("instances", [])
+    payload = normalize(facts)
     return bedrock.analyze(
         session,
         bedrock_region,
         model_id,
-        facts,
+        payload,
         system_prompt=review.build_system_prompt(instances),
         validate=lambda text: review.validate(text, instances),
         is_empty=not instances,
