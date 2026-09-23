@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vista"
+version = "0.1.0"
+description = "AI-powered AWS attack surface analysis that reviews EC2 configuration with Amazon Bedrock."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["boto3==1.40.64"]
+
+[project.scripts]
+vista = "vista.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["vista*"]

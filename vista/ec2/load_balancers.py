@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ec2.inventory import isoformat
-from ec2.network import find_effective_route_table, load_security_groups
+from vista.ec2.inventory import isoformat
+from vista.ec2.network import find_effective_route_table, load_security_groups
 
 SOURCE_APIS = [
     "elasticloadbalancing:DescribeLoadBalancers",
