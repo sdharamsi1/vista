@@ -20,11 +20,11 @@ BLUE = "34"
 MAGENTA = "35"
 CYAN = "36"
 
-HEADING_PATTERN = re.compile(r"^#\s+EC2 Security Review$")
+HEADING_PATTERN = re.compile(r"^#\s+(?P<title>.+?Security Review)\s*$")
 SECTION_PATTERN = re.compile(r"^##\s+(?P<name>.+)$")
 FINDING_PATTERN = re.compile(r"^###\s+(?P<title>.+)$")
 FIELD_PATTERN = re.compile(
-    r"^\s*- \*\*(?P<label>Severity|Category|Affected instances|Evidence|"
+    r"^\s*- \*\*(?P<label>Severity|Category|Affected [A-Za-z]+|Evidence|"
     r"Why it matters|Remediation):\*\*\s*(?P<value>.*)$"
 )
 SEVERITY_STYLES = {
@@ -34,6 +34,7 @@ SEVERITY_STYLES = {
 }
 CATEGORY_STYLES = {
     "INTERNET_EXPOSURE": ("●", YELLOW),
+    "PUBLIC_EXPOSURE": ("●", YELLOW),
     "SECURITY_CONFIGURATION": ("▲", BLUE),
 }
 SPINNER_FRAMES = ("◐", "◓", "◑", "◒")
@@ -242,10 +243,13 @@ def _render_finding(
     if category:
         lines.append(_status_row("Category", category, CATEGORY_STYLES, use_color))
 
+    affected_label = next(
+        (key for key in fields if key.startswith("Affected")), "Affected resources"
+    )
     _section(
         lines,
-        "Affected instances",
-        fields.get("Affected instances", "Not supplied."),
+        affected_label,
+        fields.get(affected_label, "Not supplied."),
         "▪",
         CYAN,
         width,
@@ -280,6 +284,15 @@ def _render_finding(
     )
 
 
+# Title of the review from its top heading, defaulting generically.
+def _review_title(text: str) -> str:
+    for line in text.splitlines():
+        match = HEADING_PATTERN.match(line.strip())
+        if match:
+            return match.group("title")
+    return "Security Review"
+
+
 # Render the full review for the terminal.
 def render_review(text: str, *, use_color: bool = True, width: int | None = None) -> str:
     """Return a compact terminal rendering of validated Bedrock Markdown."""
@@ -287,9 +300,10 @@ def render_review(text: str, *, use_color: bool = True, width: int | None = None
     terminal_width = max(40, min(terminal_width, 120))
     rule = "─" * terminal_width
     summary, findings = _parse_review(text)
+    title = _review_title(text)
 
     lines = [
-        _style("EC2 Security Review", use_color, BOLD, CYAN),
+        _style(title, use_color, BOLD, CYAN),
         _style("═" * min(terminal_width, 80), use_color, CYAN),
     ]
 
@@ -306,7 +320,7 @@ def render_review(text: str, *, use_color: bool = True, width: int | None = None
             [
                 "",
                 _style(
-                    "  ✓ No noteworthy EC2 risks identified in supplied facts.",
+                    "  ✓ No noteworthy risks identified in supplied facts.",
                     use_color,
                     BOLD,
                     GREEN,
