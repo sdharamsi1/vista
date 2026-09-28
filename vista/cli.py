@@ -24,9 +24,10 @@ from botocore.exceptions import (
 from vista import ui
 from vista.ec2 import service as ec2_service
 from vista.render import Spinner, render_review
+from vista.s3 import service as s3_service
 
 # Service registry: name -> service module. Add new services here.
-SERVICES = {ec2_service.NAME: ec2_service}
+SERVICES = {ec2_service.NAME: ec2_service, s3_service.NAME: s3_service}
 
 # Model menu: (label, id). A None id means prompt for a custom one.
 MODELS: list[tuple[str, str | None]] = [

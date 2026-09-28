@@ -1,9 +1,9 @@
 # Vista
 
-Vista is an AI-powered AWS attack surface analysis tool. It discovers EC2 resources across an
-account, collects their factual configuration, and asks an Amazon Bedrock model to identify the
-account's most significant security risks — Internet exposure or configuration — with evidence and
-remediation for each finding.
+Vista is an AI-powered AWS attack surface analysis tool. It discovers resources across an account,
+collects their factual configuration, and asks an Amazon Bedrock model to identify the account's
+most significant security risks — public exposure or misconfiguration — with evidence and
+remediation for each finding. It currently reviews **EC2** and **S3**.
 
 ## Requirements
 
@@ -63,6 +63,15 @@ Run `vista --help` to see all options. Two useful ones:
 - `--save-json PATH` — write the exact factual JSON sent to Bedrock to a private (0600) file.
 - `--plain` — print the model's raw Markdown without terminal formatting.
 
+### Services
+
+- **EC2** — instances and their network path, IAM, IMDS, storage, and load-balancer exposure.
+- **S3** — buckets and their public-access controls (Block Public Access, policy, ACL, ownership),
+  encryption, versioning, logging, replication, and CORS.
+
+A bucket is only included when its region is in the selected scope, so use `--all-regions` (or the
+right `--region`) to see every bucket.
+
 ### Models
 
 The interactive menu offers two models plus a custom entry:
@@ -81,22 +90,37 @@ call. `me-south-1` and `me-central-1` are excluded from region enumeration (edit
 
 ## IAM permissions
 
-The scanning identity needs read-only EC2/IAM/ELB access plus Bedrock invoke:
+The scanning identity needs read-only access plus Bedrock invoke. Common to every scan:
 
-- `sts:GetCallerIdentity`
-- `ec2:DescribeRegions`, `ec2:DescribeInstances`, `ec2:DescribeSecurityGroups`,
-  `ec2:DescribeSubnets`, `ec2:DescribeRouteTables`, `ec2:DescribeNetworkAcls`, `ec2:DescribeVolumes`
+- `sts:GetCallerIdentity`, `ec2:DescribeRegions`
+- `bedrock:InvokeModel` on the chosen model/inference profile
+
+For **EC2**:
+
+- `ec2:DescribeInstances`, `ec2:DescribeSecurityGroups`, `ec2:DescribeSubnets`,
+  `ec2:DescribeRouteTables`, `ec2:DescribeNetworkAcls`, `ec2:DescribeVolumes`
 - `iam:GetInstanceProfile`, `iam:GetRole`, `iam:ListAttachedRolePolicies`, `iam:ListRolePolicies`,
   `iam:GetRolePolicy`, `iam:GetPolicy`, `iam:GetPolicyVersion`
 - `elasticloadbalancing:DescribeLoadBalancers`, `elasticloadbalancing:DescribeListeners`,
   `elasticloadbalancing:DescribeTargetHealth`
-- `bedrock:InvokeModel` on the chosen model/inference profile
+
+For **S3**:
+
+- `s3:ListAllMyBuckets`, `s3:GetBucketLocation`
+- `s3:GetBucketPublicAccessBlock`, `s3:GetBucketPolicy`, `s3:GetBucketPolicyStatus`,
+  `s3:GetBucketAcl`, `s3:GetBucketOwnershipControls`, `s3:GetBucketWebsite`,
+  `s3:GetEncryptionConfiguration`, `s3:GetBucketVersioning`, `s3:GetBucketLogging`,
+  `s3:GetReplicationConfiguration`, `s3:GetBucketObjectLockConfiguration`, `s3:GetBucketCORS`,
+  `s3:GetBucketTagging`
+- `s3:GetAccountPublicAccessBlock`, `s3:ListAccessPoints`, `s3:GetAccessPointPolicyStatus`
+
+Anything denied is recorded per resource under `collection_errors` rather than aborting the scan.
 
 ## Output
 
 Vista prints an account-level review: a short risk summary followed by up to ten findings ordered
-by severity. Each finding lists its severity, category, affected instances, the supporting
-evidence, why it matters, and a concrete remediation step. Instances that share a root cause are
+by severity. Each finding lists its severity, category, the affected resources, the supporting
+evidence, why it matters, and a concrete remediation step. Resources that share a root cause are
 grouped into a single finding.
 
 ## EC2 facts payload
@@ -164,3 +188,50 @@ looks like this:
 
 A full populated example is in
 [`vista/ec2/examples/sample-payload.json`](vista/ec2/examples/sample-payload.json).
+
+## S3 facts payload
+
+S3 exposure is decided by the interaction of Block Public Access, bucket policy, ACL, and object
+ownership — not a network path — so the payload carries those controls plus configuration signals.
+Identical bucket policies are de-duplicated into `shared.policies` and referenced by `policy_ref`.
+Account-level Block Public Access is under `account` and overrides per-bucket settings.
+
+```json
+{
+  "scan": { "account_id": "...", "regions": ["..."] },
+  "shared": { "policies": { "pol-<hash>": { "Statement": [] } } },
+  "account": {
+    "public_access_block": { "BlockPublicAcls": true, "IgnorePublicAcls": true, "BlockPublicPolicy": true, "RestrictPublicBuckets": true },
+    "access_points": [ { "name": "...", "bucket": "...", "network_origin": "Internet", "policy_is_public": false } ]
+  },
+  "buckets": [
+    {
+      "name": "...",
+      "arn": "arn:...:s3:::...",
+      "region": "...",
+      "tags": {},
+      "public_access_block": { "BlockPublicAcls": true, "...": true },
+      "policy_ref": "pol-<hash>",
+      "policy_is_public": false,
+      "acl": { "grants": [], "public_grants": [] },
+      "object_ownership": "BucketOwnerEnforced",
+      "website": null,
+      "encryption": { "sse_algorithm": "aws:kms", "kms_key_arn": "...", "bucket_key_enabled": true },
+      "versioning": { "status": "Enabled", "mfa_delete": null },
+      "logging": { "target_bucket": "...", "target_prefix": "..." },
+      "replication": null,
+      "object_lock": null,
+      "cors": null,
+      "collection_errors": null
+    }
+  ]
+}
+```
+
+- **account.public_access_block** — account-level Block Public Access; overrides bucket settings.
+- **buckets[]** — one entry per bucket in the selected regions, with its own Block Public Access,
+  `policy_ref` (into `shared.policies`), AWS-computed `policy_is_public`, ACL (public grants
+  flagged), object ownership, website, encryption, versioning, logging, replication, object lock,
+  and CORS.
+- **collection_errors** — per-resource map of any field that could not be read (e.g. `AccessDenied`);
+  the model treats those as unknown rather than safe.
