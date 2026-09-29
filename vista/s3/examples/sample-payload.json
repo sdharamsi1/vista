@@ -1,0 +1,285 @@
+{
+  "scan": {
+    "account_id": "123456789012",
+    "caller_arn": "arn:aws:sts::123456789012:assumed-role/vista-scanner/session",
+    "regions": [
+      "us-east-1",
+      "us-west-2"
+    ],
+    "started_at": "2026-01-15T18:20:00+00:00",
+    "completed_at": "2026-01-15T18:20:06+00:00"
+  },
+  "shared": {
+    "policies": {
+      "pol-2dd7ec3ff31e": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "PublicRead",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::public-web-assets/*"
+          }
+        ]
+      },
+      "pol-aba8a195d8db": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "DenyInsecureTransport",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:*",
+            "Resource": [
+              "arn:aws:s3:::app-data-prod",
+              "arn:aws:s3:::app-data-prod/*"
+            ],
+            "Condition": {
+              "Bool": {
+                "aws:SecureTransport": "false"
+              }
+            }
+          }
+        ]
+      },
+      "pol-de0a1406d2de": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "DenyInsecureTransport",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:*",
+            "Resource": [
+              "arn:aws:s3:::app-logs-prod",
+              "arn:aws:s3:::app-logs-prod/*"
+            ],
+            "Condition": {
+              "Bool": {
+                "aws:SecureTransport": "false"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "account": {
+    "public_access_block": {
+      "BlockPublicAcls": true,
+      "IgnorePublicAcls": true,
+      "BlockPublicPolicy": false,
+      "RestrictPublicBuckets": false
+    },
+    "access_points": [
+      {
+        "name": "app-data-ap",
+        "region": "us-east-1",
+        "bucket": "app-data-prod",
+        "network_origin": "Internet",
+        "vpc_id": null,
+        "arn": "arn:aws:s3:us-east-1:123456789012:accesspoint/app-data-ap",
+        "policy_is_public": false,
+        "collection_errors": null
+      }
+    ],
+    "collection_errors": null
+  },
+  "buckets": [
+    {
+      "name": "public-web-assets",
+      "arn": "arn:aws:s3:::public-web-assets",
+      "region": "us-east-1",
+      "creation_date": "2025-11-02T10:00:00+00:00",
+      "tags": {
+        "Environment": "prod",
+        "public": "intended"
+      },
+      "public_access_block": null,
+      "policy_is_public": true,
+      "acl": {
+        "owner_id": "abc",
+        "owner_display_name": "acct",
+        "grants": [
+          {
+            "grantee_type": "CanonicalUser",
+            "grantee_id": "abc",
+            "grantee_uri": null,
+            "display_name": "acct",
+            "permission": "FULL_CONTROL"
+          }
+        ],
+        "public_grants": []
+      },
+      "object_ownership": "BucketOwnerEnforced",
+      "website": {
+        "index_document": "index.html",
+        "error_document": "error.html",
+        "redirect_all_requests_to": null
+      },
+      "encryption": {
+        "sse_algorithm": "AES256",
+        "kms_key_arn": null,
+        "bucket_key_enabled": null
+      },
+      "versioning": {
+        "status": "Suspended",
+        "mfa_delete": null
+      },
+      "logging": null,
+      "replication": null,
+      "object_lock": null,
+      "cors": null,
+      "collection_errors": null,
+      "policy_ref": "pol-2dd7ec3ff31e"
+    },
+    {
+      "name": "app-data-prod",
+      "arn": "arn:aws:s3:::app-data-prod",
+      "region": "us-east-1",
+      "creation_date": "2025-06-14T09:00:00+00:00",
+      "tags": {
+        "Environment": "prod",
+        "appian:owner-squad": "payments"
+      },
+      "public_access_block": {
+        "BlockPublicAcls": true,
+        "IgnorePublicAcls": true,
+        "BlockPublicPolicy": true,
+        "RestrictPublicBuckets": true
+      },
+      "policy_is_public": false,
+      "acl": {
+        "owner_id": "abc",
+        "owner_display_name": "acct",
+        "grants": [],
+        "public_grants": []
+      },
+      "object_ownership": "BucketOwnerEnforced",
+      "website": null,
+      "encryption": {
+        "sse_algorithm": "aws:kms",
+        "kms_key_arn": "arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+        "bucket_key_enabled": true
+      },
+      "versioning": {
+        "status": "Enabled",
+        "mfa_delete": "Disabled"
+      },
+      "logging": {
+        "target_bucket": "app-logs-prod",
+        "target_prefix": "app-data/"
+      },
+      "replication": null,
+      "object_lock": {
+        "ObjectLockEnabled": "Enabled",
+        "Rule": {
+          "DefaultRetention": {
+            "Mode": "GOVERNANCE",
+            "Days": 30
+          }
+        }
+      },
+      "cors": null,
+      "collection_errors": null,
+      "policy_ref": "pol-aba8a195d8db"
+    },
+    {
+      "name": "app-logs-prod",
+      "arn": "arn:aws:s3:::app-logs-prod",
+      "region": "us-east-1",
+      "creation_date": "2025-06-14T09:01:00+00:00",
+      "tags": {
+        "Environment": "prod"
+      },
+      "public_access_block": {
+        "BlockPublicAcls": true,
+        "IgnorePublicAcls": true,
+        "BlockPublicPolicy": true,
+        "RestrictPublicBuckets": true
+      },
+      "policy_is_public": false,
+      "acl": {
+        "owner_id": "abc",
+        "owner_display_name": "acct",
+        "grants": [],
+        "public_grants": []
+      },
+      "object_ownership": "BucketOwnerEnforced",
+      "website": null,
+      "encryption": {
+        "sse_algorithm": "aws:kms",
+        "kms_key_arn": "arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+        "bucket_key_enabled": true
+      },
+      "versioning": {
+        "status": "Enabled",
+        "mfa_delete": "Disabled"
+      },
+      "logging": null,
+      "replication": null,
+      "object_lock": null,
+      "cors": null,
+      "collection_errors": null,
+      "policy_ref": "pol-de0a1406d2de"
+    },
+    {
+      "name": "legacy-backups",
+      "arn": "arn:aws:s3:::legacy-backups",
+      "region": "us-west-2",
+      "creation_date": "2023-03-01T12:00:00+00:00",
+      "tags": {},
+      "public_access_block": null,
+      "policy_is_public": null,
+      "acl": {
+        "owner_id": "abc",
+        "owner_display_name": "acct",
+        "grants": [
+          {
+            "grantee_type": "Group",
+            "grantee_id": null,
+            "grantee_uri": "http://acs.amazonaws.com/groups/global/AuthenticatedUsers",
+            "display_name": null,
+            "permission": "READ"
+          }
+        ],
+        "public_grants": [
+          {
+            "grantee_type": "Group",
+            "grantee_id": null,
+            "grantee_uri": "http://acs.amazonaws.com/groups/global/AuthenticatedUsers",
+            "display_name": null,
+            "permission": "READ"
+          }
+        ]
+      },
+      "object_ownership": "ObjectWriter",
+      "website": null,
+      "encryption": null,
+      "versioning": {
+        "status": null,
+        "mfa_delete": null
+      },
+      "logging": null,
+      "replication": {
+        "Role": "arn:aws:iam::123456789012:role/s3-replication",
+        "Rules": [
+          {
+            "Status": "Enabled",
+            "Destination": {
+              "Bucket": "arn:aws:s3:::partner-copy",
+              "Account": "210987654321"
+            }
+          }
+        ]
+      },
+      "object_lock": null,
+      "cors": null,
+      "collection_errors": {
+        "policy": "AccessDenied",
+        "policy_status": "AccessDenied"
+      }
+    }
+  ]
+}

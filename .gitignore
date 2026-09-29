@@ -4,6 +4,7 @@ __pycache__/
 .DS_Store
 *.json
 !vista/ec2/examples/sample-payload.json
+!vista/s3/examples/sample-payload.json
 *.egg-info/
 intent.txt
 *.intent.txt
