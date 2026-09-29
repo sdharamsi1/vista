@@ -69,6 +69,7 @@ def analyze(
     model_id: str,
     facts: dict[str, Any],
     json_path: Path | None = None,
+    intent: str | None = None,
 ) -> tuple[str, dict[str, int]]:
     instances = facts.get("instances", [])
     payload = normalize(facts)
@@ -77,7 +78,7 @@ def analyze(
         bedrock_region,
         model_id,
         payload,
-        system_prompt=review.build_system_prompt(instances),
+        system_prompt=review.build_system_prompt(instances, intent),
         validate=lambda text: review.validate(text, instances),
         is_empty=not instances,
         empty_message=review.EMPTY_MESSAGE,

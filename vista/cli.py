@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Vista CLI: authenticate, pick a service and model, scan, and print a Bedrock review."""
+"""Vista CLI: assess an AWS service and print an Amazon Bedrock security review.
+
+Usage:
+    vista assess ec2 --all-regions --model us.anthropic.claude-opus-5
+    vista assess s3  --regions us-east-1 us-west-2 --model us.openai.gpt-5.6-sol
+
+Credentials come from the standard AWS chain (environment variables, AWS_PROFILE,
+SSO, or an instance role). Pass --profile to use a named profile. Vista assumes
+you are already authenticated and never prompts for credentials.
+"""
 
 from __future__ import annotations
 
@@ -29,77 +38,128 @@ from vista.s3 import service as s3_service
 # Service registry: name -> service module. Add new services here.
 SERVICES = {ec2_service.NAME: ec2_service, s3_service.NAME: s3_service}
 
-# Model menu: (label, id). A None id means prompt for a custom one.
-MODELS: list[tuple[str, str | None]] = [
-    ("Claude Opus 5 (Anthropic)", "us.anthropic.claude-opus-5"),
-    ("GPT-5.6 Sol (OpenAI)", "us.openai.gpt-5.6-sol"),
-    ("Other (enter a model ID)", None),
-]
-
-# Region for the initial STS/DescribeRegions calls.
+# Region for the initial STS/DescribeRegions calls when a scope isn't pinned.
 DEFAULT_BOOTSTRAP_REGION = "us-east-1"
 
 # Regions never enumerated.
 SKIP_REGIONS = {"me-south-1", "me-central-1"}
 
-AUTH_ERRORS = (
-    NoCredentialsError,
-    PartialCredentialsError,
-    ProfileNotFound,
-    BotoCoreError,
-    ClientError,
-)
+# Largest accepted intent file, to bound token cost.
+MAX_INTENT_BYTES = 16 * 1024
 
 
-# Parse CLI arguments.
-def parse_args() -> argparse.Namespace:
+# Build the top-level argument parser and its subcommands.
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Collect AWS facts and ask Amazon Bedrock to review them."
+        prog="vista",
+        description=(
+            "AI-powered AWS attack surface analysis. Collect a service's factual "
+            "configuration and ask Amazon Bedrock to review it for security risks."
+        ),
+        epilog=(
+            "examples:\n"
+            "  vista assess ec2 --all-regions --model us.anthropic.claude-opus-5\n"
+            "  vista assess s3 --regions us-east-1 us-west-2 --model us.openai.gpt-5.6-sol\n"
+            "\n"
+            "Credentials come from the standard AWS chain; pass --profile for a named\n"
+            "profile. You must already be authenticated."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    scope = parser.add_mutually_exclusive_group()
+    subparsers = parser.add_subparsers(dest="command", metavar="<command>")
+
+    assess = subparsers.add_parser(
+        "assess",
+        help="scan a service and print a Bedrock security review",
+        description=(
+            "Scan an AWS service across one or more regions and print an "
+            "account-level Bedrock security review."
+        ),
+        epilog=(
+            "examples:\n"
+            "  vista assess ec2 --all-regions --model us.anthropic.claude-opus-5\n"
+            "  vista assess s3 --regions us-east-1 --model us.openai.gpt-5.6-sol"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    assess.add_argument(
+        "service",
+        choices=list(SERVICES),
+        help="AWS service to evaluate",
+    )
+    scope = assess.add_mutually_exclusive_group(required=True)
     scope.add_argument(
-        "--region",
-        help="A single AWS region to scan (prompted for if neither this nor "
-        "--all-regions is given)",
+        "--regions",
+        nargs="+",
+        metavar="REGION",
+        help="one or more AWS regions to scan (e.g. --regions us-east-1 us-west-2)",
     )
     scope.add_argument(
         "--all-regions",
         action="store_true",
-        help="Scan every region enabled for the account",
+        help="scan every region enabled for the account",
     )
-    parser.add_argument(
-        "--service",
-        choices=list(SERVICES),
-        help="AWS service to evaluate (prompted for if omitted)",
-    )
-    parser.add_argument(
-        "--bedrock-model",
+    assess.add_argument(
+        "--model",
         default=os.getenv("BEDROCK_MODEL_ID"),
-        help="Bedrock model or inference-profile ID (prompted for if omitted; "
-        "or set BEDROCK_MODEL_ID)",
+        metavar="MODEL_ID",
+        help="Bedrock model or inference-profile ID (or set BEDROCK_MODEL_ID)",
     )
-    parser.add_argument(
+    assess.add_argument(
+        "--profile",
+        metavar="NAME",
+        help="named AWS profile to use (defaults to the standard credential chain)",
+    )
+    assess.add_argument(
+        "--intent",
+        type=Path,
+        metavar="PATH",
+        help="text file describing the account's purpose; sent to Bedrock as extra context",
+    )
+    assess.add_argument(
         "--save-json",
         type=Path,
-        help="Create a private file with the exact factual JSON sent to Bedrock "
-        "(one merged payload across all scanned regions)",
+        metavar="PATH",
+        help="write the exact factual JSON sent to Bedrock to a private (0600) file",
     )
-    parser.add_argument(
+    assess.add_argument(
         "--plain",
         action="store_true",
-        help="Print the original Bedrock Markdown without terminal formatting",
+        help="print the model's raw Markdown without terminal formatting",
     )
-    return parser.parse_args()
+    return parser
 
 
-# Region used before scan targets are chosen.
+# Region used for the bootstrap STS/DescribeRegions calls.
 def bootstrap_region(args: argparse.Namespace) -> str:
+    if args.regions:
+        return args.regions[0]
     return (
-        args.region
-        or os.getenv("AWS_REGION")
+        os.getenv("AWS_REGION")
         or os.getenv("AWS_DEFAULT_REGION")
         or DEFAULT_BOOTSTRAP_REGION
     )
+
+
+# Read and validate the optional intent file; returns its text or None when no path is given.
+def load_intent(path: Path | None) -> str | None:
+    if path is None:
+        return None
+    try:
+        raw = path.read_bytes()
+    except (FileNotFoundError, IsADirectoryError, PermissionError, OSError) as error:
+        raise SystemExit(f"Could not read intent file {path}: {error}")
+    if len(raw) > MAX_INTENT_BYTES:
+        raise SystemExit(
+            f"Intent file {path} is {len(raw)} bytes; the limit is {MAX_INTENT_BYTES}."
+        )
+    try:
+        intent = raw.decode("utf-8").strip()
+    except UnicodeDecodeError:
+        raise SystemExit(f"Intent file {path} is not valid UTF-8 text.")
+    if not intent:
+        raise SystemExit(f"Intent file {path} is empty.")
+    return intent
 
 
 # Enabled regions minus SKIP_REGIONS.
@@ -136,6 +196,7 @@ def run_scan(
     bedrock_region: str,
     save_json: Path | None,
     plain: bool,
+    intent: str | None = None,
 ) -> int:
     multi = len(regions) > 1
     on_region = None
@@ -156,7 +217,9 @@ def run_scan(
         stream=sys.stderr,
         enabled=spinner_enabled,
     ):
-        analysis, usage = service.analyze(session, bedrock_region, model_id, facts, save_json)
+        analysis, usage = service.analyze(
+            session, bedrock_region, model_id, facts, save_json, intent
+        )
 
     if usage.get("input"):
         note = f"  ({usage['attempts']} attempts)" if usage["attempts"] > 1 else ""
@@ -171,208 +234,45 @@ def run_scan(
     return 0
 
 
-# True when flags fully specify a run, so the shell can be skipped.
-def fully_specified(args: argparse.Namespace) -> bool:
-    return bool(args.bedrock_model) and bool(args.region or args.all_regions)
+# Run the `assess` subcommand from parsed flags.
+def run_assess(args: argparse.Namespace) -> int:
+    if not args.model:
+        raise SystemExit("No Bedrock model given; pass --model or set BEDROCK_MODEL_ID.")
 
+    intent = load_intent(args.intent)
 
-# Run once from flags.
-def one_shot(args: argparse.Namespace) -> int:
     bootstrap = bootstrap_region(args)
-    session = boto3.Session(region_name=bootstrap)
+    session = boto3.Session(profile_name=args.profile, region_name=bootstrap)
     identity = session.client("sts", region_name=bootstrap).get_caller_identity()
-    print(
-        f"Authenticated as {identity['Arn']} (account {identity['Account']}).",
-        file=sys.stderr,
-    )
-    service = SERVICES[args.service] if args.service else next(iter(SERVICES.values()))
-    model_id = args.bedrock_model
-    if not model_id:
-        raise SystemExit("No Bedrock model given; pass --bedrock-model or set BEDROCK_MODEL_ID.")
+    ui.status(identity)
+    if intent:
+        ui.info(f"Using account intent from {args.intent} ({len(intent)} chars)")
+
+    service = SERVICES[args.service]
     if args.all_regions:
         regions = list_enabled_regions(session, bootstrap)
-    elif args.region:
-        regions = [args.region]
+        if not regions:
+            print("No enabled regions were returned for this account.", file=sys.stderr)
+            return 1
     else:
-        raise SystemExit("No region scope given; pass --region or --all-regions.")
+        regions = args.regions
+
     return run_scan(
-        service, session, regions, model_id, bootstrap, args.save_json, args.plain
+        service, session, regions, args.model, bootstrap, args.save_json, args.plain, intent
     )
 
 
-# Interactive auth; returns (session, identity) or None if cancelled.
-def authenticate_interactive(
-    bootstrap: str, *, allow_cancel: bool
-) -> tuple[boto3.Session, dict[str, str]] | None:
-    exit_label = "Cancel" if allow_cancel else "Quit"
-    while True:
-        choice = ui.menu(
-            "Authenticate to AWS",
-            ["Use default credentials", "Use a named profile", exit_label],
-            allow_quit=False,
-        )
-        if choice is ui.QUIT or choice == 2:
-            return None
-        profile: str | None = None
-        if choice == 1:
-            entered = ui.prompt_text("Profile name", allow_back=True)
-            if entered is ui.BACK or entered is ui.QUIT:
-                continue
-            profile = entered
-        try:
-            session = boto3.Session(profile_name=profile, region_name=bootstrap)
-            identity = session.client("sts", region_name=bootstrap).get_caller_identity()
-        except AUTH_ERRORS as error:
-            ui.error(f"Authentication failed: {error}")
-            continue
-        ui.success("Authenticated")
-        ui.status(identity)
-        return session, identity
-
-
-# Pick region scope; returns a region list or BACK/QUIT.
-def choose_regions_interactive(
-    session: boto3.Session, bootstrap: str
-) -> list[str] | ui.Sentinel:
-    while True:
-        scope = ui.menu(
-            "Region scope",
-            ["All enabled regions", "A specific region"],
-            allow_back=True,
-        )
-        if scope is ui.QUIT:
-            return ui.QUIT
-        if scope is ui.BACK:
-            return ui.BACK
-        try:
-            regions = list_enabled_regions(session, bootstrap)
-        except (BotoCoreError, ClientError) as error:
-            ui.error(f"Could not list regions: {error}")
-            return ui.BACK
-        if not regions:
-            ui.warn("No enabled regions were returned for this account.")
-            return ui.BACK
-        if scope == 0:
-            return regions
-        selected = ui.menu("Select a region", regions, allow_back=True)
-        if selected is ui.QUIT:
-            return ui.QUIT
-        if selected is ui.BACK:
-            continue
-        return [regions[selected]]
-
-
-# Guided service/model/region selection with back navigation, then scan.
-def scan_flow(
-    session: boto3.Session, bootstrap: str, args: argparse.Namespace
-) -> ui.Sentinel | None:
-    service_modules = list(SERVICES.values())
-    model_labels = [label for label, _ in MODELS]
-    step = 0
-    service: Any = None
-    model_id = ""
-    regions: list[str] = []
-
-    while True:
-        if step == 0:
-            choice = ui.menu(
-                "Select a service to evaluate",
-                [module.LABEL for module in service_modules],
-                allow_back=True,
-            )
-            if choice is ui.QUIT:
-                return ui.QUIT
-            if choice is ui.BACK:
-                return None
-            service = service_modules[choice]
-            step = 1
-        elif step == 1:
-            choice = ui.menu("Select a Bedrock model", model_labels, allow_back=True)
-            if choice is ui.QUIT:
-                return ui.QUIT
-            if choice is ui.BACK:
-                step = 0
-                continue
-            candidate = MODELS[choice][1]
-            if candidate is None:
-                entered = ui.prompt_text("Model or inference-profile ID", allow_back=True)
-                if entered is ui.QUIT:
-                    return ui.QUIT
-                if entered is ui.BACK:
-                    continue
-                candidate = entered
-            model_id = candidate
-            step = 2
-        elif step == 2:
-            result = choose_regions_interactive(session, bootstrap)
-            if result is ui.QUIT:
-                return ui.QUIT
-            if result is ui.BACK:
-                step = 1
-                continue
-            regions = result
-            step = 3
-        else:
-            ui.info()
-            ui.info(
-                "Ready to scan  "
-                + ui.style(service.LABEL, "bold")
-                + ui.style(f"  ·  {model_id}", "dim")
-                + ui.style(f"  ·  {len(regions)} region(s)", "dim")
-            )
-            confirm = ui.menu("Proceed?", ["Run scan", "Change region"], allow_back=True)
-            if confirm is ui.QUIT:
-                return ui.QUIT
-            if confirm is ui.BACK:
-                return None
-            if confirm == 1:
-                step = 2
-                continue
-            run_scan(
-                service, session, regions, model_id, bootstrap, args.save_json, args.plain
-            )
-            ui.info()
-            ui.success("Scan complete.")
-            return None
-
-
-# Top-level loop: authenticate, then scan / re-authenticate / quit.
-def interactive_shell(args: argparse.Namespace) -> int:
-    ui.banner("AWS attack surface review")
-    bootstrap = bootstrap_region(args)
-    auth = authenticate_interactive(bootstrap, allow_cancel=False)
-    if auth is None:
-        ui.info("Goodbye.")
-        return 0
-    session, _identity = auth
-
-    while True:
-        choice = ui.menu(
-            "Main menu",
-            ["Run a scan", "Re-authenticate", "Quit"],
-            allow_quit=False,
-        )
-        if choice is ui.QUIT or choice == 2:
-            ui.info("Goodbye.")
-            return 0
-        if choice == 1:
-            auth = authenticate_interactive(bootstrap, allow_cancel=True)
-            if auth is not None:
-                session, _identity = auth
-            continue
-        if scan_flow(session, bootstrap, args) is ui.QUIT:
-            ui.info("Goodbye.")
-            return 0
-
-
-# Entry point: choose interactive or one-shot mode and map errors to exit codes.
+# Entry point: dispatch the subcommand and map errors to exit codes.
 def main() -> int:
-    args = parse_args()
-    interactive = sys.stdin.isatty() and sys.stderr.isatty()
+    parser = build_parser()
+    args = parser.parse_args()
+
+    if args.command is None:
+        parser.print_help(sys.stderr)
+        return 0
+
     try:
-        if interactive and not fully_specified(args):
-            return interactive_shell(args)
-        return one_shot(args)
+        return run_assess(args)
     except KeyboardInterrupt:
         print("\nReview cancelled.", file=sys.stderr)
         return 130
@@ -381,7 +281,7 @@ def main() -> int:
         return 1
     except NoRegionError:
         print(
-            "No AWS region configured; pass --region/--all-regions or set AWS_REGION.",
+            "No AWS region configured; pass --regions/--all-regions or set AWS_REGION.",
             file=sys.stderr,
         )
         return 1

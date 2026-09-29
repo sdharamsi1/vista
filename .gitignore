@@ -5,3 +5,5 @@ __pycache__/
 *.json
 !vista/ec2/examples/sample-payload.json
 *.egg-info/
+intent.txt
+*.intent.txt

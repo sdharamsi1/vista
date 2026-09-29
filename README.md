@@ -24,7 +24,7 @@ pip install "git+https://github.com/sdharamsi1/vista.git"
 Then run it:
 
 ```bash
-vista
+vista assess ec2 --all-regions --model us.anthropic.claude-opus-5
 ```
 
 > If your system Python reports an "externally managed environment" error, add `--user` to the
@@ -44,24 +44,49 @@ pip install -e .
 
 ## Usage
 
-Run the CLI:
+Vista is a single subcommand, `assess`, that scans one service and prints a Bedrock review:
 
 ```bash
-vista
+vista assess ec2 --all-regions --model us.anthropic.claude-opus-5
+vista assess s3  --regions us-east-1 us-west-2 --model us.openai.gpt-5.6-sol
 ```
 
-Vista launches an interactive shell that:
+You must already be authenticated to AWS. Credentials come from the standard AWS chain
+(environment variables, `AWS_PROFILE`, SSO, or an instance role); Vista does not prompt for them.
+It calls `sts:GetCallerIdentity` once and prints the account/identity to stderr before scanning.
 
-1. Authenticates to AWS (default credentials or a named profile) and shows the account/identity.
-2. Presents a **main menu**: run a scan, re-authenticate, or quit — it loops so you can run
-   several scans without restarting.
-3. Walks you through selecting a **service**, a **Bedrock model**, and a **region scope**, with
-   `b` to go back a step and `q` to quit at any prompt.
+Run `vista --help` for the top-level help and `vista assess --help` for the full flag list. The
+flags are:
 
-Run `vista --help` to see all options. Two useful ones:
-
+- `service` — positional, one of `ec2` or `s3`.
+- `--regions REGION [REGION ...]` — one or more regions to scan.
+- `--all-regions` — scan every region enabled for the account (mutually exclusive with
+  `--regions`; exactly one is required).
+- `--model MODEL_ID` — Bedrock model or inference-profile ID (or set `BEDROCK_MODEL_ID`).
+- `--profile NAME` — use a named AWS profile instead of the default credential chain.
+- `--intent PATH` — a text file describing the account's purpose and justification (see below).
 - `--save-json PATH` — write the exact factual JSON sent to Bedrock to a private (0600) file.
 - `--plain` — print the model's raw Markdown without terminal formatting.
+
+### Account intent
+
+`--intent PATH` lets the account owner supply free-text context about what the account is for and
+why things are configured the way they are. Vista sends that text to Bedrock alongside the facts,
+so the model can ease up on findings the owner explains as expected while still reporting genuine
+risks and misconfigurations. A public path or open port that the intent credibly justifies is
+downgraded (with the reason stated in the finding); a dangerous exposure such as world-open
+SSH/RDP/database is never downgraded on intent alone.
+
+The intent text is treated strictly as untrusted context, never as instructions: it cannot change
+the output format, hide a risk, or reduce the number of findings.
+
+```bash
+vista assess ec2 --all-regions --model us.anthropic.claude-opus-5 --intent intent.txt
+```
+
+Omit `--intent` and Vista behaves exactly as before — nothing extra is sent to Bedrock. The file
+must be UTF-8 text and at most 16 KB. Name it `intent.txt` or `*.intent.txt` and it is ignored by
+git out of the box (it can contain sensitive account details, so keep it out of version control).
 
 ### Services
 
@@ -70,23 +95,24 @@ Run `vista --help` to see all options. Two useful ones:
   encryption, versioning, logging, replication, and CORS.
 
 A bucket is only included when its region is in the selected scope, so use `--all-regions` (or the
-right `--region`) to see every bucket.
+right `--regions`) to see every bucket.
 
 ### Models
 
-The interactive menu offers two models plus a custom entry:
+Pass any Bedrock model or inference-profile ID to `--model`. Two known-good options:
 
 - Claude Opus 5 — `us.anthropic.claude-opus-5`
 - GPT-5.6 Sol — `us.openai.gpt-5.6-sol`
 
 Both are US cross-region inference profiles. Use a region where the model is available and where
-your account has been granted access to it.
+your account has been granted access to it. Set `BEDROCK_MODEL_ID` to avoid passing `--model` on
+every run.
 
 ### Regions
 
 Vista scans all selected regions, merges the facts into a single payload, and makes **one** Bedrock
-call. `me-south-1` and `me-central-1` are excluded from region enumeration (edit `SKIP_REGIONS` in
-`vista/cli.py` to change this).
+call. When `--all-regions` is used, `me-south-1` and `me-central-1` are excluded from region
+enumeration (edit `SKIP_REGIONS` in `vista/cli.py` to change this).
 
 ## IAM permissions
 
@@ -119,9 +145,32 @@ Anything denied is recorded per resource under `collection_errors` rather than a
 ## Output
 
 Vista prints an account-level review: a short risk summary followed by up to ten findings ordered
-by severity. Each finding lists its severity, category, the affected resources, the supporting
-evidence, why it matters, and a concrete remediation step. Resources that share a root cause are
-grouped into a single finding.
+by severity. Each finding lists its severity, likelihood, impact, confidence, category, the affected
+resources, the supporting evidence, why it matters, and a concrete remediation step. Resources that
+share a root cause are grouped into a single finding.
+
+### Severity
+
+Severity is **CRITICAL / HIGH / MEDIUM / LOW** and is not chosen freely — it is derived from two
+axes the model scores from the collected facts:
+
+- **Likelihood** — how reachable or exploitable the weakness is from the configuration alone (its
+  attack path and how many preconditions must already hold). It is not CVE- or exploit-based;
+  Vista has no vulnerability or runtime data.
+- **Impact** — the blast radius if exploited (single resource up to account-wide or cross-account).
+
+The two map to severity through a fixed matrix:
+
+| | Impact LOW | Impact MEDIUM | Impact HIGH |
+| --- | --- | --- | --- |
+| **Likelihood HIGH** | MEDIUM | HIGH | CRITICAL |
+| **Likelihood MEDIUM** | LOW | MEDIUM | HIGH |
+| **Likelihood LOW** | LOW | LOW | MEDIUM |
+
+**Confidence** (CONFIRMED / PARTIAL / INSUFFICIENT) is reported separately and reflects how complete
+the evidence was — for example a failed collector lowers confidence rather than severity. Supplied
+account intent can lower a finding's likelihood (and so its severity), but never downgrades a
+CRITICAL or HIGH dangerous exposure on its own.
 
 ## EC2 facts payload
 

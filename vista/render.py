@@ -24,13 +24,24 @@ HEADING_PATTERN = re.compile(r"^#\s+(?P<title>.+?Security Review)\s*$")
 SECTION_PATTERN = re.compile(r"^##\s+(?P<name>.+)$")
 FINDING_PATTERN = re.compile(r"^###\s+(?P<title>.+)$")
 FIELD_PATTERN = re.compile(
-    r"^\s*- \*\*(?P<label>Severity|Category|Affected [A-Za-z]+|Evidence|"
-    r"Why it matters|Remediation):\*\*\s*(?P<value>.*)$"
+    r"^\s*- \*\*(?P<label>Severity|Likelihood|Impact|Confidence|Category|Affected [A-Za-z]+|"
+    r"Evidence|Why it matters|Remediation):\*\*\s*(?P<value>.*)$"
 )
 SEVERITY_STYLES = {
-    "HIGH_PRIORITY": ("!!", RED),
-    "INVESTIGATE": ("!", YELLOW),
-    "INSUFFICIENT_DATA": ("?", MAGENTA),
+    "CRITICAL": ("!!", RED),
+    "HIGH": ("▲", RED),
+    "MEDIUM": ("!", YELLOW),
+    "LOW": ("·", BLUE),
+}
+LEVEL_STYLES = {
+    "HIGH": ("▲", RED),
+    "MEDIUM": ("!", YELLOW),
+    "LOW": ("·", BLUE),
+}
+CONFIDENCE_STYLES = {
+    "CONFIRMED": ("●", GREEN),
+    "PARTIAL": ("◐", YELLOW),
+    "INSUFFICIENT": ("?", MAGENTA),
 }
 CATEGORY_STYLES = {
     "INTERNET_EXPOSURE": ("●", YELLOW),
@@ -227,7 +238,10 @@ def _render_finding(
     use_color: bool,
 ) -> None:
     fields = finding["fields"]
-    severity = _plain(fields.get("Severity", "INSUFFICIENT_DATA"))
+    severity = _plain(fields.get("Severity", "MEDIUM"))
+    likelihood = _plain(fields.get("Likelihood", ""))
+    impact = _plain(fields.get("Impact", ""))
+    confidence = _plain(fields.get("Confidence", ""))
     category = _plain(fields.get("Category", ""))
 
     title = finding["title"]
@@ -240,6 +254,12 @@ def _render_finding(
         lines.append(_style(part, use_color, BOLD, CYAN))
     lines.append(_style(rule, use_color, DIM))
     lines.append(_status_row("Severity", severity, SEVERITY_STYLES, use_color))
+    if likelihood:
+        lines.append(_status_row("Likelihood", likelihood, LEVEL_STYLES, use_color))
+    if impact:
+        lines.append(_status_row("Impact", impact, LEVEL_STYLES, use_color))
+    if confidence:
+        lines.append(_status_row("Confidence", confidence, CONFIDENCE_STYLES, use_color))
     if category:
         lines.append(_status_row("Category", category, CATEGORY_STYLES, use_color))
 
