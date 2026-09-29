@@ -5,7 +5,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
-SEVERITIES = {"HIGH_PRIORITY", "INVESTIGATE", "INSUFFICIENT_DATA"}
+from vista import bedrock, severity
+
 CATEGORIES = {"PUBLIC_EXPOSURE", "SECURITY_CONFIGURATION"}
 MAX_FINDINGS = 10
 
@@ -13,6 +14,9 @@ EMPTY_MESSAGE = "# S3 Security Review\n\nNo buckets found in the selected region
 
 FINDING_LABELS = (
     "**Severity:**",
+    "**Likelihood:**",
+    "**Impact:**",
+    "**Confidence:**",
     "**Category:**",
     "**Affected buckets:**",
     "**Evidence:**",
@@ -60,15 +64,14 @@ account standards expect SSE-KMS; a bucket policy that does not deny non-TLS acc
 logging; replication to an external account (data egress); overly permissive CORS (AllowedOrigins
 "*", especially with credentials); and static website hosting on a bucket not intended to be public.
 
-Assign each finding a Severity:
-- HIGH_PRIORITY: strong evidence of a bucket effectively public to anonymous principals after Block
-  Public Access is applied, especially with write/delete or sensitive data indicators. A public
-  read-only static website with matching intent is not automatically HIGH_PRIORITY.
-- INVESTIGATE: a potential public path whose intent is not supplied, or a meaningful configuration
-  concern such as those listed above.
-- INSUFFICIENT_DATA: a relevant fact could not be read (collection_errors) or essential evidence is
-  missing for a responsible judgment.
-- Any effectively public bucket without supplied approved intent is at least INVESTIGATE.
+{SEVERITY_MODEL}
+
+For S3 specifically: treat a bucket that is effectively public to anonymous principals after Block
+Public Access is applied as at least MEDIUM Likelihood, and HIGH when public write or delete is
+possible; a public read-only static website whose public use is supplied as intended is not
+automatically HIGH Likelihood. Treat a fact that could not be read (collection_errors) as lowering
+Confidence, never as safe. Supplied approved intent may lower a bucket's Likelihood, but only with
+the reason stated.
 
 Assign each finding a Category: PUBLIC_EXPOSURE when the dominant risk is public access,
 SECURITY_CONFIGURATION when it is encryption, versioning, logging, transport, replication, or CORS.
@@ -97,14 +100,18 @@ regions covered, and the account-level Block Public Access state.
 ## Top Findings
 
 ### 1. Concise risk title
-- **Severity:** HIGH_PRIORITY, INVESTIGATE, or INSUFFICIENT_DATA
+- **Severity:** CRITICAL, HIGH, MEDIUM, or LOW (must equal the matrix result for the Likelihood and Impact below)
+- **Likelihood:** HIGH, MEDIUM, or LOW
+- **Impact:** HIGH, MEDIUM, or LOW
+- **Confidence:** CONFIRMED, PARTIAL, or INSUFFICIENT
 - **Category:** PUBLIC_EXPOSURE or SECURITY_CONFIGURATION
 - **Affected buckets:** each bucket formatted as `bucket-name`, comma-separated
 - **Evidence:** one to three concise, fact-specific sentences.
 - **Why it matters:** one or two concise sentences on the concrete impact.
 - **Remediation:** one or two concise sentences with a specific fix and acceptable end state.
 
-Number the finding headings sequentially (### 1., ### 2., ...), most severe first, at most 10 blocks.
+Number the finding headings sequentially (### 1., ### 2., ...), ordered most to least severe
+(CRITICAL, then HIGH, MEDIUM, LOW), at most 10 blocks.
 
 Every bucket name you cite must be one supplied in the input; never invent a name. If no bucket
 presents a noteworthy risk, still return the Account Risk Summary and the "## Top Findings" heading
@@ -113,14 +120,17 @@ bucket.
 """
 
 
-# Build the per-request system prompt, appending the bucket count.
-def build_system_prompt(buckets: list[dict[str, Any]]) -> str:
+# Build the per-request system prompt with the bucket count and, when supplied, account intent.
+def build_system_prompt(buckets: list[dict[str, Any]], intent: str | None = None) -> str:
     count = len(buckets)
-    return (
-        SYSTEM_PROMPT
+    prompt = (
+        SYSTEM_PROMPT.replace("{SEVERITY_MODEL}", severity.SEVERITY_MODEL_PROMPT)
         + f"\nThe input contains {count} buckets. Return at most {MAX_FINDINGS} findings, grouping "
         "buckets that share a root cause, and cite only bucket names present in the input."
     )
+    if intent:
+        prompt += bedrock.build_intent_section(intent)
+    return prompt
 
 
 # Text of one labeled field in a finding block.
@@ -179,9 +189,24 @@ def validate(text: str, buckets: list[dict[str, Any]]) -> None:
                 f"finding {position} has missing or duplicated fields: " + ", ".join(missing)
             )
 
-        severity = enum_value(block, "Severity")
-        if severity not in SEVERITIES:
-            details.append(f"finding {position} has an invalid Severity: {severity or 'missing'}")
+        severity_value = enum_value(block, "Severity")
+        if severity_value not in severity.SEVERITIES:
+            details.append(f"finding {position} has an invalid Severity: {severity_value or 'missing'}")
+        likelihood = enum_value(block, "Likelihood")
+        if likelihood not in severity.LIKELIHOODS:
+            details.append(f"finding {position} has an invalid Likelihood: {likelihood or 'missing'}")
+        impact = enum_value(block, "Impact")
+        if impact not in severity.IMPACTS:
+            details.append(f"finding {position} has an invalid Impact: {impact or 'missing'}")
+        confidence = enum_value(block, "Confidence")
+        if confidence not in severity.CONFIDENCE:
+            details.append(f"finding {position} has an invalid Confidence: {confidence or 'missing'}")
+        expected = severity.derive_severity(likelihood, impact)
+        if expected is not None and severity_value != expected:
+            details.append(
+                f"finding {position} Severity {severity_value} does not match the matrix result "
+                f"{expected} for Likelihood {likelihood} x Impact {impact}"
+            )
         category = enum_value(block, "Category")
         if category not in CATEGORIES:
             details.append(f"finding {position} has an invalid Category: {category or 'missing'}")

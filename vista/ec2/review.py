@@ -5,7 +5,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
-SEVERITIES = {"HIGH_PRIORITY", "INVESTIGATE", "INSUFFICIENT_DATA"}
+from vista import bedrock, severity
+
 CATEGORIES = {"INTERNET_EXPOSURE", "SECURITY_CONFIGURATION"}
 MAX_FINDINGS = 10
 
@@ -13,6 +14,9 @@ EMPTY_MESSAGE = "# EC2 Security Review\n\nNo non-terminated instances found."
 
 FINDING_LABELS = (
     "**Severity:**",
+    "**Likelihood:**",
+    "**Impact:**",
+    "**Confidence:**",
     "**Category:**",
     "**Affected instances:**",
     "**Evidence:**",
@@ -68,17 +72,13 @@ rules, unhealthy public target registration, and bootstrap or prototype resource
 Standard AmazonSSMManagedInstanceCore permissions alone are normal management context and are not a
 finding on their own.
 
-Assign each finding a Severity:
-- HIGH_PRIORITY: strong supplied evidence of likely dangerous exposure, such as a complete broad
-  DIRECT path to SSH, RDP, administrative, or database ports, or a comparably severe combination.
-  Ordinary public web ports, a narrow public /32 source, or an OIDC-protected ALB are not
-  automatically HIGH_PRIORITY.
-- INVESTIGATE: a public path exists without supplied approved intent, or a meaningful configuration
-  concern such as those listed above.
-- INSUFFICIENT_DATA: a relevant collector failed or essential evidence needed for a responsible
-  judgment is missing. Do not use it merely because runtime or business context is absent.
-- Any DIRECT, LOAD_BALANCER, or BOTH path without supplied approved owner intent is at least
-  INVESTIGATE. Never report a public path as requiring no action.
+{SEVERITY_MODEL}
+
+For EC2 specifically: treat a confirmed public network path (DIRECT, LOAD_BALANCER, or BOTH) as at
+least MEDIUM Likelihood, and HIGH when it reaches SSH, RDP, administrative, or database ports from a
+broad source; ordinary public web ports, a narrow public /32 source, or an OIDC-protected ALB are
+not automatically HIGH Likelihood. Never report a public path as requiring no action. Supplied
+approved intent may lower a path's Likelihood, but only with the reason stated.
 
 Assign each finding a Category: INTERNET_EXPOSURE when the dominant risk is a public network path,
 SECURITY_CONFIGURATION when it is an IAM, IMDS, storage, or lifecycle weakness.
@@ -111,14 +111,18 @@ the regions covered.
 ## Top Findings
 
 ### 1. Concise risk title
-- **Severity:** HIGH_PRIORITY, INVESTIGATE, or INSUFFICIENT_DATA
+- **Severity:** CRITICAL, HIGH, MEDIUM, or LOW (must equal the matrix result for the Likelihood and Impact below)
+- **Likelihood:** HIGH, MEDIUM, or LOW
+- **Impact:** HIGH, MEDIUM, or LOW
+- **Confidence:** CONFIRMED, PARTIAL, or INSUFFICIENT
 - **Category:** INTERNET_EXPOSURE or SECURITY_CONFIGURATION
 - **Affected instances:** each instance formatted as `i-instanceid` (Name or Unnamed), comma-separated
 - **Evidence:** one to three concise, fact-specific sentences.
 - **Why it matters:** one or two concise sentences on the concrete impact.
 - **Remediation:** one or two concise sentences with a specific fix and acceptable end state.
 
-Number the finding headings sequentially (### 1., ### 2., ...), most severe first, at most 10 blocks.
+Number the finding headings sequentially (### 1., ### 2., ...), ordered most to least severe
+(CRITICAL, then HIGH, MEDIUM, LOW), at most 10 blocks.
 
 Every instance ID you cite must be one supplied in the input; never invent an ID. If no instance
 presents a noteworthy risk, still return the Account Risk Summary and the "## Top Findings" heading
@@ -127,14 +131,17 @@ instance.
 """
 
 
-# Build the per-request system prompt, appending the instance count.
-def build_system_prompt(instances: list[dict[str, Any]]) -> str:
+# Build the per-request system prompt with the instance count and, when supplied, account intent.
+def build_system_prompt(instances: list[dict[str, Any]], intent: str | None = None) -> str:
     count = len(instances)
-    return (
-        SYSTEM_PROMPT
+    prompt = (
+        SYSTEM_PROMPT.replace("{SEVERITY_MODEL}", severity.SEVERITY_MODEL_PROMPT)
         + f"\nThe input contains {count} instances. Return at most {MAX_FINDINGS} findings, "
         "grouping instances that share a root cause, and cite only instance IDs present in the input."
     )
+    if intent:
+        prompt += bedrock.build_intent_section(intent)
+    return prompt
 
 
 # Text of one labeled field in a finding block.
@@ -193,9 +200,24 @@ def validate(text: str, instances: list[dict[str, Any]]) -> None:
                 f"finding {position} has missing or duplicated fields: " + ", ".join(missing)
             )
 
-        severity = enum_value(block, "Severity")
-        if severity not in SEVERITIES:
-            details.append(f"finding {position} has an invalid Severity: {severity or 'missing'}")
+        severity_value = enum_value(block, "Severity")
+        if severity_value not in severity.SEVERITIES:
+            details.append(f"finding {position} has an invalid Severity: {severity_value or 'missing'}")
+        likelihood = enum_value(block, "Likelihood")
+        if likelihood not in severity.LIKELIHOODS:
+            details.append(f"finding {position} has an invalid Likelihood: {likelihood or 'missing'}")
+        impact = enum_value(block, "Impact")
+        if impact not in severity.IMPACTS:
+            details.append(f"finding {position} has an invalid Impact: {impact or 'missing'}")
+        confidence = enum_value(block, "Confidence")
+        if confidence not in severity.CONFIDENCE:
+            details.append(f"finding {position} has an invalid Confidence: {confidence or 'missing'}")
+        expected = severity.derive_severity(likelihood, impact)
+        if expected is not None and severity_value != expected:
+            details.append(
+                f"finding {position} Severity {severity_value} does not match the matrix result "
+                f"{expected} for Likelihood {likelihood} x Impact {impact}"
+            )
         category = enum_value(block, "Category")
         if category not in CATEGORIES:
             details.append(f"finding {position} has an invalid Category: {category or 'missing'}")
