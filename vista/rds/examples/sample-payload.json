@@ -1,0 +1,419 @@
+{
+  "scan": {
+    "account_id": "123456789012",
+    "caller_arn": "arn:aws:sts::123456789012:assumed-role/vista-scanner/session",
+    "regions": [
+      "us-east-1",
+      "us-west-2"
+    ],
+    "started_at": "2026-01-15T18:30:00+00:00",
+    "completed_at": "2026-01-15T18:30:04+00:00",
+    "collection_errors_by_region": null
+  },
+  "shared": {
+    "security_groups": {
+      "sg-0db1a2b3c4d5e6f70": {
+        "group_id": "sg-0db1a2b3c4d5e6f70",
+        "group_name": "app-db",
+        "description": "database access",
+        "vpc_id": "vpc-0a1b2c3d4e5f60718",
+        "tags": {},
+        "ingress_rules": [
+          {
+            "protocol": "tcp",
+            "from_port": 5432,
+            "to_port": 5432,
+            "peer": {
+              "type": "ipv4_cidr",
+              "value": "0.0.0.0/0",
+              "description": "temp vendor access"
+            }
+          },
+          {
+            "protocol": "tcp",
+            "from_port": 3306,
+            "to_port": 3306,
+            "peer": {
+              "type": "security_group",
+              "value": "sg-0app1a2b3c4d5e6f7",
+              "account_id": "123456789012",
+              "description": null
+            }
+          }
+        ],
+        "egress_rules": [
+          {
+            "protocol": "all",
+            "from_port": null,
+            "to_port": null,
+            "peer": {
+              "type": "ipv4_cidr",
+              "value": "0.0.0.0/0",
+              "description": null
+            }
+          }
+        ]
+      }
+    },
+    "subnet_groups": {
+      "us-east-1/app-db-subnets": {
+        "name": "app-db-subnets",
+        "vpc_id": "vpc-0a1b2c3d4e5f60718",
+        "subnet_ids": [
+          "subnet-0aa1b2c3d4e5f6071",
+          "subnet-0bb1b2c3d4e5f6071"
+        ]
+      }
+    },
+    "subnets": {
+      "subnet-0aa1b2c3d4e5f6071": {
+        "subnet_id": "subnet-0aa1b2c3d4e5f6071",
+        "vpc_id": "vpc-0a1b2c3d4e5f60718",
+        "availability_zone": "us-east-1a",
+        "availability_zone_id": "use1-az6",
+        "ipv4_cidr": "10.20.0.0/24",
+        "ipv6_cidrs": [],
+        "map_public_ip_on_launch": true,
+        "assign_ipv6_on_creation": null,
+        "default_for_availability_zone": false,
+        "tags": {},
+        "route_table_association_type": "explicit_subnet_association",
+        "route_table_id": "rtb-0a1b2c3d4e5f60718",
+        "network_acl_id": "acl-0a1b2c3d4e5f60718"
+      },
+      "subnet-0bb1b2c3d4e5f6071": {
+        "subnet_id": "subnet-0bb1b2c3d4e5f6071",
+        "vpc_id": "vpc-0a1b2c3d4e5f60718",
+        "availability_zone": "us-east-1b",
+        "availability_zone_id": "use1-az1",
+        "ipv4_cidr": "10.20.1.0/24",
+        "ipv6_cidrs": [],
+        "map_public_ip_on_launch": true,
+        "assign_ipv6_on_creation": null,
+        "default_for_availability_zone": false,
+        "tags": {},
+        "route_table_association_type": "explicit_subnet_association",
+        "route_table_id": "rtb-0a1b2c3d4e5f60718",
+        "network_acl_id": "acl-0a1b2c3d4e5f60718"
+      }
+    },
+    "route_tables": {
+      "rtb-0a1b2c3d4e5f60718": {
+        "route_table_id": "rtb-0a1b2c3d4e5f60718",
+        "vpc_id": "vpc-0a1b2c3d4e5f60718",
+        "tags": {},
+        "routes": [
+          {
+            "destination": "10.20.0.0/16",
+            "state": "active",
+            "origin": "CreateRouteTable",
+            "target": {
+              "type": "gateway",
+              "id": "local"
+            }
+          },
+          {
+            "destination": "0.0.0.0/0",
+            "state": "active",
+            "origin": "CreateRoute",
+            "target": {
+              "type": "internet_gateway",
+              "id": "igw-0a1b2c3d4e5f60718"
+            }
+          }
+        ]
+      }
+    },
+    "network_acls": {
+      "acl-0a1b2c3d4e5f60718": {
+        "network_acl_id": "acl-0a1b2c3d4e5f60718",
+        "vpc_id": "vpc-0a1b2c3d4e5f60718",
+        "is_default": true,
+        "tags": {},
+        "associations": [
+          {
+            "association_id": "aclassoc-0a1b2c3d",
+            "subnet_id": "subnet-0aa1b2c3d4e5f6071"
+          },
+          {
+            "association_id": "aclassoc-0b1b2c3d",
+            "subnet_id": "subnet-0bb1b2c3d4e5f6071"
+          }
+        ],
+        "entries": [
+          {
+            "rule_number": 100,
+            "direction": "ingress",
+            "action": "allow",
+            "protocol": "-1",
+            "ipv4_cidr": "0.0.0.0/0",
+            "ipv6_cidr": null,
+            "port_range": null,
+            "icmp": null
+          },
+          {
+            "rule_number": 32767,
+            "direction": "ingress",
+            "action": "deny",
+            "protocol": "-1",
+            "ipv4_cidr": "0.0.0.0/0",
+            "ipv6_cidr": null,
+            "port_range": null,
+            "icmp": null
+          },
+          {
+            "rule_number": 100,
+            "direction": "egress",
+            "action": "allow",
+            "protocol": "-1",
+            "ipv4_cidr": "0.0.0.0/0",
+            "ipv6_cidr": null,
+            "port_range": null,
+            "icmp": null
+          },
+          {
+            "rule_number": 32767,
+            "direction": "egress",
+            "action": "deny",
+            "protocol": "-1",
+            "ipv4_cidr": "0.0.0.0/0",
+            "ipv6_cidr": null,
+            "port_range": null,
+            "icmp": null
+          }
+        ]
+      }
+    },
+    "parameter_groups": {
+      "us-east-1/default.aurora-mysql8.0": {
+        "name": "default.aurora-mysql8.0",
+        "is_default": true,
+        "user_parameters": {}
+      },
+      "us-east-1/orders-pg": {
+        "name": "orders-pg",
+        "is_default": false,
+        "user_parameters": {
+          "rds.force_ssl": "0",
+          "log_statement": "none"
+        }
+      }
+    },
+    "cluster_parameter_groups": {
+      "us-east-1/analytics-cluster-pg": {
+        "name": "analytics-cluster-pg",
+        "is_default": false,
+        "user_parameters": {
+          "require_secure_transport": "ON"
+        }
+      }
+    },
+    "kms_keys": {
+      "arn:aws:kms:us-east-1:123456789012:key/0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9": {
+        "key_manager": "CUSTOMER",
+        "key_state": "Enabled"
+      }
+    }
+  },
+  "db_instances": [
+    {
+      "identifier": "orders-db",
+      "arn": "arn:aws:rds:us-east-1:123456789012:db:orders-db",
+      "region": "us-east-1",
+      "tags": {
+        "env": "prod"
+      },
+      "engine": "postgres",
+      "engine_version": "16.4",
+      "engine_lifecycle_support": "open-source-rds-extended-support-disabled",
+      "instance_class": "db.m6g.large",
+      "status": "available",
+      "cluster_identifier": null,
+      "read_replica_source": null,
+      "publicly_accessible": true,
+      "endpoint": "orders-db.abcdefghij.us-east-1.rds.amazonaws.com",
+      "port": 5432,
+      "vpc_id": "vpc-0a1b2c3d4e5f60718",
+      "subnet_group_ref": "us-east-1/app-db-subnets",
+      "security_group_ids": [
+        "sg-0db1a2b3c4d5e6f70"
+      ],
+      "storage_encrypted": false,
+      "kms_key_id": null,
+      "iam_auth_enabled": false,
+      "master_username": "postgres",
+      "master_user_secret": null,
+      "associated_roles": [],
+      "ca_certificate": {
+        "identifier": "rds-ca-rsa2048-g1",
+        "valid_till": "2027-05-29T00:00:00+00:00"
+      },
+      "parameter_group_refs": [
+        "us-east-1/orders-pg"
+      ],
+      "deletion_protection": false,
+      "backup_retention_days": 1,
+      "multi_az": false,
+      "auto_minor_version_upgrade": true,
+      "log_exports": [],
+      "monitoring_interval_seconds": 0
+    },
+    {
+      "identifier": "analytics-aurora-1",
+      "arn": "arn:aws:rds:us-east-1:123456789012:db:analytics-aurora-1",
+      "region": "us-east-1",
+      "tags": {
+        "env": "prod"
+      },
+      "engine": "aurora-mysql",
+      "engine_version": "8.0.mysql_aurora.3.08.0",
+      "engine_lifecycle_support": "open-source-rds-extended-support-disabled",
+      "instance_class": "db.r6g.large",
+      "status": "available",
+      "cluster_identifier": "analytics-aurora",
+      "read_replica_source": null,
+      "publicly_accessible": false,
+      "endpoint": "analytics-aurora-1.abcdefghij.us-east-1.rds.amazonaws.com",
+      "port": 3306,
+      "vpc_id": "vpc-0a1b2c3d4e5f60718",
+      "subnet_group_ref": "us-east-1/app-db-subnets",
+      "security_group_ids": [
+        "sg-0db1a2b3c4d5e6f70"
+      ],
+      "storage_encrypted": true,
+      "kms_key_id": "arn:aws:kms:us-east-1:123456789012:key/0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9",
+      "iam_auth_enabled": true,
+      "master_username": "admin",
+      "master_user_secret": null,
+      "associated_roles": [],
+      "ca_certificate": {
+        "identifier": "rds-ca-rsa2048-g1",
+        "valid_till": "2027-05-29T00:00:00+00:00"
+      },
+      "parameter_group_refs": [
+        "us-east-1/default.aurora-mysql8.0"
+      ],
+      "deletion_protection": true,
+      "backup_retention_days": 14,
+      "multi_az": false,
+      "auto_minor_version_upgrade": true,
+      "log_exports": [
+        "audit",
+        "error"
+      ],
+      "monitoring_interval_seconds": 60
+    }
+  ],
+  "db_clusters": [
+    {
+      "identifier": "analytics-aurora",
+      "arn": "arn:aws:rds:us-east-1:123456789012:cluster:analytics-aurora",
+      "region": "us-east-1",
+      "tags": {
+        "env": "prod"
+      },
+      "engine": "aurora-mysql",
+      "engine_version": "8.0.mysql_aurora.3.08.0",
+      "engine_mode": "provisioned",
+      "engine_lifecycle_support": "open-source-rds-extended-support-disabled",
+      "status": "available",
+      "members": [
+        {
+          "identifier": "analytics-aurora-1",
+          "writer": true
+        }
+      ],
+      "publicly_accessible": null,
+      "endpoint": "analytics-aurora.cluster-abcdefghij.us-east-1.rds.amazonaws.com",
+      "reader_endpoint": "analytics-aurora.cluster-ro-abcdefghij.us-east-1.rds.amazonaws.com",
+      "port": 3306,
+      "subnet_group_ref": "us-east-1/app-db-subnets",
+      "security_group_ids": [
+        "sg-0db1a2b3c4d5e6f70"
+      ],
+      "storage_encrypted": true,
+      "kms_key_id": "arn:aws:kms:us-east-1:123456789012:key/0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9",
+      "iam_auth_enabled": true,
+      "data_api_enabled": true,
+      "master_username": "admin",
+      "master_user_secret": {
+        "secret_arn": "arn:aws:secretsmanager:us-east-1:123456789012:secret:rds!cluster-abc-AbCdEf",
+        "status": "active"
+      },
+      "associated_roles": [
+        {
+          "role_arn": "arn:aws:iam::123456789012:role/aurora-s3-export",
+          "feature": "s3Export"
+        }
+      ],
+      "cluster_parameter_group_ref": "us-east-1/analytics-cluster-pg",
+      "deletion_protection": true,
+      "backup_retention_days": 14,
+      "log_exports": [
+        "audit",
+        "error"
+      ],
+      "activity_stream_status": "stopped"
+    }
+  ],
+  "db_proxies": [
+    {
+      "identifier": "orders-proxy",
+      "arn": "arn:aws:rds:us-east-1:123456789012:db-proxy:prx-0a1b2c3d4e5f60718",
+      "region": "us-east-1",
+      "engine_family": "POSTGRESQL",
+      "status": "available",
+      "endpoint": "orders-proxy.proxy-abcdefghij.us-east-1.rds.amazonaws.com",
+      "vpc_id": "vpc-0a1b2c3d4e5f60718",
+      "subnet_ids": [
+        "subnet-0aa1b2c3d4e5f6071",
+        "subnet-0bb1b2c3d4e5f6071"
+      ],
+      "security_group_ids": [
+        "sg-0db1a2b3c4d5e6f70"
+      ],
+      "require_tls": false,
+      "debug_logging": true,
+      "role_arn": "arn:aws:iam::123456789012:role/orders-proxy-secrets",
+      "default_auth_scheme": null,
+      "auth": [
+        {
+          "auth_scheme": "SECRETS",
+          "iam_auth": "DISABLED",
+          "secret_arn": "arn:aws:secretsmanager:us-east-1:123456789012:secret:orders-db-app-AbCdEf",
+          "client_password_auth_type": "POSTGRES_SCRAM_SHA_256"
+        }
+      ]
+    }
+  ],
+  "snapshots": [
+    {
+      "identifier": "orders-db-pre-migration",
+      "arn": "arn:aws:rds:us-east-1:123456789012:snapshot:orders-db-pre-migration",
+      "kind": "instance",
+      "region": "us-east-1",
+      "source": "orders-db",
+      "engine": "postgres",
+      "created": "2026-01-10T09:30:00+00:00",
+      "encrypted": false,
+      "kms_key_id": null,
+      "shared_with": [
+        "all"
+      ]
+    },
+    {
+      "identifier": "analytics-aurora-q4",
+      "arn": "arn:aws:rds:us-east-1:123456789012:cluster-snapshot:analytics-aurora-q4",
+      "kind": "cluster",
+      "region": "us-east-1",
+      "source": "analytics-aurora",
+      "engine": "aurora-mysql",
+      "created": "2026-01-10T09:30:00+00:00",
+      "encrypted": true,
+      "kms_key_id": "arn:aws:kms:us-east-1:123456789012:key/0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9",
+      "shared_with": [
+        "210987654321"
+      ]
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-"""EC2 service: collect facts across regions, merge them, and run the Bedrock review.
+"""API Gateway service: collect facts across regions, merge them, and run the Bedrock review.
 
 Implements the interface the CLI expects from every service: NAME, LABEL, collect(), count(),
 and analyze().
@@ -10,13 +10,13 @@ from pathlib import Path
 from typing import Any, Callable
 
 from vista import findings
-from vista.ec2 import review
-from vista.ec2.normalize import normalize
-from vista.ec2.scanner import scan_region
+from vista.apigateway import review
+from vista.apigateway.collector import scan_region
+from vista.apigateway.normalize import normalize
 from vista.regions import flatten, now, progress, scan_header, scan_regions
 
-NAME = "ec2"
-LABEL = "EC2"
+NAME = "apigateway"
+LABEL = "API Gateway"
 
 
 # Scan every region in parallel and return one merged facts payload. on_region(region, count) reports progress.
@@ -28,24 +28,25 @@ def collect(
     started_at = now()
     caller = session.client("sts").get_caller_identity()
     per_region = scan_regions(session, regions, scan_region, progress(on_region, count))
+    errors = {facts["region"]: facts["collection_errors"] for facts in per_region}
     return {
-        "scan": {
-            **scan_header(caller, regions, started_at),
-            "collector_status_by_region": {
-                facts["scan"]["region"]: facts["scan"].get("collector_status", {})
-                for facts in per_region
-            },
-        },
-        "instances": flatten(per_region, "instances"),
+        "scan": scan_header(caller, regions, started_at, errors),
+        "account_settings": [
+            facts["account_settings"] for facts in per_region if facts["account_settings"]
+        ],
+        "usage_plans": flatten(per_region, "usage_plans"),
+        "vpc_links": flatten(per_region, "vpc_links"),
+        "domain_names": flatten(per_region, "domain_names"),
+        "apis": flatten(per_region, "apis"),
     }
 
 
-# Number of resources (instances) in the payload.
+# Number of resources (APIs) in the payload.
 def count(facts: dict[str, Any]) -> int:
-    return len(facts.get("instances", []))
+    return len(facts.get("apis", []))
 
 
-# Run the Bedrock review for the merged EC2 facts. Returns (markdown, usage).
+# Run the Bedrock review for the merged API Gateway facts. Returns (markdown, usage).
 def analyze(
     session: Any,
     bedrock_region: str,

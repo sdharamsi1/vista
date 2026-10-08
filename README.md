@@ -3,7 +3,7 @@
 Vista is an AI-powered AWS attack surface analysis tool. It discovers resources across an account,
 collects their factual configuration, and asks an Amazon Bedrock model to identify the account's
 most significant security risks — public exposure or misconfiguration — with evidence and
-remediation for each finding. It currently reviews **EC2** and **S3**.
+remediation for each finding. It currently reviews **EC2**, **S3**, **API Gateway**, and **RDS**.
 
 ## Requirements
 
@@ -49,6 +49,8 @@ Vista is a single subcommand, `assess`, that scans one service and prints a Bedr
 ```bash
 vista assess ec2 --all-regions --model us.anthropic.claude-opus-5
 vista assess s3  --regions us-east-1 us-west-2 --model us.openai.gpt-5.6-sol
+vista assess apigateway --all-regions --model us.anthropic.claude-opus-5
+vista assess rds --regions us-east-1 --model us.anthropic.claude-opus-5
 ```
 
 You must already be authenticated to AWS. Credentials come from the standard AWS chain
@@ -58,7 +60,7 @@ It calls `sts:GetCallerIdentity` once and prints the account/identity to stderr 
 Run `vista --help` for the top-level help and `vista assess --help` for the full flag list. The
 flags are:
 
-- `service` — positional, one of `ec2` or `s3`.
+- `service` — positional, one of `ec2`, `s3`, `apigateway`, or `rds`.
 - `--regions REGION [REGION ...]` — one or more regions to scan.
 - `--all-regions` — scan every region enabled for the account (mutually exclusive with
   `--regions`; exactly one is required).
@@ -93,6 +95,14 @@ git out of the box (it can contain sensitive account details, so keep it out of 
 - **EC2** — instances and their network path, IAM, IMDS, storage, and load-balancer exposure.
 - **S3** — buckets and their public-access controls (Block Public Access, policy, ACL, ownership),
   encryption, versioning, logging, replication, and CORS.
+- **API Gateway** — REST, HTTP, and WebSocket APIs. APIs are expected to be Internet-facing, so
+  the review focuses on how well each one is secured: per-route authorization and authorizers,
+  resource policies, API-key-only routes, execute-api bypass, WAF, throttling and usage plans,
+  access/execution logging, TLS (custom domains and backends), request validation, and CORS.
+- **RDS** — DB instances, clusters, RDS Proxies, and manual snapshots: public accessibility and the
+  full network path (security groups, routes, NACLs), encryption and KMS key ownership, TLS
+  parameters, IAM authentication, Secrets Manager use, backups, deletion protection, associated IAM
+  roles, CA expiry, engine support, and snapshot sharing.
 
 A bucket is only included when its region is in the selected scope, so use `--all-regions` (or the
 right `--regions`) to see every bucket.
@@ -111,8 +121,11 @@ every run.
 ### Regions
 
 Vista scans all selected regions, merges the facts into a single payload, and makes **one** Bedrock
-call. When `--all-regions` is used, `me-south-1` and `me-central-1` are excluded from region
-enumeration (edit `SKIP_REGIONS` in `vista/cli.py` to change this).
+call. Every service scans up to 8 regions at once (`MAX_REGION_WORKERS` in `vista/regions.py`);
+calls within a region stay sequential to respect per-region API limits. S3 lists buckets globally,
+so it collects buckets in parallel and scans regions in parallel only for access points. When
+`--all-regions` is used, `me-south-1` and `me-central-1` are excluded from region enumeration (edit
+`SKIP_REGIONS` in `vista/cli.py` to change this).
 
 ## IAM permissions
 
@@ -140,6 +153,22 @@ For **S3**:
   `s3:GetBucketTagging`
 - `s3:GetAccountPublicAccessBlock`, `s3:ListAccessPoints`, `s3:GetAccessPointPolicyStatus`
 
+For **API Gateway**:
+
+- `apigateway:GET` (covers every REST and HTTP/WebSocket read: APIs, resources, routes,
+  integrations, authorizers, request validators, stages, account settings, usage plans and keys,
+  VPC links, domain names, and API mappings)
+
+For **RDS**:
+
+- `rds:DescribeDBInstances`, `rds:DescribeDBClusters`, `rds:DescribeDBProxies`,
+  `rds:DescribeDBSubnetGroups`, `rds:DescribeDBSnapshots`, `rds:DescribeDBSnapshotAttributes`,
+  `rds:DescribeDBClusterSnapshots`, `rds:DescribeDBClusterSnapshotAttributes`,
+  `rds:DescribeDBParameters`, `rds:DescribeDBClusterParameters`
+- `ec2:DescribeSecurityGroups`, `ec2:DescribeSubnets`, `ec2:DescribeRouteTables`,
+  `ec2:DescribeNetworkAcls`
+- `kms:DescribeKey` (to tell AWS-managed `aws/rds` keys from customer-managed keys)
+
 Anything denied is recorded per resource under `collection_errors` rather than aborting the scan.
 
 ## Output
@@ -148,6 +177,18 @@ Vista prints an account-level review: a short risk summary followed by up to ten
 by severity. Each finding lists its severity, likelihood, impact, confidence, category, the affected
 resources, the supporting evidence, why it matters, and a concrete remediation step. Resources that
 share a root cause are grouped into a single finding.
+
+Every service uses the same review format and validation; only the category names differ:
+
+| Service | Categories |
+| --- | --- |
+| EC2 | `INTERNET_EXPOSURE`, `SECURITY_CONFIGURATION` |
+| S3, RDS | `PUBLIC_EXPOSURE`, `SECURITY_CONFIGURATION` |
+| API Gateway | `ACCESS_CONTROL`, `SECURITY_CONFIGURATION` |
+
+If a response is malformed (missing fields, a severity that doesn't match the matrix, or an
+identifier that isn't in the input), Vista sends the validation error back once and asks for a
+corrected review.
 
 ### Severity
 
@@ -172,6 +213,26 @@ the evidence was — for example a failed collector lowers confidence rather tha
 account intent can lower a finding's likelihood (and so its severity), but never downgrades a
 CRITICAL or HIGH dangerous exposure on its own.
 
+## Project layout
+
+Every service is a package under `vista/` with the same pieces, and the CLI only talks to
+`service.py`:
+
+- `collector.py` (or `scanner.py` for EC2) — turns AWS API responses into plain JSON facts.
+- `normalize.py` — de-duplicates repeated objects into `shared` (RDS collects straight into
+  `shared`, so it has none).
+- `review.py` — a `ReviewSpec` plus the service-specific guidance for the model.
+- `service.py` — `NAME`, `LABEL`, `collect()`, `count()`, and `analyze()`.
+- `examples/sample-payload.json` — a full example of the JSON sent to Bedrock.
+
+Shared modules hold everything else: `facts.py` (collector helpers), `regions.py` (parallel region
+scanning and the `scan` header), `findings.py` (the review format, prompt assembly, and
+validation), `severity.py`, `bedrock.py`, and `render.py`. To add a service, create the package
+and register its `service` module in `SERVICES` in `vista/cli.py`.
+
+Every payload starts with the same `scan` header: `account_id`, `caller_arn`, `regions`,
+`started_at`, `completed_at`, and `collection_errors_by_region` (null when nothing failed).
+
 ## EC2 facts payload
 
 For each scan, Vista collects factual AWS configuration and sends it to the model as JSON. No risk
@@ -188,6 +249,7 @@ looks like this:
   "scan": {
     "account_id": "...",
     "regions": ["..."],
+    "collection_errors_by_region": null,
     "collector_status_by_region": { "us-east-1": { "inventory": {}, "network": {}, "storage": {}, "iam": {}, "load_balancers": {} } }
   },
   "shared": {
@@ -247,7 +309,7 @@ Account-level Block Public Access is under `account` and overrides per-bucket se
 
 ```json
 {
-  "scan": { "account_id": "...", "regions": ["..."] },
+  "scan": { "account_id": "...", "regions": ["..."], "collection_errors_by_region": null },
   "shared": { "policies": { "pol-<hash>": { "Statement": [] } } },
   "account": {
     "public_access_block": { "BlockPublicAcls": true, "IgnorePublicAcls": true, "BlockPublicPolicy": true, "RestrictPublicBuckets": true },
@@ -284,3 +346,94 @@ Account-level Block Public Access is under `account` and overrides per-bucket se
   and CORS.
 - **collection_errors** — per-resource map of any field that could not be read (e.g. `AccessDenied`);
   the model treats those as unknown rather than safe.
+
+A full populated example is in
+[`vista/s3/examples/sample-payload.json`](vista/s3/examples/sample-payload.json).
+
+## API Gateway facts payload
+
+REST APIs (`apigateway`) and HTTP/WebSocket APIs (`apigatewayv2`) are reshaped into one common
+format. Identical REST resource policies are de-duplicated into `shared.policies` and referenced by
+`policy_ref`. Region-wide context (account logging role and throttle, usage plans, VPC links, and
+custom domains) is listed once per region, and only for regions that contain an API. Stage variable
+values are never collected, only their names.
+
+```json
+{
+  "scan": { "account_id": "...", "regions": ["..."], "collection_errors_by_region": null },
+  "shared": { "policies": { "pol-<hash>": { "Statement": [] } } },
+  "account_settings": [ { "region": "...", "cloudwatch_role_arn": "...", "throttle": { "burstLimit": 5000, "rateLimit": 10000.0 } } ],
+  "usage_plans": [ { "id": "...", "region": "...", "throttle": null, "quota": null, "api_stages": [ { "api_id": "...", "stage": "prod" } ], "api_key_count": 3 } ],
+  "vpc_links": [ { "id": "...", "region": "...", "target_arns": ["arn:...:loadbalancer/net/..."] } ],
+  "domain_names": [ { "domain_name": "api.example.com", "security_policy": "TLS_1_2", "mappings": [ { "base_path": "(none)", "api_id": "...", "stage": "prod" } ] } ],
+  "apis": [
+    {
+      "api_id": "...",
+      "name": "...",
+      "type": "REST",
+      "region": "...",
+      "endpoint_types": ["REGIONAL"],
+      "disable_execute_api_endpoint": false,
+      "policy_ref": "pol-<hash>",
+      "authorizers": { "<id>": { "type": "COGNITO_USER_POOLS", "identity_source": "..." } },
+      "request_validators": { "<id>": { "validate_request_body": true } },
+      "routes": [ { "route_key": "GET /orders", "authorization_type": "NONE", "api_key_required": true, "integration": { "type": "AWS_PROXY", "uri": "..." } } ],
+      "stages": [ { "stage_name": "prod", "web_acl_arn": null, "access_log_destination": "...", "method_settings": {}, "variable_names": [] } ],
+      "collection_errors": null
+    }
+  ]
+}
+```
+
+- **routes[]** — every route with the authorization it enforces. REST routes carry their
+  integration inline; HTTP/WebSocket routes reference `integrations[integration_id]` on the same API.
+  Integrations record TLS verification settings and any `credentials_arn` they execute with.
+- **stages[]** — WAF (REST only), access log destination, tracing, method/route settings (logging
+  level, data tracing, throttling, caching), and stage variable names.
+- **usage_plans[]** — throttle and quota per plan and per API stage, plus the number of API keys.
+
+A full populated example is in
+[`vista/apigateway/examples/sample-payload.json`](vista/apigateway/examples/sample-payload.json).
+
+## RDS facts payload
+
+Network, parameter, and key context is collected once into `shared` and referenced from each
+resource, using the same security-group, subnet, route-table, and network-ACL shapes as EC2. Subnet
+groups and parameter groups are only unique within a region, so they are keyed as `region/name`.
+Only user-modified parameters are listed; default parameter groups use engine defaults.
+
+```json
+{
+  "scan": { "account_id": "...", "regions": ["..."], "collection_errors_by_region": null },
+  "shared": {
+    "security_groups":          { "sg-...": {} },
+    "subnet_groups":            { "us-east-1/app-db-subnets": { "vpc_id": "...", "subnet_ids": ["subnet-..."] } },
+    "subnets":                  { "subnet-...": { "route_table_id": "rtb-...", "network_acl_id": "acl-..." } },
+    "route_tables":             { "rtb-...": {} },
+    "network_acls":             { "acl-...": {} },
+    "parameter_groups":         { "us-east-1/orders-pg": { "is_default": false, "user_parameters": { "rds.force_ssl": "0" } } },
+    "cluster_parameter_groups": { "us-east-1/analytics-cluster-pg": {} },
+    "kms_keys":                 { "arn:...:key/...": { "key_manager": "CUSTOMER", "key_state": "Enabled" } }
+  },
+  "db_instances": [
+    { "identifier": "...", "engine": "postgres", "publicly_accessible": true, "port": 5432, "security_group_ids": ["sg-..."], "subnet_group_ref": "us-east-1/app-db-subnets", "storage_encrypted": false, "master_user_secret": null, "ca_certificate": { "identifier": "rds-ca-rsa2048-g1", "valid_till": "..." } }
+  ],
+  "db_clusters": [
+    { "identifier": "...", "engine": "aurora-mysql", "members": [ { "identifier": "...", "writer": true } ], "data_api_enabled": true, "associated_roles": [ { "role_arn": "...", "feature": "s3Export" } ] }
+  ],
+  "db_proxies": [
+    { "identifier": "...", "require_tls": false, "debug_logging": true, "auth": [ { "auth_scheme": "SECRETS", "iam_auth": "DISABLED" } ] }
+  ],
+  "snapshots": [
+    { "identifier": "...", "kind": "instance", "encrypted": false, "shared_with": ["all"] }
+  ]
+}
+```
+
+- **snapshots[]** — manual snapshots only. `shared_with` of `["all"]` means the snapshot is public;
+  account IDs are cross-account shares; `null` means the sharing attribute could not be read.
+- **db_proxies[]** — RDS Proxies, which are VPC-only; reviewed for TLS, client auth, and debug
+  logging.
+
+A full populated example is in
+[`vista/rds/examples/sample-payload.json`](vista/rds/examples/sample-payload.json).

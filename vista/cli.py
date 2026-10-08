@@ -4,6 +4,8 @@
 Usage:
     vista assess ec2 --all-regions --model us.anthropic.claude-opus-5
     vista assess s3  --regions us-east-1 us-west-2 --model us.openai.gpt-5.6-sol
+    vista assess apigateway --all-regions --model us.anthropic.claude-opus-5
+    vista assess rds --regions us-east-1 --model us.anthropic.claude-opus-5
 
 Credentials come from the standard AWS chain (environment variables, AWS_PROFILE,
 SSO, or an instance role). Pass --profile to use a named profile. Vista assumes
@@ -31,12 +33,17 @@ from botocore.exceptions import (
 )
 
 from vista import ui
+from vista.apigateway import service as apigateway_service
 from vista.ec2 import service as ec2_service
+from vista.rds import service as rds_service
 from vista.render import Spinner, render_review
 from vista.s3 import service as s3_service
 
 # Service registry: name -> service module. Add new services here.
-SERVICES = {ec2_service.NAME: ec2_service, s3_service.NAME: s3_service}
+SERVICES = {
+    service.NAME: service
+    for service in (ec2_service, s3_service, apigateway_service, rds_service)
+}
 
 # Region for the initial STS/DescribeRegions calls when a scope isn't pinned.
 DEFAULT_BOOTSTRAP_REGION = "us-east-1"
@@ -60,6 +67,8 @@ def build_parser() -> argparse.ArgumentParser:
             "examples:\n"
             "  vista assess ec2 --all-regions --model us.anthropic.claude-opus-5\n"
             "  vista assess s3 --regions us-east-1 us-west-2 --model us.openai.gpt-5.6-sol\n"
+            "  vista assess apigateway --all-regions --model us.anthropic.claude-opus-5\n"
+            "  vista assess rds --regions us-east-1 --model us.anthropic.claude-opus-5\n"
             "\n"
             "Credentials come from the standard AWS chain; pass --profile for a named\n"
             "profile. You must already be authenticated."

@@ -2,22 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any, Iterator
 
+from vista.facts import isoformat, normalize_tags
+
 SOURCE_API = "ec2:DescribeInstances"
-
-
-# Convert a datetime (or other value) to an ISO 8601 string, passing through None.
-def isoformat(value: Any) -> str | None:
-    if value is None:
-        return None
-    return value.isoformat() if isinstance(value, datetime) else str(value)
-
-
-# Flatten AWS key/value tag pairs into a simple {key: value} dict.
-def normalize_tags(tags: list[dict[str, str]] | None) -> dict[str, str]:
-    return {tag["Key"]: tag.get("Value", "") for tag in tags or [] if "Key" in tag}
 
 
 # Reduce a raw ENI to its addresses, security groups, and attachment details.

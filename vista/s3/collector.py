@@ -13,10 +13,12 @@ import json
 import threading
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
 from typing import Any, Callable
 
 from botocore.exceptions import BotoCoreError, ClientError
+
+from vista.facts import isoformat, normalize_tags, paginate, safe_call
+from vista.regions import flatten, now, scan_header, scan_regions
 
 # Buckets are collected concurrently; each is ~13 sequential API calls, so parallelism helps a lot.
 MAX_WORKERS = 16
@@ -41,25 +43,9 @@ PUBLIC_ACL_GROUPS = (
 )
 
 
-# ISO 8601 string for a datetime, passing through None/other.
-def _iso(value: Any) -> str | None:
-    if value is None:
-        return None
-    return value.isoformat() if isinstance(value, datetime) else str(value)
-
-
-# Run a getter, returning its value; None for "not configured", recording other errors in `errors`.
+# Run a getter, returning None for "not configured" and recording other errors in `errors`.
 def _try(errors: dict[str, str], field: str, getter: Callable[[], Any]) -> Any:
-    try:
-        return getter()
-    except ClientError as error:
-        code = error.response.get("Error", {}).get("Code", "")
-        if code not in BENIGN_CODES:
-            errors[field] = code
-        return None
-    except BotoCoreError as error:
-        errors[field] = type(error).__name__
-        return None
+    return safe_call(errors, field, getter, BENIGN_CODES)
 
 
 # Map an S3 LocationConstraint to a region name.
@@ -164,12 +150,8 @@ def _collect_bucket(
         "name": name,
         "arn": arn,
         "region": region,
-        "creation_date": _iso(creation_date),
-        "tags": {
-            tag["Key"]: tag.get("Value", "")
-            for tag in (tagging or {}).get("TagSet", [])
-            if "Key" in tag
-        },
+        "creation_date": isoformat(creation_date),
+        "tags": normalize_tags((tagging or {}).get("TagSet")),
         "public_access_block": (bpa or {}).get("PublicAccessBlockConfiguration"),
         "policy": _decode_policy(policy) if policy else None,
         "policy_is_public": (
@@ -194,39 +176,40 @@ def _collect_bucket(
 
 
 # List access points for the account in one region, with each one's policy and public-access status.
-def _collect_access_points(
-    s3control: Any, account_id: str, region: str
-) -> list[dict[str, Any]]:
+def _collect_access_points(session: Any, account_id: str, region: str) -> dict[str, Any]:
+    s3control = session.client("s3control", region_name=region)
+    region_errors: dict[str, str] = {}
+    listed = _try(
+        region_errors,
+        "access_points",
+        lambda: paginate(s3control, "list_access_points", "AccessPointList", AccountId=account_id),
+    )
     access_points = []
-    paginator = s3control.get_paginator("list_access_points")
-    for page in paginator.paginate(AccountId=account_id):
-        for item in page.get("AccessPointList", []):
-            name = item.get("Name")
-            errors: dict[str, str] = {}
-            policy_status = _try(
-                errors,
-                "policy_status",
-                lambda: s3control.get_access_point_policy_status(
-                    AccountId=account_id, Name=name
+    for item in listed or []:
+        name = item.get("Name")
+        errors: dict[str, str] = {}
+        policy_status = _try(
+            errors,
+            "policy_status",
+            lambda: s3control.get_access_point_policy_status(AccountId=account_id, Name=name),
+        )
+        access_points.append(
+            {
+                "name": name,
+                "region": region,
+                "bucket": item.get("Bucket"),
+                "network_origin": item.get("NetworkOrigin"),
+                "vpc_id": (item.get("VpcConfiguration") or {}).get("VpcId"),
+                "arn": item.get("AccessPointArn"),
+                "policy_is_public": (
+                    (policy_status or {}).get("PolicyStatus", {}).get("IsPublic")
+                    if policy_status
+                    else None
                 ),
-            )
-            access_points.append(
-                {
-                    "name": name,
-                    "region": region,
-                    "bucket": item.get("Bucket"),
-                    "network_origin": item.get("NetworkOrigin"),
-                    "vpc_id": (item.get("VpcConfiguration") or {}).get("VpcId"),
-                    "arn": item.get("AccessPointArn"),
-                    "policy_is_public": (
-                        (policy_status or {}).get("PolicyStatus", {}).get("IsPublic")
-                        if policy_status
-                        else None
-                    ),
-                    "collection_errors": errors or None,
-                }
-            )
-    return access_points
+                "collection_errors": errors or None,
+            }
+        )
+    return {"access_points": access_points, "collection_errors": region_errors or None}
 
 
 # Collect S3 facts for buckets in the selected regions plus account-level context.
@@ -235,7 +218,7 @@ def collect(
     regions: list[str],
     on_region: Callable[[str, int], None] | None = None,
 ) -> dict[str, Any]:
-    started_at = datetime.now().astimezone()
+    started_at = now()
     caller = session.client("sts").get_caller_identity()
     account_id = caller["Account"]
     partition = caller["Arn"].split(":", 2)[1]
@@ -300,25 +283,22 @@ def collect(
         "public_access_block",
         lambda: s3control.get_public_access_block(AccountId=account_id),
     )
-    access_points: list[dict[str, Any]] = []
-    for region in sorted(selected):
-        control = session.client("s3control", region_name=region)
-        try:
-            access_points.extend(_collect_access_points(control, account_id, region))
-        except (BotoCoreError, ClientError):
-            continue
+    per_region = scan_regions(
+        session,
+        regions,
+        lambda region_session, region: _collect_access_points(region_session, account_id, region),
+    )
 
     return {
-        "scan": {
-            "account_id": account_id,
-            "caller_arn": caller.get("Arn"),
-            "regions": sorted(selected),
-            "started_at": started_at.isoformat(),
-            "completed_at": datetime.now().astimezone().isoformat(),
-        },
+        "scan": scan_header(
+            caller,
+            regions,
+            started_at,
+            {region: facts["collection_errors"] for region, facts in zip(regions, per_region)},
+        ),
         "account": {
             "public_access_block": (account_bpa or {}).get("PublicAccessBlockConfiguration"),
-            "access_points": access_points,
+            "access_points": flatten(per_region, "access_points"),
             "collection_errors": account_errors or None,
         },
         "buckets": buckets,
