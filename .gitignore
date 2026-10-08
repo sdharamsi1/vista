@@ -5,6 +5,8 @@ __pycache__/
 *.json
 !vista/ec2/examples/sample-payload.json
 !vista/s3/examples/sample-payload.json
+!vista/apigateway/examples/sample-payload.json
+!vista/rds/examples/sample-payload.json
 *.egg-info/
 intent.txt
 *.intent.txt

@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 
-from vista import bedrock
+from vista import findings
 from vista.s3 import review
 from vista.s3.collector import collect as _collect
 from vista.s3.normalize import normalize
@@ -41,16 +41,7 @@ def analyze(
     json_path: Path | None = None,
     intent: str | None = None,
 ) -> tuple[str, dict[str, int]]:
-    buckets = facts.get("buckets", [])
-    payload = normalize(facts)
-    return bedrock.analyze(
-        session,
-        bedrock_region,
-        model_id,
-        payload,
-        system_prompt=review.build_system_prompt(buckets, intent),
-        validate=lambda text: review.validate(text, buckets),
-        is_empty=not buckets,
-        empty_message=review.EMPTY_MESSAGE,
-        json_path=json_path,
+    return findings.run_review(
+        session, bedrock_region, model_id, review, facts, normalize(facts), count(facts),
+        json_path, intent,
     )

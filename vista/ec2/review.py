@@ -1,33 +1,24 @@
-"""EC2 review spec: the system prompt and response validation for the Bedrock review."""
+"""EC2 review spec: the service guidance and response validation for the Bedrock review."""
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
-from vista import bedrock, severity
+from vista import findings
 
-CATEGORIES = {"INTERNET_EXPOSURE", "SECURITY_CONFIGURATION"}
-MAX_FINDINGS = 10
-
-EMPTY_MESSAGE = "# EC2 Security Review\n\nNo non-terminated instances found."
-
-FINDING_LABELS = (
-    "**Severity:**",
-    "**Likelihood:**",
-    "**Impact:**",
-    "**Confidence:**",
-    "**Category:**",
-    "**Affected instances:**",
-    "**Evidence:**",
-    "**Why it matters:**",
-    "**Remediation:**",
+SPEC = findings.ReviewSpec(
+    service="EC2",
+    noun="instance",
+    categories=("INTERNET_EXPOSURE", "SECURITY_CONFIGURATION"),
+    affected_label="Affected instances",
+    affected_format="each instance formatted as `i-instanceid` (Name or Unnamed)",
+    summary=(
+        "One or two sentences on the account's overall EC2 posture, the number of "
+        "instances reviewed, and the regions covered."
+    ),
 )
 
-INSTANCE_ID_PATTERN = re.compile(r"`(i-[0-9a-fA-F]+)`")
-FINDING_HEADING_PATTERN = re.compile(r"^###\s+(.+)$", re.MULTILINE)
-
-SYSTEM_PROMPT = """Review the supplied factual AWS EC2 configuration for one AWS account, which may
+GUIDANCE = """Review the supplied factual AWS EC2 configuration for one AWS account, which may
 span one or more regions. The JSON contains real resource identities and exact AWS API values for
 every non-terminated instance in the account. Each instance record includes its own "region" field.
 Make all security judgments yourself; no local security conclusions are included.
@@ -99,140 +90,20 @@ Be evidence-specific and concise:
 For Remediation, give a concrete fix: the exact setting, permission, rule, or control to change and
 the acceptable end state. Recommend confirming approved intent or operational need before any
 destructive or traffic-affecting change, such as closing a public path or terminating an instance.
-
-Return only the following Markdown, and nothing else:
-
-# EC2 Security Review
-
-## Account Risk Summary
-One or two sentences on the account's overall EC2 posture, the number of instances reviewed, and
-the regions covered.
-
-## Top Findings
-
-### 1. Concise risk title
-- **Severity:** CRITICAL, HIGH, MEDIUM, or LOW (must equal the matrix result for the Likelihood and Impact below)
-- **Likelihood:** HIGH, MEDIUM, or LOW
-- **Impact:** HIGH, MEDIUM, or LOW
-- **Confidence:** CONFIRMED, PARTIAL, or INSUFFICIENT
-- **Category:** INTERNET_EXPOSURE or SECURITY_CONFIGURATION
-- **Affected instances:** each instance formatted as `i-instanceid` (Name or Unnamed), comma-separated
-- **Evidence:** one to three concise, fact-specific sentences.
-- **Why it matters:** one or two concise sentences on the concrete impact.
-- **Remediation:** one or two concise sentences with a specific fix and acceptable end state.
-
-Number the finding headings sequentially (### 1., ### 2., ...), ordered most to least severe
-(CRITICAL, then HIGH, MEDIUM, LOW), at most 10 blocks.
-
-Every instance ID you cite must be one supplied in the input; never invent an ID. If no instance
-presents a noteworthy risk, still return the Account Risk Summary and the "## Top Findings" heading
-with no finding blocks. Do not return a table, JSON, extra headings, or a separate block for every
-instance.
 """
 
 
+# Every identifier a finding may cite.
+def identifiers(facts: dict[str, Any]) -> set[str]:
+    return {instance["instance_id"] for instance in facts.get("instances", [])}
+
+
 # Build the per-request system prompt with the instance count and, when supplied, account intent.
-def build_system_prompt(instances: list[dict[str, Any]], intent: str | None = None) -> str:
-    count = len(instances)
-    prompt = (
-        SYSTEM_PROMPT.replace("{SEVERITY_MODEL}", severity.SEVERITY_MODEL_PROMPT)
-        + f"\nThe input contains {count} instances. Return at most {MAX_FINDINGS} findings, "
-        "grouping instances that share a root cause, and cite only instance IDs present in the input."
-    )
-    if intent:
-        prompt += bedrock.build_intent_section(intent)
-    return prompt
+def build_system_prompt(facts: dict[str, Any], intent: str | None = None) -> str:
+    counts = f"{len(facts.get('instances', []))} instances"
+    return findings.build_system_prompt(SPEC, GUIDANCE, counts, intent)
 
 
-# Text of one labeled field in a finding block.
-def finding_field(block: str, label: str) -> str | None:
-    pattern = rf"- \*\*{re.escape(label)}:\*\*\s*(.*?)(?=\n\s*- \*\*|\Z)"
-    match = re.search(pattern, block, re.DOTALL)
-    return match.group(1).strip() if match else None
-
-
-# Enum value following a bold label in a finding block.
-def enum_value(block: str, label: str) -> str | None:
-    match = re.search(rf"\*\*{re.escape(label)}:\*\*\s*`?([A-Z_]+)`?", block)
-    return match.group(1) if match else None
-
-
-# Split into (title, block) pairs, one per finding heading.
-def split_findings(text: str) -> list[tuple[str, str]]:
-    findings: list[tuple[str, str]] = []
-    title: str | None = None
-    body: list[str] = []
-    for line in text.splitlines():
-        heading = FINDING_HEADING_PATTERN.match(line.strip())
-        if heading:
-            if title is not None:
-                findings.append((title, "\n".join(body)))
-            title = heading.group(1).strip()
-            body = []
-        elif title is not None:
-            body.append(line)
-    if title is not None:
-        findings.append((title, "\n".join(body)))
-    return findings
-
-
-# Validate sections, findings, fields, enums, and instance IDs; raise on any defect.
-def validate(text: str, instances: list[dict[str, Any]]) -> None:
-    valid_ids = {instance["instance_id"] for instance in instances}
-    details: list[str] = []
-
-    for section in ("# EC2 Security Review", "## Top Findings"):
-        if text.count(section) != 1:
-            details.append(f"missing or repeated section: {section}")
-
-    findings = split_findings(text)
-    if len(findings) > MAX_FINDINGS:
-        details.append(f"returned {len(findings)} findings, more than the {MAX_FINDINGS} allowed")
-
-    unknown_ids: set[str] = set()
-    for position, (title, block) in enumerate(findings, start=1):
-        if not title:
-            details.append(f"finding {position} has an empty title")
-
-        missing = [label for label in FINDING_LABELS if block.count(label) != 1]
-        if missing:
-            details.append(
-                f"finding {position} has missing or duplicated fields: " + ", ".join(missing)
-            )
-
-        severity_value = enum_value(block, "Severity")
-        if severity_value not in severity.SEVERITIES:
-            details.append(f"finding {position} has an invalid Severity: {severity_value or 'missing'}")
-        likelihood = enum_value(block, "Likelihood")
-        if likelihood not in severity.LIKELIHOODS:
-            details.append(f"finding {position} has an invalid Likelihood: {likelihood or 'missing'}")
-        impact = enum_value(block, "Impact")
-        if impact not in severity.IMPACTS:
-            details.append(f"finding {position} has an invalid Impact: {impact or 'missing'}")
-        confidence = enum_value(block, "Confidence")
-        if confidence not in severity.CONFIDENCE:
-            details.append(f"finding {position} has an invalid Confidence: {confidence or 'missing'}")
-        expected = severity.derive_severity(likelihood, impact)
-        if expected is not None and severity_value != expected:
-            details.append(
-                f"finding {position} Severity {severity_value} does not match the matrix result "
-                f"{expected} for Likelihood {likelihood} x Impact {impact}"
-            )
-        category = enum_value(block, "Category")
-        if category not in CATEGORIES:
-            details.append(f"finding {position} has an invalid Category: {category or 'missing'}")
-
-        affected = finding_field(block, "Affected instances") or ""
-        referenced = INSTANCE_ID_PATTERN.findall(affected)
-        if not referenced:
-            details.append(f"finding {position} names no affected instance ID")
-        unknown_ids.update(identifier for identifier in referenced if identifier not in valid_ids)
-
-    if unknown_ids:
-        details.append("findings cite instance IDs not in the input: " + ", ".join(sorted(unknown_ids)))
-
-    if "No non-terminated instances found" in text:
-        details.append("contradictory no-instances message")
-
-    if details:
-        raise ValueError("Bedrock returned an incomplete review (" + "; ".join(details) + ").")
+# Validate the review structure and that every cited instance exists; raise on any defect.
+def validate(text: str, facts: dict[str, Any]) -> None:
+    findings.validate_review(text, SPEC, identifiers(facts))

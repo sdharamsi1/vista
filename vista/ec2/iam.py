@@ -6,7 +6,7 @@ import json
 from typing import Any
 from urllib.parse import unquote
 
-from vista.ec2.inventory import isoformat
+from vista.facts import isoformat
 
 SOURCE_APIS = [
     "iam:GetInstanceProfile",
