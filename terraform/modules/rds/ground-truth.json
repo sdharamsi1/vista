@@ -1,0 +1,335 @@
+{
+  "service": "rds",
+  "scoring": "Match findings to scenarios by the identifier in terraform output scenario_resources: the snapshot identifier for rds-05, the proxy name for rds-07, and the instance identifier otherwise. Score each scenario against the highest-severity finding that cites it, or NONE if no finding cites it. A scenario passes when that result is in acceptable_severities and, if cited, the finding's category is expected.category or in acceptable_categories. NONE on a scenario that does not accept NONE is a false negative; a rating above acceptable_severities on an expected or minor scenario is a false positive. When deferral_acceptable is true, PARTIAL or INSUFFICIENT confidence counts as an appropriate deferral.",
+  "rating_method": "Likelihood follows CCSS (NIST IR 7502) exploitability concepts aligned with Vista's definitions: HIGH when reachable from the Internet and usable without credentials; MEDIUM when one precondition must hold first (a credential or API key, a foothold inside the network, an application flaw, or compromise of the resource); LOW when prior account-level access is needed or the issue is defense in depth only. Impact follows CCSS confidentiality, integrity, and availability impact, widened by the mapped ATT&CK technique's outcome: HIGH for account-wide reach, privilege escalation, or full read/write/delete of data; MEDIUM when confined to the resource or one data store; LOW for minor or visibility-only impact. Severity comes from Vista's likelihood x impact matrix. fsbp_reference_severity is the highest published FSBP severity among controls that fail because of the scenario's change (controls that fail on every resource are listed in baseline_controls and excluded). acceptable_severities is the expected severity plus one adjacent level: toward the FSBP reference when one exists and differs, otherwise toward the axis the rationale marks as uncertain. Expected scenarios accept NONE and LOW; ambiguous scenarios accept one level on each side plus deferral. A context_override means documented context removes the attack path FSBP assumes, so the range moves at most one level toward the reference.",
+  "action_method": "expected_action is what a person should do about the scenario: REMEDIATE for dangerous and minor, REVIEW for ambiguous, NO_ACTION for expected. It is derived from kind, not rated separately. Severity and action are scored independently.",
+  "framework_sources": {
+    "fsbp": "https://docs.aws.amazon.com/securityhub/latest/userguide/fsbp-standard.html",
+    "attack": "https://attack.mitre.org/matrices/enterprise/cloud/iaas/",
+    "owasp_api": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
+    "ccss": "https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nistir7502.pdf"
+  },
+  "baseline_controls": {
+    "note": "Fail regardless of scenario; excluded from per-scenario references. Deletion protection is off on every database so terraform destroy works in one step; a grouped LOW finding for it is within range for every scenario, but a grouped MEDIUM would push rds-06 out of range.",
+    "controls": [
+      {
+        "control": "RDS.5",
+        "severity": "MEDIUM",
+        "scope": "Not Multi-AZ"
+      },
+      {
+        "control": "RDS.26",
+        "severity": "MEDIUM",
+        "scope": "Not in an AWS Backup plan"
+      },
+      {
+        "control": "RDS.6",
+        "severity": "LOW",
+        "scope": "No enhanced monitoring"
+      },
+      {
+        "control": "RDS.8",
+        "severity": "LOW",
+        "scope": "Deletion protection off"
+      },
+      {
+        "control": "RDS.23",
+        "severity": "LOW",
+        "scope": "Default engine port"
+      }
+    ]
+  },
+  "kinds": {
+    "dangerous": "A real weakness Vista must report within the acceptable range.",
+    "ambiguous": "Defensible either way; the model should explain the tradeoff or defer. NONE and over-rating are both wrong.",
+    "expected": "A correctly configured resource; NONE or a LOW hygiene note.",
+    "minor": "A small, real gap; LOW or no finding."
+  },
+  "change_log": [
+    {
+      "date": "2026-10-14",
+      "change": "Added expected_action to every scenario.",
+      "reason": "The research question asks Vista to separate resources needing remediation from expected configurations and cases needing human review. The review format previously had no way to say the last two, so Vista now emits a Recommended action field and the ground truth records the matching answer."
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "rds-01",
+      "tier": "controlled",
+      "kind": "dangerous",
+      "resource": "analytics-db",
+      "title": "Private instance with unencrypted storage",
+      "expected": {
+        "category": "SECURITY_CONFIGURATION",
+        "likelihood": "LOW",
+        "impact": "MEDIUM",
+        "severity": "LOW"
+      },
+      "acceptable_severities": [
+        "LOW",
+        "MEDIUM"
+      ],
+      "rationale": "publicly_accessible is false and no security group rule exists, so there is no network path; reading unencrypted storage or its backups needs prior account access.",
+      "framework_mappings": {
+        "fsbp": [
+          {
+            "control": "RDS.3",
+            "severity": "MEDIUM"
+          }
+        ],
+        "fsbp_reference_severity": "MEDIUM",
+        "attack": [
+          "T1578.001"
+        ],
+        "context_override": null
+      },
+      "expected_action": "REMEDIATE"
+    },
+    {
+      "id": "rds-02",
+      "tier": "controlled",
+      "kind": "dangerous",
+      "resource": "billing-db",
+      "title": "Private instance that does not enforce TLS",
+      "expected": {
+        "category": "SECURITY_CONFIGURATION",
+        "likelihood": "MEDIUM",
+        "impact": "MEDIUM",
+        "severity": "MEDIUM"
+      },
+      "acceptable_severities": [
+        "LOW",
+        "MEDIUM"
+      ],
+      "rationale": "rds.force_ssl is 0, so clients can connect without encryption and credentials or data can be read in transit; exploiting it needs a network position inside the VPC first.",
+      "framework_mappings": {
+        "fsbp": [],
+        "fsbp_reference_severity": null,
+        "attack": [
+          "T1040"
+        ],
+        "context_override": null,
+        "note": "No FSBP control covers rds.force_ssl."
+      },
+      "expected_action": "REMEDIATE"
+    },
+    {
+      "id": "rds-03",
+      "tier": "controlled",
+      "kind": "dangerous",
+      "resource": "events-db",
+      "title": "Private instance with an associated role that writes to the exports bucket",
+      "expected": {
+        "category": "SECURITY_CONFIGURATION",
+        "likelihood": "MEDIUM",
+        "impact": "MEDIUM",
+        "severity": "MEDIUM"
+      },
+      "acceptable_severities": [
+        "LOW",
+        "MEDIUM"
+      ],
+      "rationale": "The s3Export role lets anyone who can run SQL copy data out to S3, but the instance is private and the role is limited to one bucket. Vista sees only the role ARN and feature, not the policy, so it may rate this lower.",
+      "framework_mappings": {
+        "fsbp": [],
+        "fsbp_reference_severity": null,
+        "attack": [],
+        "context_override": null
+      },
+      "expected_action": "REMEDIATE"
+    },
+    {
+      "id": "rds-04",
+      "tier": "controlled",
+      "kind": "dangerous",
+      "resource": "crm-db",
+      "title": "Public instance with port 5432 open to 0.0.0.0/0",
+      "expected": {
+        "category": "PUBLIC_EXPOSURE",
+        "likelihood": "HIGH",
+        "impact": "MEDIUM",
+        "severity": "HIGH"
+      },
+      "acceptable_severities": [
+        "HIGH",
+        "CRITICAL"
+      ],
+      "rationale": "publicly_accessible is true, the security group allows 5432 from anywhere, the subnet routes to an Internet gateway, and the NACL allows it; logging in still needs the Secrets Manager password or an IAM token.",
+      "framework_mappings": {
+        "fsbp": [
+          {
+            "control": "RDS.2",
+            "severity": "CRITICAL"
+          },
+          {
+            "control": "EC2.19",
+            "severity": "CRITICAL"
+          }
+        ],
+        "fsbp_reference_severity": "CRITICAL",
+        "attack": [
+          "T1110"
+        ],
+        "context_override": null
+      },
+      "expected_action": "REMEDIATE"
+    },
+    {
+      "id": "rds-05",
+      "tier": "controlled",
+      "kind": "dangerous",
+      "resource": "staging-db-pre-migration",
+      "title": "Unencrypted manual snapshot shared with all AWS accounts",
+      "expected": {
+        "category": "PUBLIC_EXPOSURE",
+        "likelihood": "HIGH",
+        "impact": "HIGH",
+        "severity": "CRITICAL"
+      },
+      "acceptable_severities": [
+        "HIGH",
+        "CRITICAL"
+      ],
+      "rationale": "shared_with contains all on an unencrypted snapshot, so any AWS account can restore it and read all of its data. The source instance is private; the finding is about the snapshot.",
+      "framework_mappings": {
+        "fsbp": [
+          {
+            "control": "RDS.1",
+            "severity": "CRITICAL"
+          },
+          {
+            "control": "RDS.4",
+            "severity": "MEDIUM"
+          }
+        ],
+        "fsbp_reference_severity": "CRITICAL",
+        "attack": [
+          "T1537"
+        ],
+        "context_override": null
+      },
+      "expected_action": "REMEDIATE"
+    },
+    {
+      "id": "rds-06",
+      "tier": "realistic",
+      "kind": "expected",
+      "resource": "orders-db",
+      "title": "Hardened orders database reachable only through its proxy",
+      "expected": null,
+      "acceptable_severities": [
+        "NONE",
+        "LOW"
+      ],
+      "rationale": "Private, customer-managed KMS, TLS enforced, IAM and Secrets Manager authentication, backups, and log exports; its only inbound rule is from the proxy's security group. Deletion protection is off (see baseline_note). Problems with the proxy belong to rds-07, not this instance.",
+      "framework_mappings": {
+        "fsbp": [],
+        "fsbp_reference_severity": null,
+        "attack": [],
+        "context_override": null
+      },
+      "expected_action": "NO_ACTION"
+    },
+    {
+      "id": "rds-07",
+      "tier": "realistic",
+      "kind": "dangerous",
+      "resource": "orders-db-proxy",
+      "title": "RDS Proxy with debug logging left on and TLS optional",
+      "expected": {
+        "category": "SECURITY_CONFIGURATION",
+        "likelihood": "MEDIUM",
+        "impact": "MEDIUM",
+        "severity": "MEDIUM"
+      },
+      "acceptable_severities": [
+        "LOW",
+        "MEDIUM"
+      ],
+      "rationale": "debug_logging true writes SQL statements to CloudWatch Logs, and require_tls false lets clients connect in plaintext; the proxy is VPC-only, so both need internal access first.",
+      "framework_mappings": {
+        "fsbp": [],
+        "fsbp_reference_severity": null,
+        "attack": [
+          "T1040"
+        ],
+        "context_override": null,
+        "note": "No RDS Proxy control appears in the FSBP RDS control list."
+      },
+      "expected_action": "REMEDIATE"
+    },
+    {
+      "id": "rds-08",
+      "tier": "realistic",
+      "kind": "ambiguous",
+      "resource": "bi-reporting-db",
+      "title": "Public database open to a single office IP",
+      "expected": {
+        "category": "PUBLIC_EXPOSURE",
+        "likelihood": "LOW",
+        "impact": "MEDIUM",
+        "severity": "LOW"
+      },
+      "acceptable_severities": [
+        "LOW",
+        "MEDIUM"
+      ],
+      "deferral_acceptable": true,
+      "rationale": "publicly_accessible is true with an Internet route, but 5432 is allowed only from one /32. Vista's guidance says a narrow /32 is not automatically HIGH; the model should note it and suggest a private path, not treat it as world-open.",
+      "framework_mappings": {
+        "fsbp": [
+          {
+            "control": "RDS.2",
+            "severity": "CRITICAL"
+          }
+        ],
+        "fsbp_reference_severity": "CRITICAL",
+        "attack": [
+          "T1110"
+        ],
+        "context_override": "Port 5432 is allowed from a single /32 only, so EC2.19 passes and the publicly accessible flag alone does not open the database to the Internet."
+      },
+      "expected_action": "REVIEW"
+    },
+    {
+      "id": "rds-09",
+      "tier": "realistic",
+      "kind": "dangerous",
+      "resource": "legacy-inventory-db",
+      "title": "Legacy MySQL with several compounding configuration gaps",
+      "expected": {
+        "category": "SECURITY_CONFIGURATION",
+        "likelihood": "MEDIUM",
+        "impact": "MEDIUM",
+        "severity": "MEDIUM"
+      },
+      "acceptable_severities": [
+        "MEDIUM",
+        "HIGH"
+      ],
+      "rationale": "Private, but 3306 is open to all of 10.0.0.0/8, require_secure_transport is OFF, the master password is static (no master_user_secret), IAM authentication is off, backups are kept 1 day, and no logs are exported. Each gap alone is LOW or MEDIUM; together they make credential theft in transit and unrecoverable loss plausible.",
+      "framework_mappings": {
+        "fsbp": [
+          {
+            "control": "RDS.9",
+            "severity": "MEDIUM"
+          },
+          {
+            "control": "RDS.10",
+            "severity": "MEDIUM"
+          },
+          {
+            "control": "RDS.11",
+            "severity": "MEDIUM"
+          }
+        ],
+        "fsbp_reference_severity": "MEDIUM",
+        "attack": [
+          "T1040"
+        ],
+        "context_override": null
+      },
+      "expected_action": "REMEDIATE"
+    }
+  ]
+}

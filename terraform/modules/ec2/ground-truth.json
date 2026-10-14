@@ -1,0 +1,413 @@
+{
+  "service": "ec2",
+  "scoring": "Match findings to scenarios by the instance ID in terraform output scenario_resources. Score each scenario against the highest-severity finding that cites it, or NONE if no finding cites it. A scenario passes when that result is in acceptable_severities and, if cited, the finding's category is expected.category or in acceptable_categories. NONE on a scenario that does not accept NONE is a false negative; a rating above acceptable_severities on an expected or minor scenario is a false positive. When deferral_acceptable is true, PARTIAL or INSUFFICIENT confidence counts as an appropriate deferral.",
+  "rating_method": "Likelihood follows CCSS (NIST IR 7502) exploitability concepts aligned with Vista's definitions: HIGH when reachable from the Internet and usable without credentials; MEDIUM when one precondition must hold first (a credential or API key, a foothold inside the network, an application flaw, or compromise of the resource); LOW when prior account-level access is needed or the issue is defense in depth only. Impact follows CCSS confidentiality, integrity, and availability impact, widened by the mapped ATT&CK technique's outcome: HIGH for account-wide reach, privilege escalation, or full read/write/delete of data; MEDIUM when confined to the resource or one data store; LOW for minor or visibility-only impact. Severity comes from Vista's likelihood x impact matrix. fsbp_reference_severity is the highest published FSBP severity among controls that fail because of the scenario's change (controls that fail on every resource are listed in baseline_controls and excluded). acceptable_severities is the expected severity plus one adjacent level: toward the FSBP reference when one exists and differs, otherwise toward the axis the rationale marks as uncertain. Expected scenarios accept NONE and LOW; ambiguous scenarios accept one level on each side plus deferral. A context_override means documented context removes the attack path FSBP assumes, so the range moves at most one level toward the reference.",
+  "action_method": "expected_action is what a person should do about the scenario: REMEDIATE for dangerous and minor, REVIEW for ambiguous, NO_ACTION for expected. It is derived from kind, not rated separately. Severity and action are scored independently.",
+  "framework_sources": {
+    "fsbp": "https://docs.aws.amazon.com/securityhub/latest/userguide/fsbp-standard.html",
+    "attack": "https://attack.mitre.org/matrices/enterprise/cloud/iaas/",
+    "owasp_api": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
+    "ccss": "https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nistir7502.pdf"
+  },
+  "baseline_controls": {
+    "note": "Fail regardless of scenario; excluded from per-scenario references.",
+    "controls": [
+      {
+        "control": "EC2.6",
+        "severity": "MEDIUM",
+        "scope": "VPC flow logs not enabled"
+      },
+      {
+        "control": "ELB.6",
+        "severity": "MEDIUM",
+        "scope": "Load balancer deletion protection off for one-step teardown"
+      }
+    ]
+  },
+  "kinds": {
+    "dangerous": "A real weakness Vista must report within the acceptable range.",
+    "ambiguous": "Defensible either way; the model should explain the tradeoff or defer. NONE and over-rating are both wrong.",
+    "expected": "A correctly configured resource; NONE or a LOW hygiene note.",
+    "minor": "A small, real gap; LOW or no finding."
+  },
+  "change_log": [
+    {
+      "date": "2026-10-14",
+      "change": "Added expected_action to every scenario.",
+      "reason": "The research question asks Vista to separate resources needing remediation from expected configurations and cases needing human review. The review format previously had no way to say the last two, so Vista now emits a Recommended action field and the ground truth records the matching answer."
+    },
+    {
+      "date": "2026-10-14",
+      "change": "ec2-06 reclassified from expected to ambiguous; expected rating set to MEDIUM likelihood x LOW impact = LOW; acceptable severities widened from NONE, LOW to NONE, LOW, MEDIUM; deferral accepted; expected_action REVIEW.",
+      "reason": "Pilot runs of both evaluated models and Prowler 4.2.1 all reported the internet-facing ALB path. Vista's EC2 guidance requires a confirmed public path to be reported at MEDIUM likelihood or higher. The scenario's own framework mapping lists two Medium ALB controls (ELB.5 access logs, ELB.16 WAF), and whether the tier is expected depends on approved intent that was not supplied. Revised after the pilot runs and before the benchmark; the pilot results were scored against the earlier definition."
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "ec2-01",
+      "tier": "controlled",
+      "kind": "dangerous",
+      "resource": "reporting-worker",
+      "title": "Private instance with an unencrypted root volume",
+      "expected": {
+        "category": "SECURITY_CONFIGURATION",
+        "likelihood": "LOW",
+        "impact": "MEDIUM",
+        "severity": "LOW"
+      },
+      "acceptable_severities": [
+        "LOW",
+        "MEDIUM"
+      ],
+      "rationale": "No inbound rules and no role; reading the volume needs prior account access, so this is defense in depth only.",
+      "framework_mappings": {
+        "fsbp": [
+          {
+            "control": "EC2.3",
+            "severity": "MEDIUM"
+          }
+        ],
+        "fsbp_reference_severity": "MEDIUM",
+        "attack": [
+          "T1578.001"
+        ],
+        "context_override": null
+      },
+      "expected_action": "REMEDIATE"
+    },
+    {
+      "id": "ec2-02",
+      "tier": "controlled",
+      "kind": "dangerous",
+      "resource": "marketing-site",
+      "title": "Public instance with HTTP and HTTPS open to 0.0.0.0/0",
+      "expected": {
+        "category": "INTERNET_EXPOSURE",
+        "likelihood": "MEDIUM",
+        "impact": "MEDIUM",
+        "severity": "MEDIUM"
+      },
+      "acceptable_severities": [
+        "MEDIUM",
+        "HIGH"
+      ],
+      "rationale": "Confirmed DIRECT path, but only on ordinary web ports, with IMDSv2 and no role, so the blast radius is the instance itself.",
+      "framework_mappings": {
+        "fsbp": [
+          {
+            "control": "EC2.9",
+            "severity": "HIGH"
+          }
+        ],
+        "fsbp_reference_severity": "HIGH",
+        "attack": [
+          "T1190"
+        ],
+        "context_override": null,
+        "note": "EC2.18 passes because 80 and 443 are its default authorized ports."
+      },
+      "expected_action": "REMEDIATE"
+    },
+    {
+      "id": "ec2-03",
+      "tier": "controlled",
+      "kind": "dangerous",
+      "resource": "image-resizer",
+      "title": "Private instance with IMDSv1 and a role that reads the uploads bucket",
+      "expected": {
+        "category": "SECURITY_CONFIGURATION",
+        "likelihood": "MEDIUM",
+        "impact": "MEDIUM",
+        "severity": "MEDIUM"
+      },
+      "acceptable_severities": [
+        "MEDIUM",
+        "HIGH"
+      ],
+      "rationale": "IMDSv1 lets an SSRF or local foothold steal the role credentials, but the instance is private and the role is limited to one bucket.",
+      "framework_mappings": {
+        "fsbp": [
+          {
+            "control": "EC2.8",
+            "severity": "HIGH"
+          }
+        ],
+        "fsbp_reference_severity": "HIGH",
+        "attack": [
+          "T1552.005"
+        ],
+        "context_override": null
+      },
+      "expected_action": "REMEDIATE"
+    },
+    {
+      "id": "ec2-04",
+      "tier": "controlled",
+      "kind": "dangerous",
+      "resource": "ci-runner",
+      "title": "Private CI runner whose role can attach any policy to any role",
+      "expected": {
+        "category": "SECURITY_CONFIGURATION",
+        "likelihood": "MEDIUM",
+        "impact": "HIGH",
+        "severity": "HIGH"
+      },
+      "acceptable_severities": [
+        "MEDIUM",
+        "HIGH"
+      ],
+      "rationale": "iam:AttachRolePolicy and iam:PutRolePolicy on * let the role grant itself AdministratorAccess; exploiting it needs the instance compromised first.",
+      "framework_mappings": {
+        "fsbp": [],
+        "fsbp_reference_severity": null,
+        "attack": [
+          "T1098.003",
+          "T1078.004"
+        ],
+        "context_override": null,
+        "note": "No FSBP control applies: IAM.1 evaluates customer-managed policies that grant *:*."
+      },
+      "expected_action": "REMEDIATE"
+    },
+    {
+      "id": "ec2-05",
+      "tier": "controlled",
+      "kind": "dangerous",
+      "resource": "legacy-bastion",
+      "title": "Legacy bastion with SSH open to 0.0.0.0/0 and an AdministratorAccess role",
+      "expected": {
+        "category": "INTERNET_EXPOSURE",
+        "likelihood": "HIGH",
+        "impact": "HIGH",
+        "severity": "CRITICAL"
+      },
+      "acceptable_severities": [
+        "HIGH",
+        "CRITICAL"
+      ],
+      "rationale": "Administrative port reachable from anywhere over a confirmed DIRECT path in the legacy VPC, and compromise yields full account control. The rule description calls it temporary, which does not reduce the risk.",
+      "framework_mappings": {
+        "fsbp": [
+          {
+            "control": "EC2.19",
+            "severity": "CRITICAL"
+          },
+          {
+            "control": "EC2.13",
+            "severity": "HIGH"
+          },
+          {
+            "control": "EC2.53",
+            "severity": "HIGH"
+          },
+          {
+            "control": "EC2.9",
+            "severity": "HIGH"
+          }
+        ],
+        "fsbp_reference_severity": "CRITICAL",
+        "attack": [
+          "T1110",
+          "T1021.004",
+          "T1078.004"
+        ],
+        "context_override": null
+      },
+      "expected_action": "REMEDIATE"
+    },
+    {
+      "id": "ec2-06",
+      "tier": "realistic",
+      "kind": "ambiguous",
+      "resource": "storefront-web",
+      "title": "Storefront behind an internet-facing HTTPS load balancer",
+      "expected": {
+        "category": "INTERNET_EXPOSURE",
+        "likelihood": "MEDIUM",
+        "impact": "LOW",
+        "severity": "LOW"
+      },
+      "acceptable_severities": [
+        "NONE",
+        "LOW",
+        "MEDIUM"
+      ],
+      "rationale": "The instance has no public IP, port 8080 accepts traffic only from the ALB's security group, the ALB terminates TLS 1.2+ and redirects HTTP, and IMDSv2 and encryption are on, so the configuration looks like a normal public web tier. Vista still reports a confirmed public path at MEDIUM likelihood or higher, the ALB has no WAF or access logs (FSBP ELB.16 and ELB.5, both Medium), and whether this exposure is intended depends on approved intent that is not supplied. REVIEW with LOW severity is the expected answer; NO_ACTION or MEDIUM is also defensible.",
+      "framework_mappings": {
+        "fsbp": [
+          {
+            "control": "ELB.5",
+            "severity": "MEDIUM",
+            "scope": "load balancer access logs (ALB, not the instance)"
+          },
+          {
+            "control": "ELB.16",
+            "severity": "MEDIUM",
+            "scope": "no WAF on the ALB (not the instance)"
+          }
+        ],
+        "fsbp_reference_severity": "MEDIUM",
+        "attack": [],
+        "context_override": null,
+        "note": "The instance itself passes EC2.3, EC2.8, and EC2.9; ELB.5 and ELB.16 apply to the ALB in front of it."
+      },
+      "deferral_acceptable": true,
+      "expected_action": "REVIEW"
+    },
+    {
+      "id": "ec2-07",
+      "tier": "realistic",
+      "kind": "dangerous",
+      "resource": "orders-api",
+      "title": "Internet-reachable orders API with IMDSv1 and a role that reads every secret",
+      "expected": {
+        "category": "INTERNET_EXPOSURE",
+        "likelihood": "MEDIUM",
+        "impact": "HIGH",
+        "severity": "HIGH"
+      },
+      "acceptable_severities": [
+        "MEDIUM",
+        "HIGH"
+      ],
+      "acceptable_categories": [
+        "INTERNET_EXPOSURE",
+        "SECURITY_CONFIGURATION"
+      ],
+      "rationale": "No public IP, but the Internet-facing ALB forwards /api/* to it. An SSRF in the app plus IMDSv1 would expose role credentials with secretsmanager:GetSecretValue on *, which reaches every workload's secrets. Requires an app flaw first, so Likelihood is MEDIUM; tests whether the model follows the ALB path and chains it with IMDS and IAM.",
+      "framework_mappings": {
+        "fsbp": [
+          {
+            "control": "EC2.8",
+            "severity": "HIGH"
+          },
+          {
+            "control": "ELB.16",
+            "severity": "MEDIUM",
+            "scope": "no WAF on the ALB in front of it"
+          }
+        ],
+        "fsbp_reference_severity": "HIGH",
+        "attack": [
+          "T1190",
+          "T1552.005",
+          "T1555.006"
+        ],
+        "context_override": null
+      },
+      "expected_action": "REMEDIATE"
+    },
+    {
+      "id": "ec2-08",
+      "tier": "realistic",
+      "kind": "ambiguous",
+      "resource": "admin-bastion",
+      "title": "Public bastion with SSH limited to the office network",
+      "expected": {
+        "category": "INTERNET_EXPOSURE",
+        "likelihood": "LOW",
+        "impact": "MEDIUM",
+        "severity": "LOW"
+      },
+      "acceptable_severities": [
+        "NONE",
+        "LOW",
+        "MEDIUM"
+      ],
+      "deferral_acceptable": true,
+      "rationale": "SSH is reachable only from the office CIDR (a /24), the role is the SSM core policy, and there is no key pair. A narrow, documented source is a common accepted pattern; suggesting SSM Session Manager instead is reasonable, but HIGH or CRITICAL is over-rating.",
+      "framework_mappings": {
+        "fsbp": [
+          {
+            "control": "EC2.9",
+            "severity": "HIGH"
+          }
+        ],
+        "fsbp_reference_severity": "HIGH",
+        "attack": [
+          "T1021.004"
+        ],
+        "context_override": "SSH is allowed only from the office /24, so EC2.13, EC2.19, and EC2.53 pass and the public IP alone does not give an Internet path to SSH."
+      },
+      "expected_action": "REVIEW"
+    },
+    {
+      "id": "ec2-09",
+      "tier": "realistic",
+      "kind": "expected",
+      "resource": "metrics-collector",
+      "title": "Security group opens 9100 to the world, but the subnet's network ACL denies it",
+      "expected": null,
+      "acceptable_severities": [
+        "NONE",
+        "LOW"
+      ],
+      "rationale": "The instance has a public IP and its security group allows 9100 from 0.0.0.0/0, but the ops subnet's NACL rule 90 denies TCP 9100 inbound before rule 100 allows everything else, so there is no Internet path. A LOW note on the overly broad security group is fine; MEDIUM or above means the model ignored the NACL.",
+      "framework_mappings": {
+        "fsbp": [
+          {
+            "control": "EC2.9",
+            "severity": "HIGH"
+          },
+          {
+            "control": "EC2.18",
+            "severity": "HIGH"
+          }
+        ],
+        "fsbp_reference_severity": "HIGH",
+        "attack": [],
+        "context_override": "The ops subnet's network ACL denies TCP 9100 inbound, so the security group rule FSBP flags is not reachable from the Internet."
+      },
+      "expected_action": "NO_ACTION"
+    },
+    {
+      "id": "ec2-10",
+      "tier": "realistic",
+      "kind": "dangerous",
+      "resource": "analytics-notebook",
+      "title": "Private notebook open to 10.0.0.0/8 with s3:* on every bucket",
+      "expected": {
+        "category": "SECURITY_CONFIGURATION",
+        "likelihood": "MEDIUM",
+        "impact": "HIGH",
+        "severity": "HIGH"
+      },
+      "acceptable_severities": [
+        "MEDIUM",
+        "HIGH"
+      ],
+      "rationale": "Jupyter on 8888 is open to all of 10.0.0.0/8, far wider than the VPC, and the role can read, write, and delete every bucket in the account. Not Internet-reachable, so it needs an internal foothold first.",
+      "framework_mappings": {
+        "fsbp": [],
+        "fsbp_reference_severity": null,
+        "attack": [
+          "T1530",
+          "T1485"
+        ],
+        "context_override": null,
+        "note": "No FSBP control applies: EC2.19 checks 0.0.0.0/0 only, and IAM.21 skips inline policies."
+      },
+      "expected_action": "REMEDIATE"
+    },
+    {
+      "id": "ec2-11",
+      "tier": "realistic",
+      "kind": "expected",
+      "resource": "queue-worker",
+      "title": "Private queue worker scoped to one SQS queue",
+      "expected": null,
+      "acceptable_severities": [
+        "NONE",
+        "LOW"
+      ],
+      "rationale": "No public IP, only the VPC-internal monitoring security group, IMDSv2, encrypted, and a role limited to receive and delete on one queue plus the SSM core policy.",
+      "framework_mappings": {
+        "fsbp": [],
+        "fsbp_reference_severity": null,
+        "attack": [],
+        "context_override": null
+      },
+      "expected_action": "NO_ACTION"
+    }
+  ]
+}
