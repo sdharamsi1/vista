@@ -59,6 +59,7 @@ OUTPUT_FORMAT = """Return only the following Markdown, and nothing else:
 - **Impact:** HIGH, MEDIUM, or LOW
 - **Confidence:** CONFIRMED, PARTIAL, or INSUFFICIENT
 - **Category:** {categories}
+- **Recommended action:** REMEDIATE, REVIEW, or NO_ACTION
 - **{affected_label}:** {affected_format}, comma-separated
 - **Evidence:** one to three concise, fact-specific sentences.
 - **Why it matters:** one or two concise sentences on the concrete impact.
@@ -66,6 +67,15 @@ OUTPUT_FORMAT = """Return only the following Markdown, and nothing else:
 
 Number the finding headings sequentially (### 1., ### 2., ...), ordered most to least severe
 (CRITICAL, then HIGH, MEDIUM, LOW), at most {max_findings} blocks.
+
+Recommended action says what a person should do, separately from Severity:
+- REMEDIATE: the evidence shows a weakness that should be changed.
+- REVIEW: a person must decide before anything changes, because the evidence is incomplete, the
+  right answer depends on approved intent or application behavior the data does not show, or the
+  configuration is defensible either way.
+- NO_ACTION: the configuration matches normal design for this kind of resource and nothing needs
+  to change; it is listed only to keep a notable path or setting visible. Never use NO_ACTION to
+  downgrade a real weakness.
 
 In {affected_label}, put only identifiers inside backticks. Every identifier you cite must be one
 supplied in the input; never invent one. If no {noun} presents a noteworthy risk, still return the
@@ -134,7 +144,7 @@ def split_findings(text: str) -> list[tuple[str, str]]:
 def validate_review(text: str, spec: ReviewSpec, valid_ids: Iterable[str]) -> None:
     valid = set(valid_ids)
     labels = (
-        "Severity", "Likelihood", "Impact", "Confidence", "Category",
+        "Severity", "Likelihood", "Impact", "Confidence", "Category", "Recommended action",
         spec.affected_label, "Evidence", "Why it matters", "Remediation",
     )
     allowed = {
@@ -143,6 +153,7 @@ def validate_review(text: str, spec: ReviewSpec, valid_ids: Iterable[str]) -> No
         "Impact": severity.IMPACTS,
         "Confidence": severity.CONFIDENCE,
         "Category": set(spec.categories),
+        "Recommended action": severity.ACTIONS,
     }
     details: list[str] = []
 

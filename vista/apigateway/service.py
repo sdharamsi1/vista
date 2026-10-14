@@ -46,7 +46,8 @@ def count(facts: dict[str, Any]) -> int:
     return len(facts.get("apis", []))
 
 
-# Run the Bedrock review for the merged API Gateway facts. Returns (markdown, usage).
+# Run the Bedrock review for the merged API Gateway facts. Returns (markdown, usage). prepared=True means facts is an
+# already-normalized payload saved by an earlier run, so it is sent as-is instead of normalized again.
 def analyze(
     session: Any,
     bedrock_region: str,
@@ -54,8 +55,9 @@ def analyze(
     facts: dict[str, Any],
     json_path: Path | None = None,
     intent: str | None = None,
+    prepared: bool = False,
 ) -> tuple[str, dict[str, int]]:
+    payload = facts if prepared else normalize(facts)
     return findings.run_review(
-        session, bedrock_region, model_id, review, facts, normalize(facts), count(facts),
-        json_path, intent,
+        session, bedrock_region, model_id, review, facts, payload, count(facts), json_path, intent
     )

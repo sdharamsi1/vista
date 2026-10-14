@@ -6,6 +6,8 @@ LIKELIHOODS = {"LOW", "MEDIUM", "HIGH"}
 IMPACTS = {"LOW", "MEDIUM", "HIGH"}
 SEVERITIES = {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
 CONFIDENCE = {"CONFIRMED", "PARTIAL", "INSUFFICIENT"}
+# What a person should do about a finding, separate from how severe it is.
+ACTIONS = {"REMEDIATE", "REVIEW", "NO_ACTION"}
 
 # Severity from Likelihood (outer key) x Impact (inner key).
 SEVERITY_MATRIX = {

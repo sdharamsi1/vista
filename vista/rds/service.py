@@ -54,7 +54,8 @@ def count(facts: dict[str, Any]) -> int:
     return sum(len(facts.get(kind, [])) for kind in RESOURCE_KINDS)
 
 
-# Run the Bedrock review for the merged RDS facts. Returns (markdown, usage).
+# Run the Bedrock review for the merged RDS facts. Returns (markdown, usage). RDS has nothing to
+# normalize, so prepared is accepted for the shared service interface and has no effect.
 def analyze(
     session: Any,
     bedrock_region: str,
@@ -62,6 +63,7 @@ def analyze(
     facts: dict[str, Any],
     json_path: Path | None = None,
     intent: str | None = None,
+    prepared: bool = False,
 ) -> tuple[str, dict[str, int]]:
     return findings.run_review(
         session, bedrock_region, model_id, review, facts, facts, count(facts), json_path, intent

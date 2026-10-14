@@ -36,6 +36,9 @@ def _extract_route_table(
 ) -> tuple[str | None, str | None]:
     if not table:
         return None, None
+    # Work on a copy: the collector hands the same dict to every interface in a subnet, so popping
+    # association_type from it would strip that field from every later interface.
+    table = dict(table)
     association_type = table.pop("association_type", None)
     _put(shared["route_tables"], table.get("route_table_id"), table)
     return table.get("route_table_id"), association_type
@@ -55,9 +58,11 @@ def _extract_load_balancer(shared: dict[str, dict], load_balancer: dict[str, Any
     for group in load_balancer.pop("security_groups", []) or []:
         _put(shared["security_groups"], group.get("group_id"), group)
     for entry in load_balancer.get("subnet_route_tables", []):
-        route_table_id, association_type = _extract_route_table(
-            shared, entry.pop("route_table", None)
-        )
+        # Every instance behind the same load balancer reaches this same dict, so only the first
+        # visit still has "route_table"; later visits must keep the IDs it already recorded.
+        if "route_table" not in entry:
+            continue
+        route_table_id, association_type = _extract_route_table(shared, entry.pop("route_table"))
         entry["route_table_id"] = route_table_id
         entry["route_table_association_type"] = association_type
 

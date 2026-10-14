@@ -62,13 +62,41 @@ flags are:
 
 - `service` — positional, one of `ec2`, `s3`, `apigateway`, or `rds`.
 - `--regions REGION [REGION ...]` — one or more regions to scan.
-- `--all-regions` — scan every region enabled for the account (mutually exclusive with
-  `--regions`; exactly one is required).
+- `--all-regions` — scan every region enabled for the account.
+- `--from-json PATH` — skip AWS collection and review a payload saved earlier (see
+  [Repeatable runs](#repeatable-runs)).
 - `--model MODEL_ID` — Bedrock model or inference-profile ID (or set `BEDROCK_MODEL_ID`).
 - `--profile NAME` — use a named AWS profile instead of the default credential chain.
 - `--intent PATH` — a text file describing the account's purpose and justification (see below).
 - `--save-json PATH` — write the exact factual JSON sent to Bedrock to a private (0600) file.
+- `--save-run DIR` — save the whole run to a directory (see [Repeatable runs](#repeatable-runs)).
 - `--plain` — print the model's raw Markdown without terminal formatting.
+
+Exactly one of `--regions`, `--all-regions`, or `--from-json` is required.
+
+### Repeatable runs
+
+To compare models, or measure how much one model varies, send the same evidence more than once.
+`--save-run DIR` writes three private (0600) files and never overwrites an earlier run:
+
+- `payload.json` — the exact JSON sent to Bedrock (live runs only).
+- `analysis.md` — the model's raw Markdown review, before any terminal formatting.
+- `run.json` — the model, Bedrock region, time, token usage, resource count, and SHA-256 hashes of
+  the payload and intent. A review that fails validation is recorded here with its error.
+
+`--from-json` then reviews a saved payload without touching AWS, so the evidence is identical
+across runs and the resources can be destroyed in the meantime. It still needs AWS credentials
+for Bedrock, and `--intent` can be supplied again because intent is not part of the payload.
+
+```bash
+vista assess ec2 --regions us-east-1 --model us.anthropic.claude-opus-5 --save-run runs/ec2/opus/1
+vista assess ec2 --from-json runs/ec2/opus/1/payload.json --model us.anthropic.claude-opus-5 --save-run runs/ec2/opus/2
+vista assess ec2 --from-json runs/ec2/opus/1/payload.json --model us.openai.gpt-5.6-sol --save-run runs/ec2/gpt/1
+```
+
+Use a new directory for every run. Run directories can contain account IDs, ARNs, and policies,
+so keep them out of version control. Vista does not set a temperature, so models use their own
+defaults, and the same payload can still produce different reviews.
 
 ### Account intent
 
@@ -174,9 +202,17 @@ Anything denied is recorded per resource under `collection_errors` rather than a
 ## Output
 
 Vista prints an account-level review: a short risk summary followed by up to ten findings ordered
-by severity. Each finding lists its severity, likelihood, impact, confidence, category, the affected
-resources, the supporting evidence, why it matters, and a concrete remediation step. Resources that
-share a root cause are grouped into a single finding.
+by severity. Each finding lists its severity, likelihood, impact, confidence, category, recommended
+action, the affected resources, the supporting evidence, why it matters, and a concrete remediation
+step. Resources that share a root cause are grouped into a single finding.
+
+The recommended action is separate from severity and says what a person should do:
+
+- `REMEDIATE` — the evidence shows a weakness that should be changed.
+- `REVIEW` — a person must decide first: the evidence is incomplete, the right answer depends on
+  approved intent or application behavior the data does not show, or it is defensible either way.
+- `NO_ACTION` — the configuration matches normal design for that kind of resource; it is listed only
+  to keep a notable path or setting visible.
 
 Every service uses the same review format and validation; only the category names differ:
 

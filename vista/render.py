@@ -24,7 +24,7 @@ HEADING_PATTERN = re.compile(r"^#\s+(?P<title>.+?Security Review)\s*$")
 SECTION_PATTERN = re.compile(r"^##\s+(?P<name>.+)$")
 FINDING_PATTERN = re.compile(r"^###\s+(?P<title>.+)$")
 FIELD_PATTERN = re.compile(
-    r"^\s*- \*\*(?P<label>Severity|Likelihood|Impact|Confidence|Category|Affected [A-Za-z]+|"
+    r"^\s*- \*\*(?P<label>Severity|Likelihood|Impact|Confidence|Category|Recommended action|Affected [A-Za-z]+|"
     r"Evidence|Why it matters|Remediation):\*\*\s*(?P<value>.*)$"
 )
 SEVERITY_STYLES = {
@@ -42,6 +42,11 @@ CONFIDENCE_STYLES = {
     "CONFIRMED": ("●", GREEN),
     "PARTIAL": ("◐", YELLOW),
     "INSUFFICIENT": ("?", MAGENTA),
+}
+ACTION_STYLES = {
+    "REMEDIATE": ("▲", RED),
+    "REVIEW": ("?", YELLOW),
+    "NO_ACTION": ("·", BLUE),
 }
 CATEGORY_STYLES = {
     "INTERNET_EXPOSURE": ("●", YELLOW),
@@ -244,6 +249,7 @@ def _render_finding(
     impact = _plain(fields.get("Impact", ""))
     confidence = _plain(fields.get("Confidence", ""))
     category = _plain(fields.get("Category", ""))
+    action = _plain(fields.get("Recommended action", ""))
 
     title = finding["title"]
     if not re.match(r"^\d+\.", title):
@@ -263,6 +269,8 @@ def _render_finding(
         lines.append(_status_row("Confidence", confidence, CONFIDENCE_STYLES, use_color))
     if category:
         lines.append(_status_row("Category", category, CATEGORY_STYLES, use_color))
+    if action:
+        lines.append(_status_row("Action", action, ACTION_STYLES, use_color))
 
     affected_label = next(
         (key for key in fields if key.startswith("Affected")), "Affected resources"

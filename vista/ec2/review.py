@@ -68,8 +68,10 @@ finding on their own.
 For EC2 specifically: treat a confirmed public network path (DIRECT, LOAD_BALANCER, or BOTH) as at
 least MEDIUM Likelihood, and HIGH when it reaches SSH, RDP, administrative, or database ports from a
 broad source; ordinary public web ports, a narrow public /32 source, or an OIDC-protected ALB are
-not automatically HIGH Likelihood. Never report a public path as requiring no action. Supplied
-approved intent may lower a path's Likelihood, but only with the reason stated.
+not automatically HIGH Likelihood. Always report a confirmed public path so it stays visible; its
+Recommended action may be REVIEW or NO_ACTION when the evidence shows the path is consistent with
+normal design or supplied approved intent explains it. Supplied approved intent may lower a path's
+Likelihood and change its Recommended action, but only with the reason stated.
 
 Assign each finding a Category: INTERNET_EXPOSURE when the dominant risk is a public network path,
 SECURITY_CONFIGURATION when it is an IAM, IMDS, storage, or lifecycle weakness.
