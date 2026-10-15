@@ -212,7 +212,8 @@ The recommended action is separate from severity and says what a person should d
 - `REVIEW` — a person must decide first: the evidence is incomplete, the right answer depends on
   approved intent or application behavior the data does not show, or it is defensible either way.
 - `NO_ACTION` — the configuration matches normal design for that kind of resource; it is listed only
-  to keep a notable path or setting visible.
+  to keep a notable path or setting visible. It requires `LOW` severity, and it is justified from the
+  configuration, never from intent that was not supplied.
 
 Every service uses the same review format and validation; only the category names differ:
 

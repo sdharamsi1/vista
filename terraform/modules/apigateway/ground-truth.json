@@ -2,7 +2,7 @@
   "service": "apigateway",
   "scoring": "Match findings to scenarios by the API ID in terraform output scenario_resources. Score each scenario against the highest-severity finding that cites it, or NONE if no finding cites it. A scenario passes when that result is in acceptable_severities and, if cited, the finding's category is expected.category or in acceptable_categories. NONE on a scenario that does not accept NONE is a false negative; a rating above acceptable_severities on an expected or minor scenario is a false positive. When deferral_acceptable is true, PARTIAL or INSUFFICIENT confidence counts as an appropriate deferral.",
   "rating_method": "Likelihood follows CCSS (NIST IR 7502) exploitability concepts aligned with Vista's definitions: HIGH when reachable from the Internet and usable without credentials; MEDIUM when one precondition must hold first (a credential or API key, a foothold inside the network, an application flaw, or compromise of the resource); LOW when prior account-level access is needed or the issue is defense in depth only. Impact follows CCSS confidentiality, integrity, and availability impact, widened by the mapped ATT&CK technique's outcome: HIGH for account-wide reach, privilege escalation, or full read/write/delete of data; MEDIUM when confined to the resource or one data store; LOW for minor or visibility-only impact. Severity comes from Vista's likelihood x impact matrix. fsbp_reference_severity is the highest published FSBP severity among controls that fail because of the scenario's change (controls that fail on every resource are listed in baseline_controls and excluded). acceptable_severities is the expected severity plus one adjacent level: toward the FSBP reference when one exists and differs, otherwise toward the axis the rationale marks as uncertain. Expected scenarios accept NONE and LOW; ambiguous scenarios accept one level on each side plus deferral. A context_override means documented context removes the attack path FSBP assumes, so the range moves at most one level toward the reference.",
-  "action_method": "expected_action is what a person should do about the scenario: REMEDIATE for dangerous and minor, REVIEW for ambiguous, NO_ACTION for expected. It is derived from kind, not rated separately. Severity and action are scored independently.",
+  "action_method": "expected_action is what a person should do about the scenario: REMEDIATE for dangerous and minor, REVIEW for ambiguous, NO_ACTION for expected. It is derived from kind, not rated separately. acceptable_actions lists every action that counts as a tolerant match, derived by four rules: (1) expected_action is always accepted; (2) if NONE is an acceptable severity, NO_ACTION is accepted, because not reporting a resource is the same as recommending no action; (3) for an expected scenario, REMEDIATE is also accepted when the finding's severity is LOW, since a LOW hygiene note is allowed; (4) REVIEW is also accepted for ec2-02, whose planted flaw is ordinary public web hosting, because whether that is intended depends on information the data cannot show. Report both strict (expected_action) and tolerant (acceptable_actions) results. Severity and action are scored independently.",
   "framework_sources": {
     "fsbp": "https://docs.aws.amazon.com/securityhub/latest/userguide/fsbp-standard.html",
     "attack": "https://attack.mitre.org/matrices/enterprise/cloud/iaas/",
@@ -35,6 +35,11 @@
       "date": "2026-10-14",
       "change": "Added expected_action to every scenario.",
       "reason": "The research question asks Vista to separate resources needing remediation from expected configurations and cases needing human review. The review format previously had no way to say the last two, so Vista now emits a Recommended action field and the ground truth records the matching answer."
+    },
+    {
+      "date": "2026-10-14",
+      "change": "Added acceptable_actions to every scenario, and an action_method describing how it is derived.",
+      "reason": "Action-field pilot runs showed that deriving expected_action from kind alone is too coarse: both evaluated models gave the public marketing site (ec2-02) REVIEW rather than REMEDIATE, and one gave the NACL-blocked port (ec2-09) a LOW REMEDIATE that Vista's own guidance supports. The tolerant list is made after seeing the pilot outputs and before the benchmark; strict expected_action is unchanged and both are reported."
     }
   ],
   "scenarios": [
@@ -65,7 +70,10 @@
         "context_override": null,
         "note": "APIGateway.9 covers HTTP and WebSocket stages only; APIGateway.1 (execution logging) passes."
       },
-      "expected_action": "REMEDIATE"
+      "expected_action": "REMEDIATE",
+      "acceptable_actions": [
+        "REMEDIATE"
+      ]
     },
     {
       "id": "apigw-02",
@@ -94,7 +102,10 @@
         "context_override": null,
         "note": "APIGateway.1 passes; no FSBP control covers dataTraceEnabled."
       },
-      "expected_action": "REMEDIATE"
+      "expected_action": "REMEDIATE",
+      "acceptable_actions": [
+        "REMEDIATE"
+      ]
     },
     {
       "id": "apigw-03",
@@ -129,7 +140,10 @@
         ],
         "context_override": null
       },
-      "expected_action": "REMEDIATE"
+      "expected_action": "REMEDIATE",
+      "acceptable_actions": [
+        "REMEDIATE"
+      ]
     },
     {
       "id": "apigw-04",
@@ -158,7 +172,10 @@
         "context_override": null,
         "note": "APIGateway.8 covers HTTP and WebSocket routes only. CRITICAL is accepted because Vista may group this with apigw-05, which has the same root cause."
       },
-      "expected_action": "REMEDIATE"
+      "expected_action": "REMEDIATE",
+      "acceptable_actions": [
+        "REMEDIATE"
+      ]
     },
     {
       "id": "apigw-05",
@@ -190,7 +207,10 @@
         ],
         "context_override": null
       },
-      "expected_action": "REMEDIATE"
+      "expected_action": "REMEDIATE",
+      "acceptable_actions": [
+        "REMEDIATE"
+      ]
     },
     {
       "id": "apigw-06",
@@ -211,7 +231,11 @@
         "owasp_api": [],
         "context_override": null
       },
-      "expected_action": "NO_ACTION"
+      "expected_action": "NO_ACTION",
+      "acceptable_actions": [
+        "NO_ACTION",
+        "REMEDIATE"
+      ]
     },
     {
       "id": "apigw-07",
@@ -242,7 +266,10 @@
         "context_override": null,
         "note": "CCSS treats obtaining the key as a precondition (MEDIUM likelihood). Vista's prompt treats API-key-only routes as HIGH likelihood, so this scenario directly tests that prompt rule."
       },
-      "expected_action": "REMEDIATE"
+      "expected_action": "REMEDIATE",
+      "acceptable_actions": [
+        "REMEDIATE"
+      ]
     },
     {
       "id": "apigw-08",
@@ -274,7 +301,10 @@
         ],
         "context_override": "The resource policy denies every source outside the office CIDR."
       },
-      "expected_action": "REVIEW"
+      "expected_action": "REVIEW",
+      "acceptable_actions": [
+        "REVIEW"
+      ]
     },
     {
       "id": "apigw-09",
@@ -311,7 +341,10 @@
         ],
         "context_override": null
       },
-      "expected_action": "REVIEW"
+      "expected_action": "REVIEW",
+      "acceptable_actions": [
+        "REVIEW"
+      ]
     }
   ]
 }

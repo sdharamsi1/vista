@@ -74,8 +74,11 @@ Recommended action says what a person should do, separately from Severity:
   right answer depends on approved intent or application behavior the data does not show, or the
   configuration is defensible either way.
 - NO_ACTION: the configuration matches normal design for this kind of resource and nothing needs
-  to change; it is listed only to keep a notable path or setting visible. Never use NO_ACTION to
-  downgrade a real weakness.
+  to change; it is listed only to keep a notable path or setting visible. A NO_ACTION finding must
+  have LOW Severity; if the Severity is MEDIUM or higher, use REMEDIATE or REVIEW. Never use
+  NO_ACTION to downgrade a real weakness. Justify it from the configuration, for example
+  "consistent with normal design"; never call a path or setting intended, approved, or expected
+  unless approved intent was supplied.
 
 In {affected_label}, put only identifiers inside backticks. Every identifier you cite must be one
 supplied in the input; never invent one. If no {noun} presents a noteworthy risk, still return the
@@ -189,6 +192,12 @@ def validate_review(text: str, spec: ReviewSpec, valid_ids: Iterable[str]) -> No
             details.append(
                 f"finding {position} Severity {values['Severity']} does not match the matrix "
                 f"result {expected} for Likelihood {values['Likelihood']} x Impact {values['Impact']}"
+            )
+
+        if values["Recommended action"] == "NO_ACTION" and values["Severity"] != "LOW":
+            details.append(
+                f"finding {position} has Recommended action NO_ACTION with Severity "
+                f"{values['Severity']}; NO_ACTION requires Severity LOW"
             )
 
         referenced = spec.id_pattern.findall(finding_field(block, spec.affected_label) or "")

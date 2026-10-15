@@ -2,7 +2,7 @@
   "service": "ec2",
   "scoring": "Match findings to scenarios by the instance ID in terraform output scenario_resources. Score each scenario against the highest-severity finding that cites it, or NONE if no finding cites it. A scenario passes when that result is in acceptable_severities and, if cited, the finding's category is expected.category or in acceptable_categories. NONE on a scenario that does not accept NONE is a false negative; a rating above acceptable_severities on an expected or minor scenario is a false positive. When deferral_acceptable is true, PARTIAL or INSUFFICIENT confidence counts as an appropriate deferral.",
   "rating_method": "Likelihood follows CCSS (NIST IR 7502) exploitability concepts aligned with Vista's definitions: HIGH when reachable from the Internet and usable without credentials; MEDIUM when one precondition must hold first (a credential or API key, a foothold inside the network, an application flaw, or compromise of the resource); LOW when prior account-level access is needed or the issue is defense in depth only. Impact follows CCSS confidentiality, integrity, and availability impact, widened by the mapped ATT&CK technique's outcome: HIGH for account-wide reach, privilege escalation, or full read/write/delete of data; MEDIUM when confined to the resource or one data store; LOW for minor or visibility-only impact. Severity comes from Vista's likelihood x impact matrix. fsbp_reference_severity is the highest published FSBP severity among controls that fail because of the scenario's change (controls that fail on every resource are listed in baseline_controls and excluded). acceptable_severities is the expected severity plus one adjacent level: toward the FSBP reference when one exists and differs, otherwise toward the axis the rationale marks as uncertain. Expected scenarios accept NONE and LOW; ambiguous scenarios accept one level on each side plus deferral. A context_override means documented context removes the attack path FSBP assumes, so the range moves at most one level toward the reference.",
-  "action_method": "expected_action is what a person should do about the scenario: REMEDIATE for dangerous and minor, REVIEW for ambiguous, NO_ACTION for expected. It is derived from kind, not rated separately. Severity and action are scored independently.",
+  "action_method": "expected_action is what a person should do about the scenario: REMEDIATE for dangerous and minor, REVIEW for ambiguous, NO_ACTION for expected. It is derived from kind, not rated separately. acceptable_actions lists every action that counts as a tolerant match, derived by four rules: (1) expected_action is always accepted; (2) if NONE is an acceptable severity, NO_ACTION is accepted, because not reporting a resource is the same as recommending no action; (3) for an expected scenario, REMEDIATE is also accepted when the finding's severity is LOW, since a LOW hygiene note is allowed; (4) REVIEW is also accepted for ec2-02, whose planted flaw is ordinary public web hosting, because whether that is intended depends on information the data cannot show. Report both strict (expected_action) and tolerant (acceptable_actions) results. Severity and action are scored independently.",
   "framework_sources": {
     "fsbp": "https://docs.aws.amazon.com/securityhub/latest/userguide/fsbp-standard.html",
     "attack": "https://attack.mitre.org/matrices/enterprise/cloud/iaas/",
@@ -40,6 +40,11 @@
       "date": "2026-10-14",
       "change": "ec2-06 reclassified from expected to ambiguous; expected rating set to MEDIUM likelihood x LOW impact = LOW; acceptable severities widened from NONE, LOW to NONE, LOW, MEDIUM; deferral accepted; expected_action REVIEW.",
       "reason": "Pilot runs of both evaluated models and Prowler 4.2.1 all reported the internet-facing ALB path. Vista's EC2 guidance requires a confirmed public path to be reported at MEDIUM likelihood or higher. The scenario's own framework mapping lists two Medium ALB controls (ELB.5 access logs, ELB.16 WAF), and whether the tier is expected depends on approved intent that was not supplied. Revised after the pilot runs and before the benchmark; the pilot results were scored against the earlier definition."
+    },
+    {
+      "date": "2026-10-14",
+      "change": "Added acceptable_actions to every scenario, and an action_method describing how it is derived.",
+      "reason": "Action-field pilot runs showed that deriving expected_action from kind alone is too coarse: both evaluated models gave the public marketing site (ec2-02) REVIEW rather than REMEDIATE, and one gave the NACL-blocked port (ec2-09) a LOW REMEDIATE that Vista's own guidance supports. The tolerant list is made after seeing the pilot outputs and before the benchmark; strict expected_action is unchanged and both are reported."
     }
   ],
   "scenarios": [
@@ -73,7 +78,10 @@
         ],
         "context_override": null
       },
-      "expected_action": "REMEDIATE"
+      "expected_action": "REMEDIATE",
+      "acceptable_actions": [
+        "REMEDIATE"
+      ]
     },
     {
       "id": "ec2-02",
@@ -106,7 +114,11 @@
         "context_override": null,
         "note": "EC2.18 passes because 80 and 443 are its default authorized ports."
       },
-      "expected_action": "REMEDIATE"
+      "expected_action": "REMEDIATE",
+      "acceptable_actions": [
+        "REMEDIATE",
+        "REVIEW"
+      ]
     },
     {
       "id": "ec2-03",
@@ -138,7 +150,10 @@
         ],
         "context_override": null
       },
-      "expected_action": "REMEDIATE"
+      "expected_action": "REMEDIATE",
+      "acceptable_actions": [
+        "REMEDIATE"
+      ]
     },
     {
       "id": "ec2-04",
@@ -167,7 +182,10 @@
         "context_override": null,
         "note": "No FSBP control applies: IAM.1 evaluates customer-managed policies that grant *:*."
       },
-      "expected_action": "REMEDIATE"
+      "expected_action": "REMEDIATE",
+      "acceptable_actions": [
+        "REMEDIATE"
+      ]
     },
     {
       "id": "ec2-05",
@@ -213,7 +231,10 @@
         ],
         "context_override": null
       },
-      "expected_action": "REMEDIATE"
+      "expected_action": "REMEDIATE",
+      "acceptable_actions": [
+        "REMEDIATE"
+      ]
     },
     {
       "id": "ec2-06",
@@ -252,7 +273,11 @@
         "note": "The instance itself passes EC2.3, EC2.8, and EC2.9; ELB.5 and ELB.16 apply to the ALB in front of it."
       },
       "deferral_acceptable": true,
-      "expected_action": "REVIEW"
+      "expected_action": "REVIEW",
+      "acceptable_actions": [
+        "REVIEW",
+        "NO_ACTION"
+      ]
     },
     {
       "id": "ec2-07",
@@ -295,7 +320,10 @@
         ],
         "context_override": null
       },
-      "expected_action": "REMEDIATE"
+      "expected_action": "REMEDIATE",
+      "acceptable_actions": [
+        "REMEDIATE"
+      ]
     },
     {
       "id": "ec2-08",
@@ -329,7 +357,11 @@
         ],
         "context_override": "SSH is allowed only from the office /24, so EC2.13, EC2.19, and EC2.53 pass and the public IP alone does not give an Internet path to SSH."
       },
-      "expected_action": "REVIEW"
+      "expected_action": "REVIEW",
+      "acceptable_actions": [
+        "REVIEW",
+        "NO_ACTION"
+      ]
     },
     {
       "id": "ec2-09",
@@ -358,7 +390,11 @@
         "attack": [],
         "context_override": "The ops subnet's network ACL denies TCP 9100 inbound, so the security group rule FSBP flags is not reachable from the Internet."
       },
-      "expected_action": "NO_ACTION"
+      "expected_action": "NO_ACTION",
+      "acceptable_actions": [
+        "NO_ACTION",
+        "REMEDIATE"
+      ]
     },
     {
       "id": "ec2-10",
@@ -387,7 +423,10 @@
         "context_override": null,
         "note": "No FSBP control applies: EC2.19 checks 0.0.0.0/0 only, and IAM.21 skips inline policies."
       },
-      "expected_action": "REMEDIATE"
+      "expected_action": "REMEDIATE",
+      "acceptable_actions": [
+        "REMEDIATE"
+      ]
     },
     {
       "id": "ec2-11",
@@ -407,7 +446,11 @@
         "attack": [],
         "context_override": null
       },
-      "expected_action": "NO_ACTION"
+      "expected_action": "NO_ACTION",
+      "acceptable_actions": [
+        "NO_ACTION",
+        "REMEDIATE"
+      ]
     }
   ]
 }
