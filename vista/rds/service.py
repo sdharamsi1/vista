@@ -64,7 +64,7 @@ def analyze(
     json_path: Path | None = None,
     intent: str | None = None,
     prepared: bool = False,
-) -> tuple[str, dict[str, int]]:
+) -> tuple[str, dict[str, Any]]:
     return findings.run_review(
         session, bedrock_region, model_id, review, facts, facts, count(facts), json_path, intent
     )

@@ -1,7 +1,8 @@
 """Save a complete record of one assessment run: the payload, the raw review, and run metadata.
 
 A run directory holds payload.json (live runs only; the exact JSON sent to the model), analysis.md
-(the model's Markdown, before terminal formatting), and run.json (model, timing, tokens, and hashes).
+(the model's Markdown, before terminal formatting), and run.json (model, timing, tokens, hashes, and
+the validation error behind any corrective retry).
 Files are written private (0600) and never overwrite an earlier run.
 """
 from __future__ import annotations
@@ -62,9 +63,10 @@ def write_run(
     started_at: str,
     finished_at: str,
     review_seconds: float,
-    usage: dict[str, int] | None = None,
+    usage: dict[str, Any] | None = None,
     error: str | None = None,
 ) -> None:
+    tokens = {key: value for key, value in usage.items() if key != "retry_errors"} if usage else usage
     has_payload = payload_file is not None and payload_file.exists()
     record = {
         "status": "error" if error else "ok",
@@ -82,7 +84,10 @@ def write_run(
         "started_at": started_at,
         "finished_at": finished_at,
         "review_seconds": round(review_seconds, 2),
-        "tokens": usage,
+        "tokens": tokens,
+        # Why each corrective retry happened. Empty when the first answer passed validation. A run
+        # that failed both attempts has no entry here; its error field holds both messages.
+        "retry_errors": (usage or {}).get("retry_errors", []),
     }
     bedrock.save_json(directory / RUN_FILE, json.dumps(record, indent=2, sort_keys=True) + "\n")
 

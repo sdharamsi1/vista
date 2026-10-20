@@ -284,7 +284,7 @@ def review_facts(
     started_at = now()
     began = time.monotonic()
 
-    def record(usage: dict[str, int] | None, error: str | None = None) -> None:
+    def record(usage: dict[str, Any] | None, error: str | None = None) -> None:
         runlog.write_run(
             save_run,
             service=service.NAME,

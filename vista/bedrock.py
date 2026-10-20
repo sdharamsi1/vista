@@ -77,15 +77,21 @@ def _usage(response: dict[str, Any]) -> tuple[int, int, int, int]:
     )
 
 
-# Sum per-attempt usage into a reporting dict.
-def _totals(usages: list[tuple[int, int, int, int]]) -> dict[str, int]:
-    return {
+# Sum per-attempt usage into a reporting dict. retry_errors holds the validation error that caused
+# each corrective retry and is included only when a retry happened.
+def _totals(
+    usages: list[tuple[int, int, int, int]], retry_errors: list[str] | None = None
+) -> dict[str, Any]:
+    totals: dict[str, Any] = {
         "input": sum(u[0] for u in usages),
         "output": sum(u[1] for u in usages),
         "cache_read": sum(u[2] for u in usages),
         "cache_write": sum(u[3] for u in usages),
         "attempts": len(usages),
     }
+    if retry_errors:
+        totals["retry_errors"] = retry_errors
+    return totals
 
 
 # Send facts to Bedrock and return a validated review. Retries once with the validation error.
@@ -101,7 +107,7 @@ def analyze(
     empty_message: str,
     max_tokens: int = 15000,
     json_path: Path | None = None,
-) -> tuple[str, dict[str, int]]:
+) -> tuple[str, dict[str, Any]]:
     payload = json.dumps(facts, separators=(",", ":"), sort_keys=True)
     if json_path is not None:
         save_json(json_path, payload)
@@ -143,5 +149,5 @@ def analyze(
                 "Bedrock returned invalid reviews twice. "
                 f"First attempt: {first_error} Corrective attempt: {second_error}"
             ) from second_error
-        return corrected, _totals(usages)
+        return corrected, _totals(usages, [str(first_error)])
     return text, _totals(usages)

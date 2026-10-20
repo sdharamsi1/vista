@@ -82,7 +82,8 @@ To compare models, or measure how much one model varies, send the same evidence 
 - `payload.json` — the exact JSON sent to Bedrock (live runs only).
 - `analysis.md` — the model's raw Markdown review, before any terminal formatting.
 - `run.json` — the model, Bedrock region, time, token usage, resource count, and SHA-256 hashes of
-  the payload and intent. A review that fails validation is recorded here with its error.
+  the payload and intent. A review that fails validation is recorded here with its error, and when
+  the first answer fails validation but the corrective retry passes, `retry_errors` lists why.
 
 `--from-json` then reviews a saved payload without touching AWS, so the evidence is identical
 across runs and the resources can be destroyed in the meantime. It still needs AWS credentials

@@ -228,7 +228,7 @@ def run_review(
     resource_count: int,
     json_path: Path | None = None,
     intent: str | None = None,
-) -> tuple[str, dict[str, int]]:
+) -> tuple[str, dict[str, Any]]:
     return bedrock.analyze(
         session,
         bedrock_region,
