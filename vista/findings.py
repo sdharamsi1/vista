@@ -59,7 +59,6 @@ OUTPUT_FORMAT = """Return only the following Markdown, and nothing else:
 - **Impact:** HIGH, MEDIUM, or LOW
 - **Confidence:** CONFIRMED, PARTIAL, or INSUFFICIENT
 - **Category:** {categories}
-- **Recommended action:** REMEDIATE, REVIEW, or NO_ACTION
 - **{affected_label}:** {affected_format}, comma-separated
 - **Evidence:** one to three concise, fact-specific sentences.
 - **Why it matters:** one or two concise sentences on the concrete impact.
@@ -68,28 +67,29 @@ OUTPUT_FORMAT = """Return only the following Markdown, and nothing else:
 Number the finding headings sequentially (### 1., ### 2., ...), ordered most to least severe
 (CRITICAL, then HIGH, MEDIUM, LOW), at most {max_findings} blocks.
 
-Recommended action says what a person should do, separately from Severity:
-- REMEDIATE: the evidence shows a weakness that should be changed.
-- REVIEW: a person must decide before anything changes, because the evidence is incomplete, the
-  right answer depends on approved intent or application behavior the data does not show, or the
-  configuration is defensible either way.
-- NO_ACTION: the configuration matches normal design for this kind of resource and nothing needs
-  to change; it is listed only to keep a notable path or setting visible. A NO_ACTION finding must
-  have LOW Severity; if the Severity is MEDIUM or higher, use REMEDIATE or REVIEW. Never use
-  NO_ACTION to downgrade a real weakness. Justify it from the configuration, for example
-  "consistent with normal design"; never call a path or setting intended, approved, or expected
-  unless approved intent was supplied.
-
 In {affected_label}, put only identifiers inside backticks. Every identifier you cite must be one
-supplied in the input; never invent one. If no {noun} presents a noteworthy risk, still return the
-Account Risk Summary and the "## Top Findings" heading with no finding blocks. Do not return a
+supplied in the input; never invent one. If no {noun} presents a noteworthy risk, still return
+the Account Risk Summary and the "## Top Findings" heading with no finding blocks. Do not return a
 table, JSON, extra headings, or a separate block for every {noun}."""
 
+# Rules shared by every service prompt: grouping, citation and anti-fabrication, and remediation.
+REVIEW_RULES = """Group, do not repeat. Report resources together in one finding only when they
+share the same root cause and the finding's Severity would be the same for every resource in it;
+otherwise report them as separate findings. Do not emit one finding per resource when resources
+share a root cause and Severity; list every affected resource in that finding.
 
-# Full system prompt: service guidance, shared severity model, output format, counts, and intent.
-def build_system_prompt(
-    spec: ReviewSpec, guidance: str, counts: str, intent: str | None = None
-) -> str:
+Be evidence-specific and concise. Cite the exact supplied values and identifiers that support each
+statement, and do not use a descriptive label without the supplied fact behind it. Do not claim
+that a path or setting is intended, approved, or expected, and do not claim WAF, vulnerabilities,
+data sensitivity, exploitation, or compromise unless the supplied facts show it.
+
+For Remediation, give the exact setting, permission, policy statement, or rule to change and the
+end state it should reach."""
+
+
+# Full system prompt: service guidance, shared severity model, shared review rules, output format,
+# and counts.
+def build_system_prompt(spec: ReviewSpec, guidance: str, counts: str) -> str:
     output = OUTPUT_FORMAT.format(
         title=spec.title,
         summary=spec.summary,
@@ -99,16 +99,15 @@ def build_system_prompt(
         max_findings=spec.max_findings,
         noun=spec.noun,
     )
-    prompt = (
+    return (
         guidance.strip().replace("{SEVERITY_MODEL}", severity.SEVERITY_MODEL_PROMPT)
         + "\n\n"
+        + REVIEW_RULES
+        + "\n\n"
         + output
-        + f"\n\nThe input contains {counts}. Return at most {spec.max_findings} findings, grouping "
-        f"{spec.noun}s that share a root cause, and cite only identifiers present in the input."
+        + f"\n\nThe input contains {counts}. Return at most {spec.max_findings} findings, and cite "
+        "only identifiers present in the input."
     )
-    if intent:
-        prompt += bedrock.build_intent_section(intent)
-    return prompt
 
 
 # Text of one labeled field in a finding block.
@@ -147,7 +146,7 @@ def split_findings(text: str) -> list[tuple[str, str]]:
 def validate_review(text: str, spec: ReviewSpec, valid_ids: Iterable[str]) -> None:
     valid = set(valid_ids)
     labels = (
-        "Severity", "Likelihood", "Impact", "Confidence", "Category", "Recommended action",
+        "Severity", "Likelihood", "Impact", "Confidence", "Category",
         spec.affected_label, "Evidence", "Why it matters", "Remediation",
     )
     allowed = {
@@ -156,7 +155,6 @@ def validate_review(text: str, spec: ReviewSpec, valid_ids: Iterable[str]) -> No
         "Impact": severity.IMPACTS,
         "Confidence": severity.CONFIDENCE,
         "Category": set(spec.categories),
-        "Recommended action": severity.ACTIONS,
     }
     details: list[str] = []
 
@@ -194,12 +192,6 @@ def validate_review(text: str, spec: ReviewSpec, valid_ids: Iterable[str]) -> No
                 f"result {expected} for Likelihood {values['Likelihood']} x Impact {values['Impact']}"
             )
 
-        if values["Recommended action"] == "NO_ACTION" and values["Severity"] != "LOW":
-            details.append(
-                f"finding {position} has Recommended action NO_ACTION with Severity "
-                f"{values['Severity']}; NO_ACTION requires Severity LOW"
-            )
-
         referenced = spec.id_pattern.findall(finding_field(block, spec.affected_label) or "")
         if not referenced:
             details.append(f"finding {position} names no affected {spec.noun}")
@@ -227,14 +219,13 @@ def run_review(
     payload: dict[str, Any],
     resource_count: int,
     json_path: Path | None = None,
-    intent: str | None = None,
 ) -> tuple[str, dict[str, Any]]:
     return bedrock.analyze(
         session,
         bedrock_region,
         model_id,
         payload,
-        system_prompt=review.build_system_prompt(facts, intent),
+        system_prompt=review.build_system_prompt(facts),
         validate=lambda text: review.validate(text, facts),
         is_empty=resource_count == 0,
         empty_message=review.SPEC.empty_message,

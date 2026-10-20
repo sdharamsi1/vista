@@ -1,456 +1,399 @@
 {
   "service": "ec2",
-  "scoring": "Match findings to scenarios by the instance ID in terraform output scenario_resources. Score each scenario against the highest-severity finding that cites it, or NONE if no finding cites it. A scenario passes when that result is in acceptable_severities and, if cited, the finding's category is expected.category or in acceptable_categories. NONE on a scenario that does not accept NONE is a false negative; a rating above acceptable_severities on an expected or minor scenario is a false positive. When deferral_acceptable is true, PARTIAL or INSUFFICIENT confidence counts as an appropriate deferral.",
-  "rating_method": "Likelihood follows CCSS (NIST IR 7502) exploitability concepts aligned with Vista's definitions: HIGH when reachable from the Internet and usable without credentials; MEDIUM when one precondition must hold first (a credential or API key, a foothold inside the network, an application flaw, or compromise of the resource); LOW when prior account-level access is needed or the issue is defense in depth only. Impact follows CCSS confidentiality, integrity, and availability impact, widened by the mapped ATT&CK technique's outcome: HIGH for account-wide reach, privilege escalation, or full read/write/delete of data; MEDIUM when confined to the resource or one data store; LOW for minor or visibility-only impact. Severity comes from Vista's likelihood x impact matrix. fsbp_reference_severity is the highest published FSBP severity among controls that fail because of the scenario's change (controls that fail on every resource are listed in baseline_controls and excluded). acceptable_severities is the expected severity plus one adjacent level: toward the FSBP reference when one exists and differs, otherwise toward the axis the rationale marks as uncertain. Expected scenarios accept NONE and LOW; ambiguous scenarios accept one level on each side plus deferral. A context_override means documented context removes the attack path FSBP assumes, so the range moves at most one level toward the reference.",
-  "action_method": "expected_action is what a person should do about the scenario: REMEDIATE for dangerous and minor, REVIEW for ambiguous, NO_ACTION for expected. It is derived from kind, not rated separately. acceptable_actions lists every action that counts as a tolerant match, derived by four rules: (1) expected_action is always accepted; (2) if NONE is an acceptable severity, NO_ACTION is accepted, because not reporting a resource is the same as recommending no action; (3) for an expected scenario, REMEDIATE is also accepted when the finding's severity is LOW, since a LOW hygiene note is allowed; (4) REVIEW is also accepted for ec2-02, whose planted flaw is ordinary public web hosting, because whether that is intended depends on information the data cannot show. Report both strict (expected_action) and tolerant (acceptable_actions) results. Severity and action are scored independently.",
+  "scoring": "Answer key for comparing Vista (LLM review) with Prowler (rule-based scanner). It holds facts and published AWS Security Hub FSBP control severities only; it contains no ratings of its own. A tool's output is matched to a scenario by the identifier in terraform output scenario_resources (the instance ID). condition flaw: reporting the scenario counts as a detection. condition flaw_blocked: a misconfiguration is present but another deployed control removes the path it opens; reporting it is shown as a separate report rate, counted as neither a detection nor a false positive. condition hardened: no misconfiguration was planted; reporting it is a false positive. fsbp lists the FSBP controls that fail because of the scenario's configuration: a setting in which the scenario differs from its module's hardened default, or a resource its configuration associates with it (its security groups, its subnet's network ACL, its IAM role, and the load balancer, listeners, and target group it is registered with). fsbp_severity is the highest published severity in that list. On coverage fsbp scenarios the reported severity (NONE when the scenario is not reported) is compared with fsbp_severity on the order NONE < LOW < MEDIUM < HIGH < CRITICAL; outside_fsbp scenarios are scored for detection and false positives only. Controls in baseline_controls fail regardless of scenario and are in no scenario's fsbp. scripts/score.py applies these rules.",
   "framework_sources": {
     "fsbp": "https://docs.aws.amazon.com/securityhub/latest/userguide/fsbp-standard.html",
     "attack": "https://attack.mitre.org/matrices/enterprise/cloud/iaas/",
-    "owasp_api": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
-    "ccss": "https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nistir7502.pdf"
+    "owasp_api": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
   },
   "baseline_controls": {
-    "note": "Fail regardless of scenario; excluded from per-scenario references.",
+    "note": "FSBP controls known to fail regardless of scenario, for example account-level settings, the VPCs the scenario resources run in, settings left at the module's hardened default that every scenario starts from, and deletion protection, which every resource leaves off so one terraform destroy removes everything. The list is not exhaustive: other FSBP controls can also fail regardless of scenario, depending on account settings at scan time. They are in no scenario's fsbp list. Backing resources no scenario is scored on (for example the S3 access-log bucket, the DynamoDB table, the SQS queue, the KMS key) are not evaluated here.",
     "controls": [
       {
+        "control": "EC2.2",
+        "title": "VPC default security groups should not allow inbound or outbound traffic",
+        "severity": "HIGH",
+        "scope": "Default security group of the prod and legacy VPCs, which keeps its AWS default rules"
+      },
+      {
         "control": "EC2.6",
+        "title": "VPC flow logging should be enabled in all VPCs",
         "severity": "MEDIUM",
-        "scope": "VPC flow logs not enabled"
+        "scope": "No flow logs on the prod and legacy VPCs"
+      },
+      {
+        "control": "EC2.10",
+        "title": "Amazon EC2 should be configured to use VPC endpoints that are created for the Amazon EC2 service",
+        "severity": "MEDIUM",
+        "scope": "No Amazon EC2 VPC endpoint in the prod and legacy VPCs"
+      },
+      {
+        "control": "EC2.55",
+        "title": "VPCs should be configured with an interface endpoint for ECR API",
+        "severity": "MEDIUM",
+        "scope": "No ECR API interface endpoint in the prod and legacy VPCs"
+      },
+      {
+        "control": "EC2.56",
+        "title": "VPCs should be configured with an interface endpoint for Docker Registry",
+        "severity": "MEDIUM",
+        "scope": "No Docker Registry interface endpoint in the prod and legacy VPCs"
+      },
+      {
+        "control": "EC2.57",
+        "title": "VPCs should be configured with an interface endpoint for Systems Manager",
+        "severity": "MEDIUM",
+        "scope": "No Systems Manager interface endpoint in the prod and legacy VPCs"
+      },
+      {
+        "control": "EC2.58",
+        "title": "VPCs should be configured with an interface endpoint for Systems Manager Incident Manager Contacts",
+        "severity": "MEDIUM",
+        "scope": "No Systems Manager Incident Manager Contacts interface endpoint in the prod and legacy VPCs"
+      },
+      {
+        "control": "EC2.60",
+        "title": "VPCs should be configured with an interface endpoint for Systems Manager Incident Manager",
+        "severity": "MEDIUM",
+        "scope": "No Systems Manager Incident Manager interface endpoint in the prod and legacy VPCs"
+      },
+      {
+        "control": "EC2.7",
+        "title": "EBS default encryption should be enabled",
+        "severity": "MEDIUM",
+        "scope": "Account setting not managed by this Terraform; fails while EBS encryption by default is off, the AWS default; with it on, ec2-01's root volume would be encrypted regardless of Terraform"
+      },
+      {
+        "control": "EC2.172",
+        "title": "EC2 VPC Block Public Access settings should block internet gateway traffic",
+        "severity": "MEDIUM",
+        "scope": "Account setting not managed by this Terraform; fails while VPC Block Public Access is off, the AWS default"
+      },
+      {
+        "control": "EC2.182",
+        "title": "Block public access settings should be enabled for Amazon EBS snapshots",
+        "severity": "HIGH",
+        "scope": "Account setting, per Region, not managed by this Terraform; fails while block public access for EBS snapshots is not enabled in the Region"
       },
       {
         "control": "ELB.6",
+        "title": "Application, Gateway, and Network Load Balancers should have deletion protection enabled",
         "severity": "MEDIUM",
-        "scope": "Load balancer deletion protection off for one-step teardown"
+        "scope": "Deletion protection off on the storefront Application Load Balancer"
+      },
+      {
+        "control": "SSM.1",
+        "title": "Amazon EC2 instances should be managed by AWS Systems Manager",
+        "severity": "MEDIUM",
+        "scope": "Instances whose hardened default gives no Systems Manager permissions: ec2-01, ec2-02, ec2-03, ec2-04, ec2-09; the result depends on Systems Manager registration at run time"
       }
     ]
   },
-  "kinds": {
-    "dangerous": "A real weakness Vista must report within the acceptable range.",
-    "ambiguous": "Defensible either way; the model should explain the tradeoff or defer. NONE and over-rating are both wrong.",
-    "expected": "A correctly configured resource; NONE or a LOW hygiene note.",
-    "minor": "A small, real gap; LOW or no finding."
-  },
-  "change_log": [
-    {
-      "date": "2026-10-14",
-      "change": "Added expected_action to every scenario.",
-      "reason": "The research question asks Vista to separate resources needing remediation from expected configurations and cases needing human review. The review format previously had no way to say the last two, so Vista now emits a Recommended action field and the ground truth records the matching answer."
-    },
-    {
-      "date": "2026-10-14",
-      "change": "ec2-06 reclassified from expected to ambiguous; expected rating set to MEDIUM likelihood x LOW impact = LOW; acceptable severities widened from NONE, LOW to NONE, LOW, MEDIUM; deferral accepted; expected_action REVIEW.",
-      "reason": "Pilot runs of both evaluated models and Prowler 4.2.1 all reported the internet-facing ALB path. Vista's EC2 guidance requires a confirmed public path to be reported at MEDIUM likelihood or higher. The scenario's own framework mapping lists two Medium ALB controls (ELB.5 access logs, ELB.16 WAF), and whether the tier is expected depends on approved intent that was not supplied. Revised after the pilot runs and before the benchmark; the pilot results were scored against the earlier definition."
-    },
-    {
-      "date": "2026-10-14",
-      "change": "Added acceptable_actions to every scenario, and an action_method describing how it is derived.",
-      "reason": "Action-field pilot runs showed that deriving expected_action from kind alone is too coarse: both evaluated models gave the public marketing site (ec2-02) REVIEW rather than REMEDIATE, and one gave the NACL-blocked port (ec2-09) a LOW REMEDIATE that Vista's own guidance supports. The tolerant list is made after seeing the pilot outputs and before the benchmark; strict expected_action is unchanged and both are reported."
-    }
-  ],
   "scenarios": [
     {
       "id": "ec2-01",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "reporting-worker",
       "title": "Private instance with an unencrypted root volume",
-      "expected": {
-        "category": "SECURITY_CONFIGURATION",
-        "likelihood": "LOW",
-        "impact": "MEDIUM",
-        "severity": "LOW"
-      },
-      "acceptable_severities": [
-        "LOW",
-        "MEDIUM"
+      "description": "Private instance in a NAT-routed subnet with no public IP, no inbound security-group rules, no IAM role, no key pair, and IMDSv2 required. Misconfigured: the root EBS volume is not encrypted.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "EC2.3",
+          "title": "Attached Amazon EBS volumes should be encrypted at-rest",
+          "severity": "MEDIUM",
+          "scope": "Root EBS volume of the instance is not encrypted"
+        }
       ],
-      "rationale": "No inbound rules and no role; reading the volume needs prior account access, so this is defense in depth only.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "EC2.3",
-            "severity": "MEDIUM"
-          }
-        ],
-        "fsbp_reference_severity": "MEDIUM",
-        "attack": [
-          "T1578.001"
-        ],
-        "context_override": null
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "fsbp_severity": "MEDIUM",
+      "attack": [
+        "T1578.001"
       ]
     },
     {
       "id": "ec2-02",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "marketing-site",
       "title": "Public instance with HTTP and HTTPS open to 0.0.0.0/0",
-      "expected": {
-        "category": "INTERNET_EXPOSURE",
-        "likelihood": "MEDIUM",
-        "impact": "MEDIUM",
-        "severity": "MEDIUM"
-      },
-      "acceptable_severities": [
-        "MEDIUM",
-        "HIGH"
+      "description": "Instance in a subnet routed to an Internet gateway, serving HTTP on port 80, with IMDSv2 required, an encrypted root volume, and no IAM role. Misconfigured: the instance has a public IPv4 address and its security group allows TCP 80 and 443 from 0.0.0.0/0.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "EC2.9",
+          "title": "Amazon EC2 instances should not have a public IPv4 address",
+          "severity": "HIGH",
+          "scope": "Instance has a public IPv4 address"
+        }
       ],
-      "rationale": "Confirmed DIRECT path, but only on ordinary web ports, with IMDSv2 and no role, so the blast radius is the instance itself.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "EC2.9",
-            "severity": "HIGH"
-          }
-        ],
-        "fsbp_reference_severity": "HIGH",
-        "attack": [
-          "T1190"
-        ],
-        "context_override": null,
-        "note": "EC2.18 passes because 80 and 443 are its default authorized ports."
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE",
-        "REVIEW"
+      "fsbp_severity": "HIGH",
+      "attack": [
+        "T1190"
       ]
     },
     {
       "id": "ec2-03",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "image-resizer",
       "title": "Private instance with IMDSv1 and a role that reads the uploads bucket",
-      "expected": {
-        "category": "SECURITY_CONFIGURATION",
-        "likelihood": "MEDIUM",
-        "impact": "MEDIUM",
-        "severity": "MEDIUM"
-      },
-      "acceptable_severities": [
-        "MEDIUM",
-        "HIGH"
+      "description": "Private instance with no public IP and no inbound rules; its role allows s3:GetObject and s3:ListBucket on one uploads bucket. Misconfigured: instance metadata http_tokens is optional, so IMDSv1 requests are accepted.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "EC2.8",
+          "title": "EC2 instances should use Instance Metadata Service Version 2 (IMDSv2)",
+          "severity": "HIGH",
+          "scope": "Instance metadata http_tokens is optional"
+        }
       ],
-      "rationale": "IMDSv1 lets an SSRF or local foothold steal the role credentials, but the instance is private and the role is limited to one bucket.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "EC2.8",
-            "severity": "HIGH"
-          }
-        ],
-        "fsbp_reference_severity": "HIGH",
-        "attack": [
-          "T1552.005"
-        ],
-        "context_override": null
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "fsbp_severity": "HIGH",
+      "attack": [
+        "T1552.005"
       ]
     },
     {
       "id": "ec2-04",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "ci-runner",
       "title": "Private CI runner whose role can attach any policy to any role",
-      "expected": {
-        "category": "SECURITY_CONFIGURATION",
-        "likelihood": "MEDIUM",
-        "impact": "HIGH",
-        "severity": "HIGH"
-      },
-      "acceptable_severities": [
-        "MEDIUM",
-        "HIGH"
-      ],
-      "rationale": "iam:AttachRolePolicy and iam:PutRolePolicy on * let the role grant itself AdministratorAccess; exploiting it needs the instance compromised first.",
-      "framework_mappings": {
-        "fsbp": [],
-        "fsbp_reference_severity": null,
-        "attack": [
-          "T1098.003",
-          "T1078.004"
-        ],
-        "context_override": null,
-        "note": "No FSBP control applies: IAM.1 evaluates customer-managed policies that grant *:*."
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "description": "Private instance with no public IP and no inbound rules. Misconfigured: its role's inline policy allows iam:AttachRolePolicy and iam:PutRolePolicy on resource *.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "outside_fsbp",
+      "fsbp": [],
+      "fsbp_severity": null,
+      "attack": [
+        "T1098.003",
+        "T1078.004"
       ]
     },
     {
       "id": "ec2-05",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "legacy-bastion",
       "title": "Legacy bastion with SSH open to 0.0.0.0/0 and an AdministratorAccess role",
-      "expected": {
-        "category": "INTERNET_EXPOSURE",
-        "likelihood": "HIGH",
-        "impact": "HIGH",
-        "severity": "CRITICAL"
-      },
-      "acceptable_severities": [
-        "HIGH",
-        "CRITICAL"
+      "description": "Instance in the legacy VPC's subnet, which is routed to an Internet gateway and uses the default network ACL. Misconfigured: the instance has a public IPv4 address, its security group allows TCP 22 from 0.0.0.0/0 (rule description \"SSH - temporary for migration\"), and its role has the AWS managed AdministratorAccess policy.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "EC2.19",
+          "title": "Security groups should not allow unrestricted access to ports with high risk",
+          "severity": "CRITICAL",
+          "scope": "Instance security group allows TCP 22 from 0.0.0.0/0; 22 is in the control's blockedPorts"
+        },
+        {
+          "control": "EC2.18",
+          "title": "Security groups should only allow unrestricted incoming traffic for authorized ports",
+          "severity": "HIGH",
+          "scope": "Same rule; 22 is not an authorized port (default 80 and 443)"
+        },
+        {
+          "control": "EC2.9",
+          "title": "Amazon EC2 instances should not have a public IPv4 address",
+          "severity": "HIGH",
+          "scope": "Instance has a public IPv4 address"
+        }
       ],
-      "rationale": "Administrative port reachable from anywhere over a confirmed DIRECT path in the legacy VPC, and compromise yields full account control. The rule description calls it temporary, which does not reduce the risk.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "EC2.19",
-            "severity": "CRITICAL"
-          },
-          {
-            "control": "EC2.13",
-            "severity": "HIGH"
-          },
-          {
-            "control": "EC2.53",
-            "severity": "HIGH"
-          },
-          {
-            "control": "EC2.9",
-            "severity": "HIGH"
-          }
-        ],
-        "fsbp_reference_severity": "CRITICAL",
-        "attack": [
-          "T1110",
-          "T1021.004",
-          "T1078.004"
-        ],
-        "context_override": null
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "fsbp_severity": "CRITICAL",
+      "attack": [
+        "T1110",
+        "T1021.004",
+        "T1078.004"
       ]
     },
     {
       "id": "ec2-06",
       "tier": "realistic",
-      "kind": "ambiguous",
       "resource": "storefront-web",
       "title": "Storefront behind an internet-facing HTTPS load balancer",
-      "expected": {
-        "category": "INTERNET_EXPOSURE",
-        "likelihood": "MEDIUM",
-        "impact": "LOW",
-        "severity": "LOW"
-      },
-      "acceptable_severities": [
-        "NONE",
-        "LOW",
-        "MEDIUM"
+      "description": "Private instance with no public IP, IMDSv2 required, an encrypted root volume, the AmazonSSMManagedInstanceCore policy, and the node-exporter security group (TCP 9100 from the VPC CIDR 10.80.0.0/16); it accepts TCP 8080 only from the load balancer's security group and is the target of the default action of the HTTPS:443 listener on the internet-facing Application Load Balancer, which also has an HTTP:80 listener that redirects to HTTPS. Misconfigured: the load balancer has access logging off, its HTTPS listener uses security policy ELBSecurityPolicy-TLS13-1-2-2021-06, its HTTP:80 listener does not use HTTPS, and the instance's target group uses HTTP for traffic and health checks.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "ELB.5",
+          "title": "Application and Classic Load Balancers logging should be enabled",
+          "severity": "MEDIUM",
+          "scope": "Access logging off on the storefront Application Load Balancer"
+        },
+        {
+          "control": "ELB.17",
+          "title": "Application and Network Load Balancers with listeners should use recommended security policies",
+          "severity": "MEDIUM",
+          "scope": "HTTPS:443 listener uses security policy ELBSecurityPolicy-TLS13-1-2-2021-06, which is not in the control's sslPolicies list"
+        },
+        {
+          "control": "ELB.18",
+          "title": "Application and Network Load Balancer listeners should use secure protocols to encrypt data in transit",
+          "severity": "MEDIUM",
+          "scope": "HTTP:80 listener (redirect to HTTPS) does not use HTTPS"
+        },
+        {
+          "control": "ELB.21",
+          "title": "Application and Network Load Balancer target groups should use encrypted health check protocols",
+          "severity": "MEDIUM",
+          "scope": "storefront target group health check protocol is HTTP"
+        },
+        {
+          "control": "ELB.22",
+          "title": "ELB target groups should use encrypted transport protocols",
+          "severity": "MEDIUM",
+          "scope": "storefront target group protocol is HTTP"
+        }
       ],
-      "rationale": "The instance has no public IP, port 8080 accepts traffic only from the ALB's security group, the ALB terminates TLS 1.2+ and redirects HTTP, and IMDSv2 and encryption are on, so the configuration looks like a normal public web tier. Vista still reports a confirmed public path at MEDIUM likelihood or higher, the ALB has no WAF or access logs (FSBP ELB.16 and ELB.5, both Medium), and whether this exposure is intended depends on approved intent that is not supplied. REVIEW with LOW severity is the expected answer; NO_ACTION or MEDIUM is also defensible.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "ELB.5",
-            "severity": "MEDIUM",
-            "scope": "load balancer access logs (ALB, not the instance)"
-          },
-          {
-            "control": "ELB.16",
-            "severity": "MEDIUM",
-            "scope": "no WAF on the ALB (not the instance)"
-          }
-        ],
-        "fsbp_reference_severity": "MEDIUM",
-        "attack": [],
-        "context_override": null,
-        "note": "The instance itself passes EC2.3, EC2.8, and EC2.9; ELB.5 and ELB.16 apply to the ALB in front of it."
-      },
-      "deferral_acceptable": true,
-      "expected_action": "REVIEW",
-      "acceptable_actions": [
-        "REVIEW",
-        "NO_ACTION"
-      ]
+      "fsbp_severity": "MEDIUM",
+      "attack": []
     },
     {
       "id": "ec2-07",
       "tier": "realistic",
-      "kind": "dangerous",
       "resource": "orders-api",
       "title": "Internet-reachable orders API with IMDSv1 and a role that reads every secret",
-      "expected": {
-        "category": "INTERNET_EXPOSURE",
-        "likelihood": "MEDIUM",
-        "impact": "HIGH",
-        "severity": "HIGH"
-      },
-      "acceptable_severities": [
-        "MEDIUM",
-        "HIGH"
+      "description": "Private instance with no public IP and the node-exporter security group (TCP 9100 from the VPC CIDR 10.80.0.0/16) that accepts TCP 8080 only from the load balancer's security group and is the target of the /api/* rule on the same load balancer's HTTPS:443 listener; its role has AmazonSSMManagedInstanceCore and four DynamoDB actions on the orders table. Misconfigured: instance metadata http_tokens is optional; the role allows secretsmanager:GetSecretValue and secretsmanager:DescribeSecret on resource *; the load balancer has access logging off, uses ELBSecurityPolicy-TLS13-1-2-2021-06 on HTTPS, and has an HTTP:80 listener; the instance's target group uses HTTP for traffic and health checks.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "EC2.8",
+          "title": "EC2 instances should use Instance Metadata Service Version 2 (IMDSv2)",
+          "severity": "HIGH",
+          "scope": "Instance metadata http_tokens is optional"
+        },
+        {
+          "control": "ELB.5",
+          "title": "Application and Classic Load Balancers logging should be enabled",
+          "severity": "MEDIUM",
+          "scope": "Access logging off on the storefront Application Load Balancer"
+        },
+        {
+          "control": "ELB.17",
+          "title": "Application and Network Load Balancers with listeners should use recommended security policies",
+          "severity": "MEDIUM",
+          "scope": "HTTPS:443 listener uses security policy ELBSecurityPolicy-TLS13-1-2-2021-06, which is not in the control's sslPolicies list"
+        },
+        {
+          "control": "ELB.18",
+          "title": "Application and Network Load Balancer listeners should use secure protocols to encrypt data in transit",
+          "severity": "MEDIUM",
+          "scope": "HTTP:80 listener (redirect to HTTPS) does not use HTTPS"
+        },
+        {
+          "control": "ELB.21",
+          "title": "Application and Network Load Balancer target groups should use encrypted health check protocols",
+          "severity": "MEDIUM",
+          "scope": "orders target group health check protocol is HTTP"
+        },
+        {
+          "control": "ELB.22",
+          "title": "ELB target groups should use encrypted transport protocols",
+          "severity": "MEDIUM",
+          "scope": "orders target group protocol is HTTP"
+        }
       ],
-      "acceptable_categories": [
-        "INTERNET_EXPOSURE",
-        "SECURITY_CONFIGURATION"
-      ],
-      "rationale": "No public IP, but the Internet-facing ALB forwards /api/* to it. An SSRF in the app plus IMDSv1 would expose role credentials with secretsmanager:GetSecretValue on *, which reaches every workload's secrets. Requires an app flaw first, so Likelihood is MEDIUM; tests whether the model follows the ALB path and chains it with IMDS and IAM.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "EC2.8",
-            "severity": "HIGH"
-          },
-          {
-            "control": "ELB.16",
-            "severity": "MEDIUM",
-            "scope": "no WAF on the ALB in front of it"
-          }
-        ],
-        "fsbp_reference_severity": "HIGH",
-        "attack": [
-          "T1190",
-          "T1552.005",
-          "T1555.006"
-        ],
-        "context_override": null
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "fsbp_severity": "HIGH",
+      "attack": [
+        "T1190",
+        "T1552.005",
+        "T1555.006"
       ]
     },
     {
       "id": "ec2-08",
       "tier": "realistic",
-      "kind": "ambiguous",
       "resource": "admin-bastion",
       "title": "Public bastion with SSH limited to the office network",
-      "expected": {
-        "category": "INTERNET_EXPOSURE",
-        "likelihood": "LOW",
-        "impact": "MEDIUM",
-        "severity": "LOW"
-      },
-      "acceptable_severities": [
-        "NONE",
-        "LOW",
-        "MEDIUM"
+      "description": "Instance in the ops subnet, which is routed to an Internet gateway and has a custom network ACL, with the AmazonSSMManagedInstanceCore policy and no key pair. Misconfigured: the instance has a public IPv4 address, its security group allows TCP 22 from the office CIDR, and the ops network ACL allows all inbound traffic from 0.0.0.0/0 except TCP 9100.",
+      "condition": "flaw",
+      "context": "The security group's only inbound rule allows TCP 22 from var.office_cidr (default 203.0.113.0/24, the RFC 5737 TEST-NET-3 range).",
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "EC2.9",
+          "title": "Amazon EC2 instances should not have a public IPv4 address",
+          "severity": "HIGH",
+          "scope": "Instance has a public IPv4 address"
+        },
+        {
+          "control": "EC2.21",
+          "title": "Network ACLs should not allow ingress from 0.0.0.0/0 to port 22 or port 3389",
+          "severity": "MEDIUM",
+          "scope": "Ops subnet custom network ACL rule 100 allows all protocols from 0.0.0.0/0, which includes TCP 22"
+        }
       ],
-      "deferral_acceptable": true,
-      "rationale": "SSH is reachable only from the office CIDR (a /24), the role is the SSM core policy, and there is no key pair. A narrow, documented source is a common accepted pattern; suggesting SSM Session Manager instead is reasonable, but HIGH or CRITICAL is over-rating.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "EC2.9",
-            "severity": "HIGH"
-          }
-        ],
-        "fsbp_reference_severity": "HIGH",
-        "attack": [
-          "T1021.004"
-        ],
-        "context_override": "SSH is allowed only from the office /24, so EC2.13, EC2.19, and EC2.53 pass and the public IP alone does not give an Internet path to SSH."
-      },
-      "expected_action": "REVIEW",
-      "acceptable_actions": [
-        "REVIEW",
-        "NO_ACTION"
+      "fsbp_severity": "HIGH",
+      "attack": [
+        "T1021.004"
       ]
     },
     {
       "id": "ec2-09",
       "tier": "realistic",
-      "kind": "expected",
       "resource": "metrics-collector",
       "title": "Security group opens 9100 to the world, but the subnet's network ACL denies it",
-      "expected": null,
-      "acceptable_severities": [
-        "NONE",
-        "LOW"
+      "description": "Instance in the ops subnet with no IAM role. Misconfigured: the instance has a public IPv4 address, its security group allows TCP 9100 from 0.0.0.0/0, and the ops network ACL's rule 100 allows all other inbound traffic from 0.0.0.0/0.",
+      "condition": "flaw_blocked",
+      "context": "The ops subnet's network ACL rule 90 denies inbound TCP 9100 from 0.0.0.0/0 before rule 100 allows all other traffic; the security group has no other inbound rule.",
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "EC2.9",
+          "title": "Amazon EC2 instances should not have a public IPv4 address",
+          "severity": "HIGH",
+          "scope": "Instance has a public IPv4 address"
+        },
+        {
+          "control": "EC2.18",
+          "title": "Security groups should only allow unrestricted incoming traffic for authorized ports",
+          "severity": "HIGH",
+          "scope": "Instance security group allows TCP 9100 from 0.0.0.0/0; 9100 is not an authorized port (default 80 and 443)"
+        },
+        {
+          "control": "EC2.21",
+          "title": "Network ACLs should not allow ingress from 0.0.0.0/0 to port 22 or port 3389",
+          "severity": "MEDIUM",
+          "scope": "Ops subnet custom network ACL rule 100 allows all protocols from 0.0.0.0/0, which includes TCP 22"
+        }
       ],
-      "rationale": "The instance has a public IP and its security group allows 9100 from 0.0.0.0/0, but the ops subnet's NACL rule 90 denies TCP 9100 inbound before rule 100 allows everything else, so there is no Internet path. A LOW note on the overly broad security group is fine; MEDIUM or above means the model ignored the NACL.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "EC2.9",
-            "severity": "HIGH"
-          },
-          {
-            "control": "EC2.18",
-            "severity": "HIGH"
-          }
-        ],
-        "fsbp_reference_severity": "HIGH",
-        "attack": [],
-        "context_override": "The ops subnet's network ACL denies TCP 9100 inbound, so the security group rule FSBP flags is not reachable from the Internet."
-      },
-      "expected_action": "NO_ACTION",
-      "acceptable_actions": [
-        "NO_ACTION",
-        "REMEDIATE"
-      ]
+      "fsbp_severity": "HIGH",
+      "attack": []
     },
     {
       "id": "ec2-10",
       "tier": "realistic",
-      "kind": "dangerous",
       "resource": "analytics-notebook",
       "title": "Private notebook open to 10.0.0.0/8 with s3:* on every bucket",
-      "expected": {
-        "category": "SECURITY_CONFIGURATION",
-        "likelihood": "MEDIUM",
-        "impact": "HIGH",
-        "severity": "HIGH"
-      },
-      "acceptable_severities": [
-        "MEDIUM",
-        "HIGH"
-      ],
-      "rationale": "Jupyter on 8888 is open to all of 10.0.0.0/8, far wider than the VPC, and the role can read, write, and delete every bucket in the account. Not Internet-reachable, so it needs an internal foothold first.",
-      "framework_mappings": {
-        "fsbp": [],
-        "fsbp_reference_severity": null,
-        "attack": [
-          "T1530",
-          "T1485"
-        ],
-        "context_override": null,
-        "note": "No FSBP control applies: EC2.19 checks 0.0.0.0/0 only, and IAM.21 skips inline policies."
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "description": "Private instance with no public IP and the AmazonSSMManagedInstanceCore policy. Misconfigured: its security group allows TCP 8888 (rule description \"Jupyter\") from 10.0.0.0/8 while the VPC is 10.80.0.0/16, and its role's inline policy data-access allows s3:* on resource *.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "outside_fsbp",
+      "fsbp": [],
+      "fsbp_severity": null,
+      "attack": [
+        "T1530",
+        "T1485"
       ]
     },
     {
       "id": "ec2-11",
       "tier": "realistic",
-      "kind": "expected",
       "resource": "queue-worker",
       "title": "Private queue worker scoped to one SQS queue",
-      "expected": null,
-      "acceptable_severities": [
-        "NONE",
-        "LOW"
-      ],
-      "rationale": "No public IP, only the VPC-internal monitoring security group, IMDSv2, encrypted, and a role limited to receive and delete on one queue plus the SSM core policy.",
-      "framework_mappings": {
-        "fsbp": [],
-        "fsbp_reference_severity": null,
-        "attack": [],
-        "context_override": null
-      },
-      "expected_action": "NO_ACTION",
-      "acceptable_actions": [
-        "NO_ACTION",
-        "REMEDIATE"
-      ]
+      "description": "Private instance with no public IP, IMDSv2 required, an encrypted root volume, and the node-exporter security group (TCP 9100 from the VPC CIDR 10.80.0.0/16); its role has AmazonSSMManagedInstanceCore and sqs:ReceiveMessage, sqs:DeleteMessage, and sqs:GetQueueAttributes on one queue. Hardened: no misconfiguration was planted.",
+      "condition": "hardened",
+      "context": null,
+      "coverage": "outside_fsbp",
+      "fsbp": [],
+      "fsbp_severity": null,
+      "attack": []
     }
   ]
 }

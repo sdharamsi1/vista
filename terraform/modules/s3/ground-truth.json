@@ -1,484 +1,291 @@
 {
   "service": "s3",
-  "scoring": "Match findings to scenarios by the bucket name in terraform output scenario_resources. Score each scenario against the highest-severity finding that cites it, or NONE if no finding cites it. A scenario passes when that result is in acceptable_severities and, if cited, the finding's category is expected.category or in acceptable_categories. NONE on a scenario that does not accept NONE is a false negative; a rating above acceptable_severities on an expected or minor scenario is a false positive. When deferral_acceptable is true, PARTIAL or INSUFFICIENT confidence counts as an appropriate deferral.",
-  "rating_method": "Likelihood follows CCSS (NIST IR 7502) exploitability concepts aligned with Vista's definitions: HIGH when reachable from the Internet and usable without credentials; MEDIUM when one precondition must hold first (a credential or API key, a foothold inside the network, an application flaw, or compromise of the resource); LOW when prior account-level access is needed or the issue is defense in depth only. Impact follows CCSS confidentiality, integrity, and availability impact, widened by the mapped ATT&CK technique's outcome: HIGH for account-wide reach, privilege escalation, or full read/write/delete of data; MEDIUM when confined to the resource or one data store; LOW for minor or visibility-only impact. Severity comes from Vista's likelihood x impact matrix. fsbp_reference_severity is the highest published FSBP severity among controls that fail because of the scenario's change (controls that fail on every resource are listed in baseline_controls and excluded). acceptable_severities is the expected severity plus one adjacent level: toward the FSBP reference when one exists and differs, otherwise toward the axis the rationale marks as uncertain. Expected scenarios accept NONE and LOW; ambiguous scenarios accept one level on each side plus deferral. A context_override means documented context removes the attack path FSBP assumes, so the range moves at most one level toward the reference.",
-  "action_method": "expected_action is what a person should do about the scenario: REMEDIATE for dangerous and minor, REVIEW for ambiguous, NO_ACTION for expected. It is derived from kind, not rated separately. acceptable_actions lists every action that counts as a tolerant match, derived by four rules: (1) expected_action is always accepted; (2) if NONE is an acceptable severity, NO_ACTION is accepted, because not reporting a resource is the same as recommending no action; (3) for an expected scenario, REMEDIATE is also accepted when the finding's severity is LOW, since a LOW hygiene note is allowed; (4) REVIEW is also accepted for ec2-02, whose planted flaw is ordinary public web hosting, because whether that is intended depends on information the data cannot show. Report both strict (expected_action) and tolerant (acceptable_actions) results. Severity and action are scored independently.",
+  "scoring": "Answer key for comparing Vista (LLM review) with Prowler (rule-based scanner). It holds facts and published AWS Security Hub FSBP control severities only; it contains no ratings of its own. A tool's output is matched to a scenario by the identifier in terraform output scenario_resources (the bucket name). condition flaw: reporting the scenario counts as a detection. condition flaw_blocked: a misconfiguration is present but another deployed control removes the path it opens; reporting it is shown as a separate report rate, counted as neither a detection nor a false positive. condition hardened: no misconfiguration was planted; reporting it is a false positive. fsbp lists the FSBP controls that fail because of the scenario's configuration: a setting in which the scenario differs from its module's hardened default, or a resource its configuration associates with it (none beyond the bucket). fsbp_severity is the highest published severity in that list. On coverage fsbp scenarios the reported severity (NONE when the scenario is not reported) is compared with fsbp_severity on the order NONE < LOW < MEDIUM < HIGH < CRITICAL; outside_fsbp scenarios are scored for detection and false positives only. Controls in baseline_controls fail regardless of scenario and are in no scenario's fsbp. scripts/score.py applies these rules.",
   "framework_sources": {
     "fsbp": "https://docs.aws.amazon.com/securityhub/latest/userguide/fsbp-standard.html",
     "attack": "https://attack.mitre.org/matrices/enterprise/cloud/iaas/",
-    "owasp_api": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
-    "ccss": "https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nistir7502.pdf"
+    "owasp_api": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
   },
   "baseline_controls": {
-    "note": "Fail regardless of scenario; excluded from per-scenario references.",
+    "note": "FSBP controls known to fail regardless of scenario, for example account-level settings, the VPCs the scenario resources run in, settings left at the module's hardened default that every scenario starts from, and deletion protection, which every resource leaves off so one terraform destroy removes everything. The list is not exhaustive: other FSBP controls can also fail regardless of scenario, depending on account settings at scan time. They are in no scenario's fsbp list. Backing resources no scenario is scored on (for example the S3 access-log bucket, the DynamoDB table, the SQS queue, the KMS key) are not evaluated here.",
     "controls": [
       {
-        "control": "S3.7",
+        "control": "S3.1",
+        "title": "S3 general purpose buckets should have block public access settings enabled",
+        "severity": "MEDIUM",
+        "scope": "Account setting; account-level Block Public Access cannot be fully on, otherwise the public bucket policies and ACL in s3-02 and s3-04 to s3-08 could not be applied"
+      },
+      {
+        "control": "S3.13",
+        "title": "S3 general purpose buckets should have Lifecycle configurations",
         "severity": "LOW",
-        "scope": "No cross-Region replication"
-      },
-      {
-        "control": "S3.20",
-        "severity": "LOW",
-        "scope": "No MFA delete"
-      },
-      {
-        "control": "S3.10",
-        "severity": "MEDIUM",
-        "scope": "No lifecycle configuration on versioned buckets"
-      },
-      {
-        "control": "S3.11",
-        "severity": "MEDIUM",
-        "scope": "No event notifications"
-      },
-      {
-        "control": "S3.15",
-        "severity": "MEDIUM",
-        "scope": "No Object Lock (passes on db-backups only)"
-      },
-      {
-        "control": "S3.22",
-        "severity": "MEDIUM",
-        "scope": "No object-level write logging"
-      },
-      {
-        "control": "S3.23",
-        "severity": "MEDIUM",
-        "scope": "No object-level read logging"
+        "scope": "No Lifecycle configuration on any scenario bucket"
       }
     ]
   },
-  "kinds": {
-    "dangerous": "A real weakness Vista must report within the acceptable range.",
-    "ambiguous": "Defensible either way; the model should explain the tradeoff or defer. NONE and over-rating are both wrong.",
-    "expected": "A correctly configured resource; NONE or a LOW hygiene note.",
-    "minor": "A small, real gap; LOW or no finding."
-  },
-  "change_log": [
-    {
-      "date": "2026-10-14",
-      "change": "Added expected_action to every scenario.",
-      "reason": "The research question asks Vista to separate resources needing remediation from expected configurations and cases needing human review. The review format previously had no way to say the last two, so Vista now emits a Recommended action field and the ground truth records the matching answer."
-    },
-    {
-      "date": "2026-10-14",
-      "change": "Added acceptable_actions to every scenario, and an action_method describing how it is derived.",
-      "reason": "Action-field pilot runs showed that deriving expected_action from kind alone is too coarse: both evaluated models gave the public marketing site (ec2-02) REVIEW rather than REMEDIATE, and one gave the NACL-blocked port (ec2-09) a LOW REMEDIATE that Vista's own guidance supports. The tolerant list is made after seeing the pilot outputs and before the benchmark; strict expected_action is unchanged and both are reported."
-    }
-  ],
   "scenarios": [
     {
       "id": "s3-01",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "design-assets",
       "title": "CORS allows any origin to send GET, PUT, and DELETE",
-      "expected": {
-        "category": "SECURITY_CONFIGURATION",
-        "likelihood": "LOW",
-        "impact": "MEDIUM",
-        "severity": "LOW"
-      },
-      "acceptable_severities": [
-        "LOW",
-        "MEDIUM"
-      ],
-      "rationale": "CORS grants no access on its own; the bucket is private and TLS-only, so this only matters if a caller already has credentials or a presigned URL.",
-      "framework_mappings": {
-        "fsbp": [],
-        "fsbp_reference_severity": null,
-        "attack": [],
-        "context_override": null,
-        "note": "No FSBP control covers CORS."
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
-      ]
+      "description": "Bucket with the module's hardened settings. Misconfigured: its CORS rule allows origin * to send GET, PUT, and DELETE requests with any header.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "outside_fsbp",
+      "fsbp": [],
+      "fsbp_severity": null,
+      "attack": []
     },
     {
       "id": "s3-02",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "build-artifacts",
       "title": "public-read ACL lets anyone list object names",
-      "expected": {
-        "category": "PUBLIC_EXPOSURE",
-        "likelihood": "HIGH",
-        "impact": "LOW",
-        "severity": "MEDIUM"
-      },
-      "acceptable_severities": [
-        "MEDIUM",
-        "HIGH"
+      "description": "Bucket with SSE-KMS, versioning, server access logging, a TLS-only policy, and object ownership BucketOwnerPreferred. Misconfigured: the bucket ACL is public-read (an AllUsers READ grant) and its BlockPublicAcls and IgnorePublicAcls settings are off.",
+      "condition": "flaw",
+      "context": "The AllUsers grant is READ on the bucket, which permits listing object keys; neither the grant nor the bucket policy grants reading object data.",
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "S3.2",
+          "title": "S3 general purpose buckets should block public read access",
+          "severity": "CRITICAL",
+          "scope": "Bucket ACL grants AllUsers READ while BlockPublicAcls and IgnorePublicAcls are off"
+        },
+        {
+          "control": "S3.8",
+          "title": "S3 general purpose buckets should block public access",
+          "severity": "HIGH",
+          "scope": "BlockPublicAcls and IgnorePublicAcls are off"
+        },
+        {
+          "control": "S3.12",
+          "title": "ACLs should not be used to manage user access to S3 general purpose buckets",
+          "severity": "MEDIUM",
+          "scope": "Bucket ACL (public-read) grants access; object ownership is BucketOwnerPreferred"
+        }
       ],
-      "rationale": "AllUsers READ on the bucket survives Block Public Access and BucketOwnerPreferred ownership, so anyone can list keys; object contents stay private.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "S3.2",
-            "severity": "CRITICAL"
-          },
-          {
-            "control": "S3.8",
-            "severity": "HIGH"
-          },
-          {
-            "control": "S3.12",
-            "severity": "MEDIUM"
-          }
-        ],
-        "fsbp_reference_severity": "CRITICAL",
-        "attack": [
-          "T1619"
-        ],
-        "context_override": "The public grant allows listing object names only; object contents stay private."
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "fsbp_severity": "CRITICAL",
+      "attack": [
+        "T1619"
       ]
     },
     {
       "id": "s3-03",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "shared-datasets",
       "title": "Wildcard principal can read and write objects from any account in the organization",
-      "expected": {
-        "category": "SECURITY_CONFIGURATION",
-        "likelihood": "MEDIUM",
-        "impact": "MEDIUM",
-        "severity": "MEDIUM"
-      },
-      "acceptable_severities": [
-        "MEDIUM",
-        "HIGH"
-      ],
-      "rationale": "aws:PrincipalOrgID keeps it non-public, but any principal in any org account can read and overwrite data, which needs an org foothold first.",
-      "framework_mappings": {
-        "fsbp": [],
-        "fsbp_reference_severity": null,
-        "attack": [
-          "T1530",
-          "T1565.001"
-        ],
-        "context_override": null,
-        "note": "S3.6 does not fail: its fixed denylist covers policy- and ACL-changing actions, not GetObject or PutObject."
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "description": "Bucket with the module's hardened settings. Misconfigured: its policy allows Principal * to call s3:GetObject and s3:PutObject on all objects, with the condition aws:PrincipalOrgID equal to var.org_id.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "outside_fsbp",
+      "fsbp": [],
+      "fsbp_severity": null,
+      "attack": [
+        "T1530",
+        "T1565.001"
       ]
     },
     {
       "id": "s3-04",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "customer-exports",
       "title": "Bucket policy allows anonymous s3:GetObject",
-      "expected": {
-        "category": "PUBLIC_EXPOSURE",
-        "likelihood": "HIGH",
-        "impact": "MEDIUM",
-        "severity": "HIGH"
-      },
-      "acceptable_severities": [
-        "HIGH",
-        "CRITICAL"
+      "description": "Bucket with SSE-KMS, versioning, server access logging, ACLs disabled, and a TLS-only policy. Misconfigured: its policy allows Principal * to call s3:GetObject on all objects with no condition, and its BlockPublicPolicy and RestrictPublicBuckets settings are off.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "S3.2",
+          "title": "S3 general purpose buckets should block public read access",
+          "severity": "CRITICAL",
+          "scope": "Bucket policy allows Principal * s3:GetObject with no condition"
+        },
+        {
+          "control": "S3.8",
+          "title": "S3 general purpose buckets should block public access",
+          "severity": "HIGH",
+          "scope": "BlockPublicPolicy and RestrictPublicBuckets are off"
+        }
       ],
-      "rationale": "Principal * with no condition and Block Public Access policy flags off: every object is readable by anyone on the Internet.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "S3.2",
-            "severity": "CRITICAL"
-          },
-          {
-            "control": "S3.8",
-            "severity": "HIGH"
-          }
-        ],
-        "fsbp_reference_severity": "CRITICAL",
-        "attack": [
-          "T1530"
-        ],
-        "context_override": null
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "fsbp_severity": "CRITICAL",
+      "attack": [
+        "T1530"
       ]
     },
     {
       "id": "s3-05",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "partner-uploads",
       "title": "Bucket policy allows anonymous read, write, and delete",
-      "expected": {
-        "category": "PUBLIC_EXPOSURE",
-        "likelihood": "HIGH",
-        "impact": "HIGH",
-        "severity": "CRITICAL"
-      },
-      "acceptable_severities": [
-        "HIGH",
-        "CRITICAL"
+      "description": "Bucket with SSE-KMS, versioning, server access logging, ACLs disabled, and a TLS-only policy. Misconfigured: its policy allows Principal * to call s3:GetObject, s3:PutObject, and s3:DeleteObject on all objects with no condition, and its BlockPublicPolicy and RestrictPublicBuckets settings are off.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "S3.2",
+          "title": "S3 general purpose buckets should block public read access",
+          "severity": "CRITICAL",
+          "scope": "Bucket policy allows Principal * s3:GetObject with no condition"
+        },
+        {
+          "control": "S3.3",
+          "title": "S3 general purpose buckets should block public write access",
+          "severity": "CRITICAL",
+          "scope": "Bucket policy allows Principal * s3:PutObject and s3:DeleteObject with no condition"
+        },
+        {
+          "control": "S3.8",
+          "title": "S3 general purpose buckets should block public access",
+          "severity": "HIGH",
+          "scope": "BlockPublicPolicy and RestrictPublicBuckets are off"
+        }
       ],
-      "rationale": "Anyone can read, overwrite, and delete objects with no credentials, enabling data theft, tampering, destruction, and malware hosting.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "S3.2",
-            "severity": "CRITICAL"
-          },
-          {
-            "control": "S3.3",
-            "severity": "CRITICAL"
-          },
-          {
-            "control": "S3.8",
-            "severity": "HIGH"
-          }
-        ],
-        "fsbp_reference_severity": "CRITICAL",
-        "attack": [
-          "T1530",
-          "T1565.001",
-          "T1485"
-        ],
-        "context_override": null
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "fsbp_severity": "CRITICAL",
+      "attack": [
+        "T1530",
+        "T1565.001",
+        "T1485"
       ]
     },
     {
       "id": "s3-06",
       "tier": "realistic",
-      "kind": "ambiguous",
       "resource": "www",
       "title": "Static website bucket with anonymous read",
-      "expected": {
-        "category": "PUBLIC_EXPOSURE",
-        "likelihood": "HIGH",
-        "impact": "LOW",
-        "severity": "MEDIUM"
-      },
-      "acceptable_severities": [
-        "LOW",
-        "MEDIUM",
-        "HIGH"
+      "description": "Bucket with static website hosting (index.html, error.html), SSE-S3 (AES256), versioning, server access logging, and ACLs disabled. Misconfigured: its policy allows Principal * to call s3:GetObject on all objects with no condition, its BlockPublicPolicy and RestrictPublicBuckets settings are off, and the policy has no statement denying non-TLS requests.",
+      "condition": "flaw",
+      "context": "Static website hosting is enabled on the bucket; Amazon S3 website endpoints do not support HTTPS.",
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "S3.2",
+          "title": "S3 general purpose buckets should block public read access",
+          "severity": "CRITICAL",
+          "scope": "Bucket policy allows Principal * s3:GetObject with no condition"
+        },
+        {
+          "control": "S3.8",
+          "title": "S3 general purpose buckets should block public access",
+          "severity": "HIGH",
+          "scope": "BlockPublicPolicy and RestrictPublicBuckets are off"
+        },
+        {
+          "control": "S3.5",
+          "title": "S3 general purpose buckets should require requests to use TLS",
+          "severity": "MEDIUM",
+          "scope": "Bucket policy has no statement requiring aws:SecureTransport"
+        }
       ],
-      "rationale": "Website hosting is enabled and anonymous GetObject is the purpose of the bucket; SSE-S3 and no TLS-only rule are required for S3 website endpoints. Without account intent the model cannot confirm the content is meant to be public, and FSBP rates the public read Critical, so MEDIUM or HIGH with that caveat, or a deferral, is correct. CRITICAL treats a website as a data leak.",
-      "deferral_acceptable": true,
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "S3.2",
-            "severity": "CRITICAL"
-          },
-          {
-            "control": "S3.8",
-            "severity": "HIGH"
-          },
-          {
-            "control": "S3.5",
-            "severity": "MEDIUM"
-          },
-          {
-            "control": "S3.17",
-            "severity": "MEDIUM"
-          }
-        ],
-        "fsbp_reference_severity": "CRITICAL",
-        "attack": [
-          "T1530"
-        ],
-        "context_override": "Static website hosting is enabled and anonymous read is its purpose; S3 website endpoints require HTTP and SSE-S3."
-      },
-      "expected_action": "REVIEW",
-      "acceptable_actions": [
-        "REVIEW"
+      "fsbp_severity": "CRITICAL",
+      "attack": [
+        "T1530"
       ]
     },
     {
       "id": "s3-07",
       "tier": "realistic",
-      "kind": "ambiguous",
       "resource": "media-library",
       "title": "Anonymous read limited to the public/ prefix",
-      "expected": {
-        "category": "PUBLIC_EXPOSURE",
-        "likelihood": "HIGH",
-        "impact": "LOW",
-        "severity": "MEDIUM"
-      },
-      "acceptable_severities": [
-        "LOW",
-        "MEDIUM",
-        "HIGH"
+      "description": "Bucket with SSE-S3, versioning, server access logging, ACLs disabled, and a TLS-only policy. Misconfigured: its policy allows Principal * to call s3:GetObject on objects under the public/ prefix with no condition, and its BlockPublicPolicy and RestrictPublicBuckets settings are off.",
+      "condition": "flaw",
+      "context": "The anonymous grant covers only objects whose keys begin with public/.",
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "S3.2",
+          "title": "S3 general purpose buckets should block public read access",
+          "severity": "CRITICAL",
+          "scope": "Bucket policy allows Principal * s3:GetObject on public/* with no condition"
+        },
+        {
+          "control": "S3.8",
+          "title": "S3 general purpose buckets should block public access",
+          "severity": "HIGH",
+          "scope": "BlockPublicPolicy and RestrictPublicBuckets are off"
+        }
       ],
-      "deferral_acceptable": true,
-      "rationale": "Only objects under public/ are anonymously readable and the rest of the bucket is private. Whether that is a leak depends on what is stored there, which the facts do not show; the model should name the prefix scope and ask for confirmation rather than call the whole bucket public.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "S3.2",
-            "severity": "CRITICAL"
-          },
-          {
-            "control": "S3.8",
-            "severity": "HIGH"
-          },
-          {
-            "control": "S3.17",
-            "severity": "MEDIUM"
-          }
-        ],
-        "fsbp_reference_severity": "CRITICAL",
-        "attack": [
-          "T1530"
-        ],
-        "context_override": "Only objects under public/ are anonymously readable."
-      },
-      "expected_action": "REVIEW",
-      "acceptable_actions": [
-        "REVIEW"
+      "fsbp_severity": "CRITICAL",
+      "attack": [
+        "T1530"
       ]
     },
     {
       "id": "s3-08",
       "tier": "realistic",
-      "kind": "dangerous",
       "resource": "invoices",
       "title": "Anonymous read restricted only by aws:Referer",
-      "expected": {
-        "category": "PUBLIC_EXPOSURE",
-        "likelihood": "HIGH",
-        "impact": "MEDIUM",
-        "severity": "HIGH"
-      },
-      "acceptable_severities": [
-        "HIGH",
-        "CRITICAL"
+      "description": "Bucket with SSE-S3, versioning, server access logging, ACLs disabled, and a TLS-only policy. Misconfigured: its policy allows Principal * to call s3:GetObject on all objects with only an aws:Referer StringLike condition (https://www.<var.name>.example/*, var.name default brightpath), and its BlockPublicPolicy and RestrictPublicBuckets settings are off.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "S3.2",
+          "title": "S3 general purpose buckets should block public read access",
+          "severity": "CRITICAL",
+          "scope": "Bucket policy allows Principal * s3:GetObject with only an aws:Referer StringLike condition, which contains a wildcard; the control does not evaluate conditions that use wildcards"
+        },
+        {
+          "control": "S3.8",
+          "title": "S3 general purpose buckets should block public access",
+          "severity": "HIGH",
+          "scope": "BlockPublicPolicy and RestrictPublicBuckets are off"
+        }
       ],
-      "rationale": "The Referer header is set by the client, so anyone can send it; the policy is effectively anonymous read of every object, and AWS reports it as public. Tests whether the model treats a spoofable condition as a real restriction.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "S3.2",
-            "severity": "CRITICAL"
-          },
-          {
-            "control": "S3.8",
-            "severity": "HIGH"
-          },
-          {
-            "control": "S3.17",
-            "severity": "MEDIUM"
-          }
-        ],
-        "fsbp_reference_severity": "CRITICAL",
-        "attack": [
-          "T1530"
-        ],
-        "context_override": null
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "fsbp_severity": "CRITICAL",
+      "attack": [
+        "T1530"
       ]
     },
     {
       "id": "s3-09",
       "tier": "realistic",
-      "kind": "expected",
       "resource": "app-config",
       "title": "Fully hardened application configuration bucket",
-      "expected": null,
-      "acceptable_severities": [
-        "NONE",
-        "LOW"
-      ],
-      "rationale": "Block Public Access on, ACLs disabled, SSE-KMS, versioning, access logging, and TLS-only.",
-      "framework_mappings": {
-        "fsbp": [],
-        "fsbp_reference_severity": null,
-        "attack": [],
-        "context_override": null
-      },
-      "expected_action": "NO_ACTION",
-      "acceptable_actions": [
-        "NO_ACTION",
-        "REMEDIATE"
-      ]
+      "description": "Bucket with all four Block Public Access settings on, ACLs disabled (BucketOwnerEnforced), SSE-KMS, versioning, server access logging, and a policy denying non-TLS requests. Hardened: no misconfiguration was planted.",
+      "condition": "hardened",
+      "context": null,
+      "coverage": "outside_fsbp",
+      "fsbp": [],
+      "fsbp_severity": null,
+      "attack": []
     },
     {
       "id": "s3-10",
       "tier": "realistic",
-      "kind": "expected",
       "resource": "db-backups",
       "title": "Fully hardened backup bucket with Object Lock",
-      "expected": null,
-      "acceptable_severities": [
-        "NONE",
-        "LOW"
-      ],
-      "rationale": "Same as app-config plus Object Lock enabled. A note that no default retention is set is reasonable but no more than LOW.",
-      "framework_mappings": {
-        "fsbp": [],
-        "fsbp_reference_severity": null,
-        "attack": [],
-        "context_override": null
-      },
-      "expected_action": "NO_ACTION",
-      "acceptable_actions": [
-        "NO_ACTION",
-        "REMEDIATE"
-      ]
+      "description": "Bucket with the same settings as app-config plus Object Lock enabled, with no default retention. Hardened: no misconfiguration was planted.",
+      "condition": "hardened",
+      "context": null,
+      "coverage": "outside_fsbp",
+      "fsbp": [],
+      "fsbp_severity": null,
+      "attack": []
     },
     {
       "id": "s3-11",
       "tier": "realistic",
-      "kind": "minor",
       "resource": "tmp-scratch",
       "title": "Private scratch bucket without versioning or access logging",
-      "expected": {
-        "category": "SECURITY_CONFIGURATION",
-        "likelihood": "LOW",
-        "impact": "LOW",
-        "severity": "LOW"
-      },
-      "acceptable_severities": [
-        "NONE",
-        "LOW",
-        "MEDIUM"
+      "description": "Bucket with all four Block Public Access settings on, ACLs disabled, SSE-KMS, and a TLS-only policy. Misconfigured: versioning is not enabled and server access logging is off.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "S3.9",
+          "title": "S3 general purpose buckets should have server access logging enabled",
+          "severity": "MEDIUM",
+          "scope": "Server access logging is off"
+        }
       ],
-      "rationale": "Private, encrypted, and TLS-only; missing versioning and logging only reduce recoverability and visibility. FSBP rates missing server access logging (S3.9) Medium, so MEDIUM is also accepted.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "S3.9",
-            "severity": "MEDIUM"
-          },
-          {
-            "control": "S3.14",
-            "severity": "LOW"
-          }
-        ],
-        "fsbp_reference_severity": "MEDIUM",
-        "attack": [],
-        "context_override": null
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE",
-        "NO_ACTION"
-      ]
+      "fsbp_severity": "MEDIUM",
+      "attack": []
     }
   ]
 }

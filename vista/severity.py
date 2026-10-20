@@ -6,8 +6,6 @@ LIKELIHOODS = {"LOW", "MEDIUM", "HIGH"}
 IMPACTS = {"LOW", "MEDIUM", "HIGH"}
 SEVERITIES = {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
 CONFIDENCE = {"CONFIRMED", "PARTIAL", "INSUFFICIENT"}
-# What a person should do about a finding, separate from how severe it is.
-ACTIONS = {"REMEDIATE", "REVIEW", "NO_ACTION"}
 
 # Severity from Likelihood (outer key) x Impact (inner key).
 SEVERITY_MATRIX = {
@@ -29,14 +27,9 @@ SEVERITY_MODEL_PROMPT = """Score each finding on two axes and then derive its Se
 Likelihood — how reachable or exploitable the weakness is from the supplied configuration alone,
 judged by the attack path and how many preconditions must already hold. Reason only from collected
 facts; never assume CVEs, running software, patch level, or active exploitation.
-- HIGH: exploitable directly from the supplied evidence with no prior access (for example a
-  confirmed public network path to the resource, or an anonymous public grant that survives every
-  applicable control).
-- MEDIUM: exploitable only after a precondition the facts do not show is already satisfied, such as
-  first compromising this instance, obtaining valid credentials, or chaining a further step.
+- HIGH: exploitable directly from the supplied evidence with no prior access.
+- MEDIUM: exploitable only after a precondition the facts do not show is already satisfied.
 - LOW: several preconditions must hold, or the weakness is defense-in-depth only.
-When supplied approved intent credibly explains that a path or capability is expected, lower its
-Likelihood and say so, but never below what the evidence supports for a dangerous exposure.
 
 Impact — the blast radius if the weakness is exploited, from the supplied facts.
 - HIGH: account-wide or cross-account access, administrative control, or read/write of data

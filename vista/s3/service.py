@@ -40,10 +40,9 @@ def analyze(
     model_id: str,
     facts: dict[str, Any],
     json_path: Path | None = None,
-    intent: str | None = None,
     prepared: bool = False,
 ) -> tuple[str, dict[str, Any]]:
     payload = facts if prepared else normalize(facts)
     return findings.run_review(
-        session, bedrock_region, model_id, review, facts, payload, count(facts), json_path, intent
+        session, bedrock_region, model_id, review, facts, payload, count(facts), json_path
     )

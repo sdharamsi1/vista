@@ -1,47 +1,119 @@
 #!/usr/bin/env python3
-"""Score saved Vista review runs against a service's ground truth.
+"""Score saved Vista review runs and a Prowler scan side by side against a service's ground truth.
 
-Each scenario is scored against the highest-severity finding that cites its resource. On a severity
-tie, the finding citing the fewest scenario resources wins, then the earliest (changed 2026-10-19
-after the S3 benchmark; EC2 scores are unchanged by it). A scenario no finding cites is scored NONE
-and NO_ACTION. Reviews are parsed with
-the same helpers the validator uses, so the harness reads them exactly as Vista does.
+The ground truth (terraform/modules/<service>/ground-truth.json) holds facts and published AWS
+Security Hub FSBP severities only. Each scenario has a condition (flaw, flaw_blocked, hardened), a
+coverage (fsbp, outside_fsbp), and, on fsbp scenarios, fsbp_severity: the highest published severity
+of the FSBP controls that fail because of the scenario. Vista (the LLM review) and Prowler (the
+rule-based scanner) are scored by the same rules, so the comparison measures what the LLM adds.
 
 Usage:
-    python scripts/score.py ec2 runs/ec2/benchmark runs/ec2/scenario_resources.combined.json
-    python scripts/score.py ec2 RUNS MAP --tier realistic --json out.json --csv out.csv
-    python scripts/score.py ec2 RUNS MAP --prowler runs/ec2/prowler/prowler-output-*.ocsf.json
+    python scripts/score.py SERVICE RUNS MAP [--ground-truth PATH] [--tier controlled|realistic]
+                            [--max-findings N] [--prowler PATH] [--json PATH] [--csv PATH]
+    python scripts/score.py ec2 runs/ec2 runs/ec2/scenario_resources.json \\
+        --prowler runs/ec2/prowler/prowler-output.ocsf.json --json out.json --csv out.csv
 
-RUNS holds one folder per model, each with run-1, run-2, ... folders written by `--save-run`
-(analysis.md and run.json). An optional RUNS/payload.json is used to confirm every identifier a
-review cites exists in the evidence. MAP is the `terraform output -json scenario_resources` file
-(scenario ID -> the identifier Vista cites). Ground truth defaults to
-terraform/modules/<service>/ground-truth.json.
+Inputs:
+  SERVICE  ec2, s3, apigateway, or rds.
+  RUNS     one folder per model, each with run-1, run-2, ... folders written by `--save-run`
+           (analysis.md and run.json), plus an optional RUNS/payload.json (the payload the runs
+           reviewed). payload.json is used to flag cited identifiers absent from the evidence and,
+           for EC2 and RDS, to attribute Prowler results.
+  MAP      `terraform output -json scenario_resources`: a JSON object of scenario ID -> the
+           identifier Vista cites (EC2 instance ID, S3 bucket name, API Gateway API ID, RDS
+           identifier). Ground-truth scenarios missing from the map are listed and not scored.
+  --ground-truth  overrides the default ground-truth path. The file is validated on load: every
+           scenario needs condition in {flaw, flaw_blocked, hardened}, coverage in {fsbp,
+           outside_fsbp}, fsbp_severity LOW..CRITICAL on fsbp and null on outside_fsbp, and no
+           hardened scenario may be fsbp.
+  --tier   score only the scenarios of one tier.
+  --max-findings  the review's finding cap (default 10); runs that reach it are counted.
+  --prowler  Prowler JSON OCSF output (prowler aws --output-formats json-ocsf). Scan without a
+           mutelist: muted (Suppressed) FAILs are still scored and only counted.
+  --json / --csv  also write full results (service, tier, scored IDs, per-tool runs, cells, and
+           summaries) as JSON, and one CSV row per (tool, run, scenario) cell.
 
-Rules, as defined in docs and the ground-truth files:
-  in range     severity is in the scenario's acceptable_severities
-  exact        severity equals the expected severity (NONE when the scenario expects no finding)
-  action       strict: equals expected_action. tolerant: in acceptable_actions, except that an
-               expected scenario accepts REMEDIATE only at LOW severity
-  category     the finding's category is the expected or an acceptable alternate (cited only)
-  grouped      the scoring finding cites more than one scenario resource; reported as a flag
-  consistency  share of scenarios with identical severity in every run, plus mean modal agreement
+Vista matching. Each review is parsed with the validator's helpers (vista.findings): position,
+title, Severity, and the backticked identifiers in the "Affected ..." field. A scenario is scored
+against the highest-severity finding citing its identifier; on a tie, the finding citing the fewest
+scored-scenario resources, then the earliest. No citing finding: not reported, severity NONE. A run
+is scored when run.json status is ok (or run.json is missing) and analysis.md exists; otherwise it
+is failed and run.json's error is shown.
 
-Prowler (--prowler), the deterministic comparison, is scored against the same ground truth by fixed
-rules decided before the S3, API Gateway, and RDS runs:
-  attribution  a FAIL result belongs to a scenario when its resource is the scenario's resource or an
-               object the scenario's exposure depends on. For EC2 that is the instance, its security
-               groups, its subnet's network ACL, its instance profile role, and the load balancer it
-               is registered with (and that load balancer's security groups), all read from the saved
-               payload. Subnets, VPCs, volumes, and account-level checks are not attributed. For the
-               other services only the scenario's own resource is attributed until their rules are
-               written. An object shared by two scenarios counts for both.
-  severity     highest Prowler severity among the scenario's FAILs, mapped one to one (critical to
-               CRITICAL, and so on); informational results are ignored; no FAIL means NONE
-  action       any FAIL at MEDIUM or above means REMEDIATE, otherwise NO_ACTION; Prowler has no REVIEW
-  columns      "prowler" counts every attributed FAIL (primary). "prowler-filtered" ignores any check
-               that FAILs for at least half of the scored scenarios (checks that fire on nearly every
-               resource); it is secondary and reported next to the primary, never instead of it
+Cell, one per (tool, run, scenario): scenario, condition, coverage, reported, severity,
+fsbp_severity, distance, grouped, findings_citing. distance = rank(severity) - rank(fsbp_severity)
+on fsbp scenarios, else null, with ranks NONE 0 < LOW 1 < MEDIUM 2 < HIGH 3 < CRITICAL 4. grouped:
+the scoring finding cites more than one scored-scenario resource.
+
+Metrics per tool (a model pools the cells of all its scored runs; Prowler is one run), each n/N for
+the groups all, fsbp, outside_fsbp:
+  detection          reported cells over flaw cells
+  flaw_blocked rate  reported cells over flaw_blocked cells; neither a detection nor a false positive
+  false positives    reported cells over hardened cells
+Severity agreement, fsbp cells only (flaw and flaw_blocked; not reported = NONE): exact (distance
+0), above (> 0), below (< 0), and the mean signed distance. outside_fsbp cells get no severity
+comparison.
+Vista only (Prowler is deterministic or has no such measure):
+  consistency        scenarios with the same severity in every scored run over scored scenarios;
+                     mean modal agreement (mean of modal count / scored runs); non-identical list
+  runs               scored and failed (with error text); retried (tokens.attempts > 1) with each
+                     run.json retry_errors entry; findings per run; runs at the --max-findings cap
+  unknown ids        AWS IDs and ARNs in analysis.md absent from payload.json, total and per run
+                     ("not checked" without payload.json)
+  grouped            cells scored from a grouped finding, and their scenario IDs
+  cost               review seconds and total tokens per run
+Per scenario: condition, coverage, fsbp_severity, and each tool's severity distribution over runs.
+
+Prowler OCSF field access (Prowler 4.x and 5.x; v4 names in the Prowler deprecation table):
+  status    status_code (PASS, FAIL, MANUAL); only FAIL is used. A file where no record has
+            status_code is rejected.
+  check     metadata.event_code (CheckID); required on FAIL.
+  severity  severity string (Critical, High, Medium, Low, Informational), else severity_id
+            (1 Informational, 2 Low, 3 Medium, 4 High, 5 Critical); required on FAIL.
+  resource  every non-empty uid (ResourceArn) and name (ResourceId) of every entry in resources[];
+            at least one is required on FAIL.
+  version   metadata.product.version (printed; "unknown" with a warning when absent) and the OCSF
+            schema metadata.version when present.
+  muted     FAILs whose status is Suppressed are counted.
+Any missing required field or unknown severity exits with the record index and the field name.
+Informational FAILs are ignored. A scenario's Prowler severity is the highest severity among the
+FAILs attributed to it, mapped one to one; none attributed means not reported (NONE). A FAIL can be
+attributed to several scenarios (a shared object counts for each).
+
+Attribution: a FAIL belongs to a scenario when a resource candidate matches one of the scenario's
+related identifiers. The related identifiers cover every resource whose FSBP control the answer key
+attributes to the scenario (its fsbp list), so Prowler is attributed as broadly as the answer key.
+Always: candidate equals the identifier. Per service:
+  ec2         related, read from RUNS/payload.json (required): the instance; its EBS volumes
+              (storage.block_devices[].volume_id); its security groups (instance and interfaces); its
+              interfaces' network ACLs; its instance-profile role ARNs; and for each
+              load_balancer_relationships entry the listener_arn, the target_group_arn (and
+              shared.target_groups[arn].arn), the load_balancer_arn, that load balancer's security
+              groups, and every listener in shared.load_balancers[arn].listeners (an HTTP redirect
+              listener forwards to no instance but is still the instance's load balancer). Also
+              matches a candidate ending in "/<identifier>" (volume, security group, and network ACL
+              ARNs). Subnets, route tables, VPCs, and account-level checks are not attributed.
+  s3          related: the bucket name. Also matches an ARN ending in ":::<bucket>" (any
+              partition); a longer bucket name or an object ARN does not match.
+  apigateway  related: the API ID. Also matches an ARN containing "/restapis/<id>" or "/apis/<id>"
+              as a path segment (REST, HTTP, WebSocket APIs and their stages, routes, integrations).
+  rds         related: the identifier and, when payload.json is present, from the db_instances,
+              db_clusters, db_proxies, or snapshots record with that identifier: its arn (proxy
+              ARNs use prx-...), its security_group_ids, its parameter group names
+              (parameter_group_refs -> shared.parameter_groups[ref].name,
+              cluster_parameter_group_ref -> shared.cluster_parameter_groups[ref].name, else the
+              ref after "region/"), and for a snapshot its source identifier and the arn of the
+              db_instances or db_clusters record with that identifier. A security group ID matches
+              a candidate equal to it or ending in "/<sg-id>"; any other identifier also matches an
+              ARN ending in ":(db|cluster|snapshot|cluster-snapshot|db-proxy|pg|cluster-pg):<id>".
+              Subnet groups, subnets, route tables, network ACLs, VPCs, and account-level checks
+              are not attributed: no answer-key control is attributed through them, and they are
+              shared by many scenarios.
+A shared object (a security group, load balancer, listener, or parameter group referenced by
+several scenarios) counts for each scenario that references it.
+Columns: "prowler" counts every attributed FAIL (primary). "prowler-filtered" ignores any check that
+FAILs for at least half of the scored scenarios (2 * count >= scored), checks that fire on nearly
+every resource; it is secondary and shown next to the primary, never instead of it.
 """
 
 from __future__ import annotations
@@ -61,14 +133,19 @@ from vista import findings  # noqa: E402
 
 SERVICES = ("ec2", "s3", "apigateway", "rds")
 SEVERITIES = ["NONE", "LOW", "MEDIUM", "HIGH", "CRITICAL"]
+CONDITIONS = ("flaw", "flaw_blocked", "hardened")
+COVERAGES = ("fsbp", "outside_fsbp")
+GROUPS = ("all", "fsbp", "outside_fsbp")
+RATES = (("detection", "flaw"), ("flaw_blocked", "flaw_blocked"), ("false_positives", "hardened"))
 AFFECTED_LABEL = re.compile(r"\*\*(Affected [A-Za-z ]+):\*\*")
 AWS_ID = re.compile(r"\b(?:i|sg|subnet|rtb|acl|igw|nat|vol|vpc|eni|ami|snap)-[0-9a-f]{8,17}\b")
 AWS_ARN = re.compile(r"arn:aws:[A-Za-z0-9:/_.\-]+")
-INTENT_WORDS = re.compile(r"\b(intended|by design)\b", re.IGNORECASE)
-ASKING = re.compile(
-    r"\b(confirm|whether|unless|verify|otherwise)\b|if (it is |this is )?intended|not intended",
-    re.IGNORECASE,
-)
+PROWLER_SEVERITIES = ("CRITICAL", "HIGH", "MEDIUM", "LOW", "INFORMATIONAL")
+PROWLER_SEVERITY_IDS = {1: "INFORMATIONAL", 2: "LOW", 3: "MEDIUM", 4: "HIGH", 5: "CRITICAL"}
+RDS_ARN_TYPES = r":(?:db|cluster|snapshot|cluster-snapshot|db-proxy|pg|cluster-pg):"
+RDS_SG_ID = re.compile(r"sg-[0-9a-f]{8,17}")
+CELL_COLUMNS = ["scenario", "condition", "coverage", "reported", "severity", "fsbp_severity",
+                "distance", "grouped", "findings_citing"]
 
 
 # Position of a severity in the ordering NONE < LOW < MEDIUM < HIGH < CRITICAL.
@@ -81,14 +158,57 @@ def pct(numerator: int, denominator: int) -> str:
     return f"{100 * numerator / denominator:.0f}%" if denominator else "-"
 
 
-# Load scenarios from a ground-truth file, optionally keeping one tier, keyed by scenario ID.
+# "n/N (pct)", or "-" when N is zero.
+def ratio(numerator: int, denominator: int) -> str:
+    return f"{numerator}/{denominator} ({pct(numerator, denominator)})" if denominator else "-"
+
+
+# Read a JSON file, exiting with a clear message when it does not parse.
+def read_json(path: Path, label: str) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise SystemExit(f"{label} {path} is not valid JSON: {error}") from None
+
+
+# Exit unless every scenario has a known condition and coverage and a consistent fsbp_severity.
+def validate_ground_truth(path: Path, data: Any) -> None:
+    if not isinstance(data, dict) or not isinstance(data.get("scenarios"), list):
+        raise SystemExit(f"ground truth {path}: expected an object with a scenarios list")
+    for index, scenario in enumerate(data["scenarios"]):
+        sid = scenario.get("id") or f"scenarios[{index}]"
+        condition, coverage = scenario.get("condition"), scenario.get("coverage")
+        fsbp_severity = scenario.get("fsbp_severity")
+        if condition not in CONDITIONS:
+            raise SystemExit(f"ground truth {path}: {sid} condition {condition!r} is not one of {', '.join(CONDITIONS)}")
+        if coverage not in COVERAGES:
+            raise SystemExit(f"ground truth {path}: {sid} coverage {coverage!r} is not one of {', '.join(COVERAGES)}")
+        if coverage == "fsbp" and fsbp_severity not in SEVERITIES[1:]:
+            raise SystemExit(f"ground truth {path}: {sid} is fsbp but fsbp_severity is {fsbp_severity!r} (expected LOW..CRITICAL)")
+        if coverage == "outside_fsbp" and fsbp_severity is not None:
+            raise SystemExit(f"ground truth {path}: {sid} is outside_fsbp but fsbp_severity is {fsbp_severity!r} (expected null)")
+        if condition == "hardened" and coverage == "fsbp":
+            raise SystemExit(f"ground truth {path}: {sid} is hardened but has coverage fsbp")
+
+
+# Load and validate a ground-truth file, optionally keeping one tier, keyed by scenario ID.
 def load_ground_truth(path: Path, tier: str | None) -> dict[str, dict[str, Any]]:
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = read_json(path, "ground truth")
+    validate_ground_truth(path, data)
     return {
         scenario["id"]: scenario
         for scenario in data["scenarios"]
         if tier is None or scenario.get("tier") == tier
     }
+
+
+# Load the scenario map, exiting unless it is a JSON object of strings.
+def load_map(path: Path) -> dict[str, str]:
+    data = read_json(path, "scenario map")
+    if not isinstance(data, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in data.items()):
+        raise SystemExit(f"scenario map {path}: expected a JSON object of scenario ID -> identifier strings "
+                         "(terraform output -json scenario_resources)")
+    return data
 
 
 # Find each model's run folders: {model: {run number: path}}.
@@ -105,29 +225,25 @@ def discover_runs(runs_dir: Path) -> dict[str, dict[int, Path]]:
     return models
 
 
-# One review's findings as dicts: position, title, enum fields, and the resources it cites.
+# One review's findings as dicts: position, title, severity, and the resources it cites.
 def parse_review(text: str) -> list[dict[str, Any]]:
     parsed = []
     for position, (title, block) in enumerate(findings.split_findings(text), start=1):
         label = AFFECTED_LABEL.search(block)
         affected = findings.finding_field(block, label.group(1)) if label else ""
+        severity = findings.enum_value(block, "Severity")
         parsed.append(
             {
                 "position": position,
                 "title": title,
-                "severity": findings.enum_value(block, "Severity"),
-                "likelihood": findings.enum_value(block, "Likelihood"),
-                "impact": findings.enum_value(block, "Impact"),
-                "confidence": findings.enum_value(block, "Confidence"),
-                "category": findings.enum_value(block, "Category"),
-                "action": findings.enum_value(block, "Recommended action"),
+                "severity": severity if severity in SEVERITIES[1:] else "NONE",
                 "cited": set(findings.BACKTICK_PATTERN.findall(affected or "")),
             }
         )
     return parsed
 
 
-# Score one scenario against a run's findings.
+# Score one scenario against a run's findings: one cell.
 def score_scenario(
     scenario: dict[str, Any],
     identifier: str,
@@ -143,53 +259,18 @@ def score_scenario(
         default=None,
     )
     severity = best["severity"] if best else "NONE"
-    action = best["action"] if best else "NO_ACTION"
-    expected = scenario["expected"]
-    expected_severity = expected["severity"] if expected else "NONE"
-    categories = scenario.get("acceptable_categories") or (
-        [expected["category"]] if expected else []
-    )
-    tolerant = action in scenario["acceptable_actions"]
-    if scenario["kind"] == "expected" and action == "REMEDIATE" and severity != "LOW":
-        tolerant = False
-    grouped = bool(best) and len(best["cited"] & scenario_resources) > 1
+    fsbp_severity = scenario["fsbp_severity"]
     return {
         "scenario": scenario["id"],
-        "kind": scenario["kind"],
-        "cited": best is not None,
-        "findings_citing": len(citing),
+        "condition": scenario["condition"],
+        "coverage": scenario["coverage"],
+        "reported": best is not None,
         "severity": severity,
-        "expected_severity": expected_severity,
-        "in_range": severity in scenario["acceptable_severities"],
-        "exact": severity == expected_severity,
-        "action": action,
-        "expected_action": scenario["expected_action"],
-        "action_strict": action == scenario["expected_action"],
-        "action_tolerant": tolerant,
-        "category": best["category"] if best else None,
-        "category_ok": best is None or not categories or best["category"] in categories,
-        "likelihood": best["likelihood"] if best else None,
-        "impact": best["impact"] if best else None,
-        "likelihood_ok": (best["likelihood"] == expected["likelihood"]) if best and expected else None,
-        "impact_ok": (best["impact"] == expected["impact"]) if best and expected else None,
-        "confidence": best["confidence"] if best else None,
-        "grouped": grouped,
-        "grouped_inflated": grouped and rank(severity) > rank(expected_severity),
-        "missed": best is None and "NONE" not in scenario["acceptable_severities"],
-        "severe_miss": expected_severity in ("HIGH", "CRITICAL") and severity in ("NONE", "LOW"),
-        "safe_overrated": scenario["kind"] in ("expected", "minor") and severity not in scenario["acceptable_severities"],
+        "fsbp_severity": fsbp_severity,
+        "distance": rank(severity) - rank(fsbp_severity) if fsbp_severity else None,
+        "grouped": bool(best) and len(best["cited"] & scenario_resources) > 1,
+        "findings_citing": len(citing),
     }
-
-
-# Sentences that call something intended or by design without asking for confirmation. This is a
-# heuristic for human review, not a verdict.
-def intent_candidates(text: str) -> list[str]:
-    sentences = re.split(r"(?<=[.!?])\s+", text)
-    return [
-        " ".join(sentence.split())
-        for sentence in sentences
-        if INTENT_WORDS.search(sentence) and not ASKING.search(sentence)
-    ]
 
 
 # AWS identifiers and ARNs in the review that do not appear in the payload.
@@ -198,125 +279,8 @@ def unknown_identifiers(text: str, payload_text: str) -> list[str]:
     return sorted(token for token in cited if token not in payload_text)
 
 
-# Read the failed results from a Prowler OCSF JSON file: (version, total results, failures).
-def load_prowler(path: Path) -> tuple[str, int, list[dict[str, str]]]:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    version = "unknown"
-    fails = []
-    for result in data:
-        version = ((result.get("metadata") or {}).get("product") or {}).get("version") or version
-        if result.get("status_code") != "FAIL":
-            continue
-        resources = result.get("resources") or [{}]
-        fails.append(
-            {
-                "check": (result.get("metadata") or {}).get("event_code") or "",
-                "severity": str(result.get("severity") or "").upper(),
-                "uid": resources[0].get("uid") or "",
-            }
-        )
-    if not fails or not all(item["check"] for item in fails):
-        raise SystemExit(f"{path} does not look like Prowler OCSF output (no FAIL results with a check ID)")
-    return version, len(data), fails
-
-
-# The identifiers a scenario's exposure depends on, from the saved EC2 payload: the instance, its
-# security groups, its network ACLs, its instance profile roles, and its load balancers with their
-# security groups.
-def ec2_related(payload: dict[str, Any], mapping: dict[str, str], scored_ids: list[str]) -> dict[str, set[str]]:
-    instances = {item["instance_id"]: item for item in payload["instances"]}
-    shared = payload["shared"]
-    related: dict[str, set[str]] = {}
-    for sid in scored_ids:
-        identifiers = {mapping[sid]}
-        instance = instances.get(mapping[sid])
-        if instance:
-            network = instance["network"]
-            identifiers |= set(network.get("security_group_ids") or [])
-            for interface in network.get("interfaces") or []:
-                identifiers |= set(interface.get("security_group_ids") or [])
-                if interface.get("network_acl_id"):
-                    identifiers.add(interface["network_acl_id"])
-            profile = shared["instance_profiles"].get((instance.get("iam") or {}).get("instance_profile_arn") or "")
-            if profile:
-                identifiers |= {role["arn"] for role in profile.get("roles") or []}
-            for relationship in network.get("load_balancer_relationships") or []:
-                arn = relationship["load_balancer_arn"]
-                identifiers.add(arn)
-                identifiers |= set((shared["load_balancers"].get(arn) or {}).get("security_group_ids") or [])
-        related[sid] = identifiers
-    return related
-
-
-# True when a Prowler resource ID is the identifier itself or ends in "/<identifier>".
-def resource_matches(uid: str, identifier: str) -> bool:
-    return uid == identifier or uid.endswith("/" + identifier)
-
-
-PROWLER_SEVERITIES = {"CRITICAL", "HIGH", "MEDIUM", "LOW"}
-
-
-# Score Prowler's failures as two baseline columns, "prowler" (every attributed FAIL) and
-# "prowler-filtered" (ignoring checks that fail for at least half of the scored scenarios).
-def score_prowler(
-    version: str,
-    total_results: int,
-    fails: list[dict[str, str]],
-    ground_truth: dict[str, dict[str, Any]],
-    mapping: dict[str, str],
-    related: dict[str, set[str]],
-) -> dict[str, dict[str, Any]]:
-    scored_ids = [sid for sid in ground_truth if sid in mapping]
-    resources = {mapping[sid] for sid in scored_ids}
-    usable = [item for item in fails if item["severity"] in PROWLER_SEVERITIES]
-    hits = {sid: [item for item in usable if any(resource_matches(item["uid"], ident) for ident in related[sid])] for sid in scored_ids}
-    per_check = Counter(check for sid in scored_ids for check in {item["check"] for item in hits[sid]})
-    universal = sorted(check for check, count in per_check.items() if 2 * count >= len(scored_ids))
-    attributed = {id(item) for sid in scored_ids for item in hits[sid]}
-    columns: dict[str, dict[str, Any]] = {}
-    for name, ignore in (("prowler", set()), ("prowler-filtered", set(universal))):
-        cells: dict[str, Any] = {}
-        drivers: dict[str, list[str]] = {}
-        for sid in scored_ids:
-            kept = [item for item in hits[sid] if item["check"] not in ignore]
-            top = max((rank(item["severity"]) for item in kept), default=0)
-            severity = SEVERITIES[top]
-            action = "REMEDIATE" if top >= rank("MEDIUM") else "NO_ACTION"
-            parsed = (
-                [{"position": 1, "severity": severity, "likelihood": None, "impact": None, "confidence": None,
-                  "category": None, "action": action, "cited": {mapping[sid]}}]
-                if kept
-                else []
-            )
-            cell = score_scenario(ground_truth[sid], mapping[sid], parsed, resources)
-            cell.update(category_ok=None, likelihood_ok=None, impact_ok=None)
-            cells[sid] = cell
-            drivers[sid] = sorted({item["check"] for item in kept if rank(item["severity"]) == top})
-        columns[name] = {
-            "baseline": True,
-            "info": {
-                "version": version,
-                "results": total_results,
-                "fails": len(fails),
-                "attributed_fails": len(attributed),
-                "unattributed_fails": len(fails) - len(attributed),
-                "universal_checks": universal,
-                "drivers": drivers,
-            },
-            "runs": {
-                1: {
-                    "status": "ok", "attempts": None, "seconds": None, "tokens_total": None,
-                    "findings": sum(len(hits[sid]) for sid in scored_ids), "at_cap": False,
-                    "noaction_above_low": 0, "intent_candidates": [], "unknown_identifiers": None,
-                    "scenarios": cells,
-                }
-            },
-        }
-    return columns
-
-
 # Score every run of every model.
-def score_all(
+def score_vista(
     models: dict[str, dict[int, Path]],
     ground_truth: dict[str, dict[str, Any]],
     mapping: dict[str, str],
@@ -327,91 +291,313 @@ def score_all(
     resources = {mapping[sid] for sid in scored_ids}
     results: dict[str, dict[str, Any]] = {}
     for model, runs in models.items():
-        results[model] = {"runs": {}}
+        results[model] = {"baseline": False, "runs": {}}
         for number, folder in runs.items():
-            meta = json.loads((folder / "run.json").read_text(encoding="utf-8")) if (folder / "run.json").exists() else {}
+            meta_path, analysis = folder / "run.json", folder / "analysis.md"
+            meta = read_json(meta_path, "run.json") if meta_path.exists() else {}
             tokens = meta.get("tokens") or {}
+            status = meta.get("status", "ok") if meta else "no run.json"
+            scored = (status == "ok" or not meta) and analysis.exists()
+            error = None
+            if not scored:
+                error = meta.get("error") or (f"status {status!r}" if status != "ok" else "analysis.md missing")
             entry: dict[str, Any] = {
-                "status": meta.get("status", "unknown"),
+                "status": status,
+                "scored": scored,
+                "error": error,
                 "attempts": tokens.get("attempts"),
+                "retry_errors": list(meta.get("retry_errors") or []),
                 "seconds": meta.get("review_seconds"),
-                "tokens_total": sum(tokens.get(k, 0) for k in ("input", "output", "cache_read", "cache_write")) or None,
+                "tokens_total": sum(tokens.get(k) or 0 for k in ("input", "output", "cache_read", "cache_write")) or None,
+                "findings": None,
+                "at_cap": False,
+                "unknown_identifiers": None,
                 "scenarios": {},
             }
-            analysis = folder / "analysis.md"
-            if entry["status"] == "ok" and analysis.exists():
+            if scored:
                 text = analysis.read_text(encoding="utf-8")
                 parsed = parse_review(text)
                 entry["findings"] = len(parsed)
                 entry["at_cap"] = len(parsed) >= max_findings
-                entry["noaction_above_low"] = sum(1 for item in parsed if item["action"] == "NO_ACTION" and item["severity"] != "LOW")
-                entry["intent_candidates"] = intent_candidates(text)
-                entry["unknown_identifiers"] = unknown_identifiers(text, payload_text) if payload_text else None
+                entry["unknown_identifiers"] = unknown_identifiers(text, payload_text) if payload_text is not None else None
                 for sid in scored_ids:
                     entry["scenarios"][sid] = score_scenario(ground_truth[sid], mapping[sid], parsed, resources)
             results[model]["runs"][number] = entry
     return results
 
 
-# Aggregate one model's runs into the headline numbers.
-def summarize(model: dict[str, Any], ground_truth: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    ok_runs = {n: r for n, r in model["runs"].items() if r["scenarios"]}
-    cells = [cell for run in ok_runs.values() for cell in run["scenarios"].values()]
-    dangerous = [c for c in cells if c["kind"] == "dangerous"]
-    ambiguous = [c for c in cells if c["kind"] == "ambiguous"]
-    with_expected = [c for c in cells if c["likelihood_ok"] is not None]
-    inflated = Counter(c["scenario"] for c in cells if c["grouped_inflated"])
-    seconds = [r["seconds"] for r in ok_runs.values() if r["seconds"] is not None]
-    tokens = [r["tokens_total"] for r in ok_runs.values() if r["tokens_total"]]
-    sids = sorted(next(iter(ok_runs.values()))["scenarios"]) if ok_runs else []
-    per_scenario = {}
-    for sid in sids:
-        severities = [run["scenarios"][sid]["severity"] for run in ok_runs.values()]
-        actions = [run["scenarios"][sid]["action"] for run in ok_runs.values()]
-        per_scenario[sid] = {"severities": Counter(severities), "actions": Counter(actions)}
-    unanimous = [sid for sid in sids if len(per_scenario[sid]["severities"]) == 1]
-    modal = [max(per_scenario[sid]["severities"].values()) / len(ok_runs) for sid in sids]
-    high = [sid for sid in sids if ground_truth[sid]["expected"] and ground_truth[sid]["expected"]["severity"] in ("HIGH", "CRITICAL")]
+# Read a Prowler JSON OCSF file. Exits with the record index and field on any malformed FAIL.
+def load_prowler(path: Path) -> dict[str, Any]:
+    data = read_json(path, "Prowler output")
+    if not isinstance(data, list) or not all(isinstance(record, dict) for record in data):
+        raise SystemExit(f"{path}: expected a JSON array of Prowler OCSF Detection Finding objects "
+                         "(prowler ... --output-formats json-ocsf)")
+    if not any("status_code" in record for record in data):
+        raise SystemExit(f"{path} does not look like Prowler OCSF output (no status_code)")
+    versions: set[str] = set()
+    schema_versions: set[str] = set()
+    fails = []
+    for index, record in enumerate(data):
+        metadata = record.get("metadata") if isinstance(record.get("metadata"), dict) else {}
+        product = metadata.get("product") if isinstance(metadata.get("product"), dict) else {}
+        if product.get("version"):
+            versions.add(str(product["version"]))
+        if metadata.get("version"):
+            schema_versions.add(str(metadata["version"]))
+        if record.get("status_code") != "FAIL":
+            continue
+        check = metadata.get("event_code")
+        if not check:
+            raise SystemExit(f"{path}: record {index} is a FAIL with no metadata.event_code (check ID)")
+        severity = str(record.get("severity") or "").upper()
+        if severity not in PROWLER_SEVERITIES:
+            severity = PROWLER_SEVERITY_IDS.get(record.get("severity_id"))
+            if severity is None:
+                raise SystemExit(f"{path}: record {index} ({check}) has unknown severity {record.get('severity')!r} "
+                                 f"and severity_id {record.get('severity_id')!r}")
+        resources = record.get("resources") if isinstance(record.get("resources"), list) else []
+        candidates = sorted({
+            str(entry[key]) for entry in resources if isinstance(entry, dict)
+            for key in ("uid", "name") if entry.get(key)
+        })
+        if not candidates:
+            raise SystemExit(f"{path}: record {index} ({check}) is a FAIL with no resources[].uid or resources[].name")
+        fails.append({"index": index, "check": check, "severity": severity, "candidates": candidates,
+                      "muted": record.get("status") == "Suppressed"})
+    if not versions:
+        print(f"Warning: {path} has no metadata.product.version; Prowler version unknown.", file=sys.stderr)
     return {
-        "runs": len(model["runs"]),
-        "runs_ok": len(ok_runs),
-        "runs_failed": len(model["runs"]) - len(ok_runs),
-        "runs_retried": sum(1 for r in model["runs"].values() if (r["attempts"] or 1) > 1),
-        "runs_at_cap": sum(1 for r in ok_runs.values() if r.get("at_cap")),
-        "findings": [r["findings"] for r in ok_runs.values()],
+        "versions": sorted(versions) or ["unknown"],
+        "schema_versions": sorted(schema_versions),
+        "results": len(data),
+        "fails": fails,
+        "muted": sum(item["muted"] for item in fails),
+    }
+
+
+# EC2: the instance, its root and attached EBS volumes, its security groups, its network ACLs, its
+# instance-profile roles, and its load balancers with their security groups and every listener,
+# plus the listener and target group of each load-balancer relationship, from the saved payload.
+def ec2_related(payload: dict[str, Any], mapping: dict[str, str], scored_ids: list[str]) -> dict[str, set[str]]:
+    instances = {item["instance_id"]: item for item in payload.get("instances") or []}
+    shared = payload.get("shared") or {}
+    load_balancers = shared.get("load_balancers") or {}
+    target_groups = shared.get("target_groups") or {}
+    related: dict[str, set[str]] = {}
+    for sid in scored_ids:
+        identifiers = {mapping[sid]}
+        instance = instances.get(mapping[sid])
+        if instance:
+            for device in (instance.get("storage") or {}).get("block_devices") or []:
+                volume_id = device.get("volume_id") or (device.get("volume") or {}).get("volume_id")
+                if volume_id:
+                    identifiers.add(volume_id)
+            network = instance.get("network") or {}
+            identifiers |= set(network.get("security_group_ids") or [])
+            for interface in network.get("interfaces") or []:
+                identifiers |= set(interface.get("security_group_ids") or [])
+                if interface.get("network_acl_id"):
+                    identifiers.add(interface["network_acl_id"])
+            profile_arn = (instance.get("iam") or {}).get("instance_profile_arn") or ""
+            profile = (shared.get("instance_profiles") or {}).get(profile_arn)
+            if profile:
+                identifiers |= {role["arn"] for role in profile.get("roles") or [] if role.get("arn")}
+            for relationship in network.get("load_balancer_relationships") or []:
+                if relationship.get("listener_arn"):
+                    identifiers.add(relationship["listener_arn"])
+                target_group_arn = relationship.get("target_group_arn")
+                if target_group_arn:
+                    identifiers.add(target_group_arn)
+                    if (target_groups.get(target_group_arn) or {}).get("arn"):
+                        identifiers.add(target_groups[target_group_arn]["arn"])
+                arn = relationship.get("load_balancer_arn")
+                if arn:
+                    identifiers.add(arn)
+                    load_balancer = load_balancers.get(arn) or {}
+                    identifiers |= set(load_balancer.get("security_group_ids") or [])
+                    identifiers |= {
+                        listener["listener_arn"] for listener in load_balancer.get("listeners") or []
+                        if listener.get("listener_arn")
+                    }
+        related[sid] = identifiers
+    return related
+
+
+# Parameter group names behind payload refs ("region/name"), falling back to the part after "/".
+def parameter_group_names(refs: list[str], groups: dict[str, Any]) -> set[str]:
+    return {(groups.get(ref) or {}).get("name") or ref.split("/", 1)[-1] for ref in refs if ref}
+
+
+# RDS: the identifier plus, from the payload, the ARN of the instance, cluster, proxy, or snapshot it
+# names, that record's security groups and parameter groups, and for a snapshot its source DB
+# instance or cluster (identifier and ARN).
+def rds_related(payload: dict[str, Any] | None, mapping: dict[str, str], scored_ids: list[str]) -> dict[str, set[str]]:
+    payload = payload or {}
+    shared = payload.get("shared") or {}
+    records = {
+        key: {record.get("identifier"): record for record in payload.get(key) or []}
+        for key in ("db_instances", "db_clusters", "db_proxies", "snapshots")
+    }
+    related: dict[str, set[str]] = {}
+    for sid in scored_ids:
+        identifiers = {mapping[sid]}
+        for key, by_identifier in records.items():
+            record = by_identifier.get(mapping[sid])
+            if not record:
+                continue
+            if record.get("arn"):
+                identifiers.add(record["arn"])
+            identifiers |= set(record.get("security_group_ids") or [])
+            identifiers |= parameter_group_names(record.get("parameter_group_refs") or [], shared.get("parameter_groups") or {})
+            identifiers |= parameter_group_names([record.get("cluster_parameter_group_ref") or ""],
+                                                 shared.get("cluster_parameter_groups") or {})
+            if key == "snapshots" and record.get("source"):
+                identifiers.add(record["source"])
+                for source_key in ("db_instances", "db_clusters"):
+                    source = records[source_key].get(record["source"])
+                    if source and source.get("arn"):
+                        identifiers.add(source["arn"])
+        related[sid] = identifiers
+    return related
+
+
+# Each scored scenario's related identifiers for Prowler attribution.
+def related_identifiers(
+    service: str, payload: dict[str, Any] | None, mapping: dict[str, str], scored_ids: list[str]
+) -> dict[str, set[str]]:
+    if service == "ec2":
+        return ec2_related(payload or {}, mapping, scored_ids)
+    if service == "rds":
+        return rds_related(payload, mapping, scored_ids)
+    return {sid: {mapping[sid]} for sid in scored_ids}
+
+
+# True when a Prowler resource candidate names the identifier under the service's rule.
+def matches(service: str, candidate: str, identifier: str) -> bool:
+    if candidate == identifier:
+        return True
+    if service == "ec2":
+        return candidate.endswith("/" + identifier)
+    if service == "s3":
+        return candidate.startswith("arn:") and candidate.endswith(":::" + identifier)
+    if service == "apigateway":
+        return re.search(r"/(?:restapis|apis)/" + re.escape(identifier) + r"(?:/|$)", candidate) is not None
+    if service == "rds":
+        if RDS_SG_ID.fullmatch(identifier):
+            return candidate.endswith("/" + identifier)
+        return re.search(RDS_ARN_TYPES + re.escape(identifier) + r"$", candidate) is not None
+    return False
+
+
+# Score Prowler's FAILs as two columns, "prowler" (every attributed FAIL) and "prowler-filtered"
+# (ignoring checks that fail for at least half of the scored scenarios).
+def score_prowler(
+    service: str,
+    prowler: dict[str, Any],
+    ground_truth: dict[str, dict[str, Any]],
+    mapping: dict[str, str],
+    related: dict[str, set[str]],
+) -> dict[str, dict[str, Any]]:
+    scored_ids = [sid for sid in ground_truth if sid in mapping]
+    resources = {mapping[sid] for sid in scored_ids}
+    usable = [item for item in prowler["fails"] if item["severity"] != "INFORMATIONAL"]
+    hits = {
+        sid: [item for item in usable
+              if any(matches(service, candidate, ident) for candidate in item["candidates"] for ident in related[sid])]
+        for sid in scored_ids
+    }
+    per_check = Counter(check for sid in scored_ids for check in {item["check"] for item in hits[sid]})
+    universal = sorted(check for check, count in per_check.items() if 2 * count >= len(scored_ids))
+    attributed = {item["index"] for sid in scored_ids for item in hits[sid]}
+    columns: dict[str, dict[str, Any]] = {}
+    for name, ignore in (("prowler", set()), ("prowler-filtered", set(universal))):
+        cells: dict[str, Any] = {}
+        drivers: dict[str, list[str]] = {}
+        for sid in scored_ids:
+            kept = [item for item in hits[sid] if item["check"] not in ignore]
+            top = max((rank(item["severity"]) for item in kept), default=0)
+            # Prowler's result for a scenario is one finding at its top severity citing only it.
+            parsed = [{"position": 1, "severity": SEVERITIES[top], "cited": {mapping[sid]}}] if kept else []
+            cell = score_scenario(ground_truth[sid], mapping[sid], parsed, resources)
+            cell["findings_citing"] = len(kept)
+            cells[sid] = cell
+            drivers[sid] = sorted({item["check"] for item in kept if rank(item["severity"]) == top})
+        columns[name] = {
+            "baseline": True,
+            "info": {
+                "versions": prowler["versions"],
+                "schema_versions": prowler["schema_versions"],
+                "results": prowler["results"],
+                "fails": len(prowler["fails"]),
+                "attributed_fails": len(attributed),
+                "unattributed_fails": len(prowler["fails"]) - len(attributed),
+                "muted_fails": prowler["muted"],
+                "universal_checks": universal,
+                "ignored_checks": sorted(ignore),
+                "drivers": drivers,
+            },
+            "runs": {
+                1: {
+                    "status": "ok", "scored": True, "error": None, "attempts": None, "retry_errors": [],
+                    "seconds": None, "tokens_total": None, "findings": None, "at_cap": False,
+                    "unknown_identifiers": None, "scenarios": cells,
+                }
+            },
+        }
+    return columns
+
+
+# n/N for one rate over cells of one condition, split by coverage group.
+def rate_groups(cells: list[dict[str, Any]], condition: str) -> dict[str, dict[str, int]]:
+    out = {}
+    for group in GROUPS:
+        pool = [c for c in cells if c["condition"] == condition and (group == "all" or c["coverage"] == group)]
+        out[group] = {"n": sum(c["reported"] for c in pool), "N": len(pool)}
+    return out
+
+
+# Aggregate one tool's scored runs into its metrics.
+def summarize(tool: dict[str, Any], scored_ids: list[str]) -> dict[str, Any]:
+    runs = tool["runs"]
+    ok_runs = {n: r for n, r in runs.items() if r["scored"]}
+    cells = [cell for run in ok_runs.values() for cell in run["scenarios"].values()]
+    fsbp_cells = [c for c in cells if c["distance"] is not None]
+    distances = [c["distance"] for c in fsbp_cells]
+    per_scenario = {sid: Counter(run["scenarios"][sid]["severity"] for run in ok_runs.values()) for sid in scored_ids}
+    identical = [sid for sid in scored_ids if ok_runs and len(per_scenario[sid]) == 1]
+    modal = [max(per_scenario[sid].values()) / len(ok_runs) for sid in scored_ids if ok_runs]
+    unknown = {n: r["unknown_identifiers"] for n, r in ok_runs.items()}
+    return {
+        "baseline": tool["baseline"],
+        "info": tool.get("info"),
+        "runs": len(runs),
+        "runs_scored": len(ok_runs),
         "cells": len(cells),
-        "in_range": sum(c["in_range"] for c in cells),
-        "exact": sum(c["exact"] for c in cells),
-        "action_strict": sum(c["action_strict"] for c in cells),
-        "action_tolerant": sum(c["action_tolerant"] for c in cells),
-        "baseline": bool(model.get("baseline")),
-        "info": model.get("info"),
-        "category_ok": sum(bool(c["category_ok"]) for c in cells),
-        "likelihood_ok": sum(c["likelihood_ok"] for c in with_expected),
-        "impact_ok": sum(c["impact_ok"] for c in with_expected),
-        "with_expected": len(with_expected),
-        "dangerous": len(dangerous),
-        "dangerous_cited": sum(c["cited"] for c in dangerous),
-        "severe_misses": sum(c["severe_miss"] for c in cells),
-        "missed": sum(c["missed"] for c in cells),
-        "safe_overrated": sum(c["safe_overrated"] for c in cells),
-        "grouped": sum(c["grouped"] for c in cells),
-        "grouped_inflated": dict(sorted(inflated.items())),
-        "ambiguous": len(ambiguous),
-        "ambiguous_review": sum(c["action"] == "REVIEW" and c["cited"] for c in ambiguous),
-        "ambiguous_omitted": sum(not c["cited"] for c in ambiguous),
-        "noaction_above_low": sum(r.get("noaction_above_low", 0) for r in ok_runs.values()),
-        "intent_candidates": [(n, s) for n, r in ok_runs.items() for s in r.get("intent_candidates", [])],
-        "unknown_identifiers": sum(len(r["unknown_identifiers"] or []) for r in ok_runs.values()),
-        "identifiers_checked": all(r["unknown_identifiers"] is not None for r in ok_runs.values()) if ok_runs else False,
-        "seconds": seconds,
-        "tokens": tokens,
+        **{name: rate_groups(cells, condition) for name, condition in RATES},
+        "severity": {
+            "N": len(fsbp_cells),
+            "exact": sum(d == 0 for d in distances),
+            "above": sum(d > 0 for d in distances),
+            "below": sum(d < 0 for d in distances),
+            "mean_distance": statistics.mean(distances) if distances else None,
+        },
         "per_scenario": per_scenario,
-        "unanimous": unanimous,
-        "not_unanimous": [sid for sid in sids if sid not in unanimous],
+        "identical": identical,
+        "not_identical": [sid for sid in scored_ids if sid not in identical] if ok_runs else [],
         "modal_agreement": statistics.mean(modal) if modal else None,
-        "high_unanimous": all(sid in unanimous for sid in high),
-        "high_count": len(high),
+        "runs_failed": [{"run": n, "status": r["status"], "error": (r["error"] or "")[:200]}
+                        for n, r in runs.items() if not r["scored"]],
+        "runs_retried": [{"run": n, "attempts": r["attempts"], "retry_errors": [str(e)[:200] for e in r["retry_errors"]]}
+                         for n, r in runs.items() if (r["attempts"] or 1) > 1],
+        "findings": [r["findings"] for r in ok_runs.values()],
+        "runs_at_cap": sum(1 for r in ok_runs.values() if r["at_cap"]),
+        "identifiers_checked": bool(ok_runs) and all(v is not None for v in unknown.values()),
+        "unknown_identifiers": sum(len(v or []) for v in unknown.values()),
+        "unknown_by_run": {n: v for n, v in unknown.items() if v},
+        "grouped": sum(c["grouped"] for c in cells),
+        "grouped_cells": [f"{sid} run-{n}" for n, r in ok_runs.items() for sid, c in r["scenarios"].items() if c["grouped"]],
+        "seconds": [r["seconds"] for r in ok_runs.values() if r["seconds"] is not None],
+        "tokens": [r["tokens_total"] for r in ok_runs.values() if r["tokens_total"]],
     }
 
 
@@ -429,135 +615,126 @@ def spread(values: list[float], unit: str = "") -> str:
     return f"{min(values):.0f}-{max(values):.0f}{unit} (median {statistics.median(values):.0f})"
 
 
-# Compact "VALUExN" distribution string, ordered by severity where possible.
+# Compact "VALUExN" distribution string, ordered by severity rank.
 def distribution(counter: Counter) -> str:
     keys = sorted(counter, key=lambda k: (rank(k) if k in SEVERITIES else 99, k))
     return " ".join(f"{key}x{counter[key]}" for key in keys)
 
 
 # Print the full human-readable report.
-def report(args: argparse.Namespace, ground_truth: dict, mapping: dict, results: dict, summaries: dict) -> None:
+def report(args: argparse.Namespace, ground_truth: dict, mapping: dict, summaries: dict) -> None:
     scored = [sid for sid in ground_truth if sid in mapping]
     skipped = [sid for sid in ground_truth if sid not in mapping]
+    names = list(summaries)
     print(f"Service: {args.service} | runs: {args.runs} | tier: {args.tier or 'all'}")
     print(f"Scored scenarios: {len(scored)}" + (f" | in ground truth but not in the map (not scored): {', '.join(skipped)}" if skipped else ""))
-    print("Models: " + ", ".join(f"{m} ({s['runs_ok']}/{s['runs']} runs scored)" for m, s in summaries.items()))
+    print("Tools: " + ", ".join(
+        f"{m} (Prowler scan)" if s["baseline"] else f"{m} ({s['runs_scored']}/{s['runs']} runs scored)"
+        for m, s in summaries.items()))
 
-    names = list(summaries)
-    rows = []
+    rows: list[list[str]] = []
 
-    # Add a row. `na` is shown for the Prowler columns when the measure only applies to the LLM runs.
+    # Add a row. `na` is shown for the Prowler columns when the measure only applies to Vista runs.
     def add(label: str, getter, na: str | None = None) -> None:
         rows.append([label, *[na if na and summaries[m]["baseline"] else getter(summaries[m]) for m in names]])
 
-    print("\n== Headline (all scenario-runs)")
-    add("scenario-runs scored", lambda s: str(s["cells"]))
-    add("dangerous scenarios cited", lambda s: f"{s['dangerous_cited']}/{s['dangerous']} ({pct(s['dangerous_cited'], s['dangerous'])})")
-    add("HIGH/CRITICAL rated LOW or missed", lambda s: str(s["severe_misses"]))
-    add("severity in range", lambda s: f"{s['in_range']}/{s['cells']} ({pct(s['in_range'], s['cells'])})")
-    add("severity exact", lambda s: f"{s['exact']}/{s['cells']} ({pct(s['exact'], s['cells'])})")
-    add("action strict", lambda s: f"{s['action_strict']}/{s['cells']} ({pct(s['action_strict'], s['cells'])})")
-    add("action tolerant", lambda s: f"{s['action_tolerant']}/{s['cells']} ({pct(s['action_tolerant'], s['cells'])})")
-    add("category ok", lambda s: f"{s['category_ok']}/{s['cells']} ({pct(s['category_ok'], s['cells'])})", na="n/a")
-    add("likelihood matches expected", lambda s: f"{s['likelihood_ok']}/{s['with_expected']} ({pct(s['likelihood_ok'], s['with_expected'])})", na="n/a")
-    add("impact matches expected", lambda s: f"{s['impact_ok']}/{s['with_expected']} ({pct(s['impact_ok'], s['with_expected'])})", na="n/a")
-    add("expected/minor rated above range", lambda s: str(s["safe_overrated"]))
-    add("uncited where NONE not acceptable", lambda s: str(s["missed"]))
-    add("scored from a grouped finding", lambda s: str(s["grouped"]))
-    add("  ...and above expected severity", lambda s: str(sum(s["grouped_inflated"].values())) + (f" {s['grouped_inflated']}" if s["grouped_inflated"] else ""))
-    print(table(["measure", *names], rows))
+    # Print the collected rows under a section heading and start a new table.
+    def section(title: str) -> None:
+        print(f"\n== {title}")
+        print(table(["measure", *names], rows))
+        rows.clear()
 
-    rows = []
-    print("\n== Human-review routing (ambiguous scenarios)")
-    add("ambiguous scenario-runs", lambda s: str(s["ambiguous"]))
-    add("routed to REVIEW", lambda s: f"{s['ambiguous_review']}/{s['ambiguous']} ({pct(s['ambiguous_review'], s['ambiguous'])})")
-    add("not reported at all", lambda s: f"{s['ambiguous_omitted']}/{s['ambiguous']} ({pct(s['ambiguous_omitted'], s['ambiguous'])})")
-    print(table(["measure", *names], rows))
+    add("cells scored", lambda s: str(s["cells"]))
+    for name, label in (("detection", "detection (flaw)"), ("flaw_blocked", "flaw_blocked report rate"),
+                        ("false_positives", "false positives (hardened)")):
+        for group in GROUPS:
+            add(f"{label}, {group}", lambda s, name=name, group=group: ratio(s[name][group]["n"], s[name][group]["N"]))
+    section("Detection and false positives")
 
-    rows = []
-    print("\n== Consistency across runs")
+    add("fsbp cells", lambda s: str(s["severity"]["N"]))
+    for key, label in (("exact", "exact"), ("above", "above FSBP"), ("below", "below FSBP")):
+        add(label, lambda s, key=key: ratio(s["severity"][key], s["severity"]["N"]))
+    add("mean signed distance", lambda s: f"{s['severity']['mean_distance']:.2f}" if s["severity"]["mean_distance"] is not None else "-")
+    section("Severity agreement with FSBP (fsbp scenarios; not reported = NONE)")
+
     det = "deterministic"
-    add("scenarios, identical severity every run", lambda s: f"{len(s['unanimous'])}/{len(s['per_scenario'])} ({pct(len(s['unanimous']), len(s['per_scenario']))})", na=det)
-    add("mean modal agreement", lambda s: f"{100 * s['modal_agreement']:.0f}%" if s["modal_agreement"] is not None else "-", na=det)
-    add("HIGH/CRITICAL scenarios identical", lambda s: f"{'yes' if s['high_unanimous'] else 'NO'} ({s['high_count']} scenarios)", na=det)
-    add("not identical", lambda s: ", ".join(s["not_unanimous"]) or "none", na=det)
-    print(table(["measure", *names], rows))
+    add("scored runs", lambda s: str(s["runs_scored"]), na=det)
+    add("scenarios, identical severity every run", lambda s: ratio(len(s["identical"]), len(scored)) if s["runs_scored"] else "-", na=det)
+    add("mean modal agreement", lambda s: f"{s['modal_agreement']:.3f} ({100 * s['modal_agreement']:.0f}%)" if s["modal_agreement"] is not None else "-", na=det)
+    add("not identical", lambda s: ", ".join(s["not_identical"]) or "none", na=det)
+    section("Consistency across runs (Vista)")
 
-    rows = []
-    print("\n== Format, cost, and behavior (LLM runs only)")
-    add("runs failed", lambda s: str(s["runs_failed"]), na="n/a")
-    add("runs needing a corrective retry", lambda s: f"{s['runs_retried']}/{s['runs']}", na="n/a")
+    add("runs scored", lambda s: f"{s['runs_scored']}/{s['runs']}", na="n/a")
     add("findings per run", lambda s: spread(s["findings"]), na="n/a")
-    add(f"runs at the {args.max_findings}-finding cap", lambda s: f"{s['runs_at_cap']}/{s['runs_ok']}", na="n/a")
-    add("NO_ACTION above LOW", lambda s: str(s["noaction_above_low"]), na="n/a")
+    add(f"runs at the {args.max_findings}-finding cap", lambda s: f"{s['runs_at_cap']}/{s['runs_scored']}", na="n/a")
     add("unknown identifiers cited", lambda s: str(s["unknown_identifiers"]) if s["identifiers_checked"] else "not checked", na="n/a")
-    add("intent-claim candidates (review by hand)", lambda s: str(len(s["intent_candidates"])), na="n/a")
+    add("cells scored from a grouped finding", lambda s: str(s["grouped"]), na="n/a")
     add("review seconds", lambda s: spread(s["seconds"], "s"), na="n/a")
     add("total tokens per run", lambda s: spread(s["tokens"]), na="n/a")
-    print(table(["measure", *names], rows))
+    section("Runs, format, and cost (Vista)")
+    for model in names:
+        for number, identifiers in summaries[model]["unknown_by_run"].items():
+            print(f"  unknown identifiers, {model} run-{number}: {', '.join(identifiers)}")
+        if summaries[model]["grouped_cells"]:
+            print(f"  grouped, {model}: {', '.join(summaries[model]['grouped_cells'])}")
+
+    print("\n== Retries and failures")
+    for model in names:
+        s = summaries[model]
+        if s["baseline"]:
+            continue
+        print(f"{model}: runs failed {len(s['runs_failed'])}/{s['runs']}; runs retried {len(s['runs_retried'])}/{s['runs']}")
+        for item in s["runs_failed"]:
+            print(f"  failed {model} run-{item['run']} (status {item['status']}): {item['error']}")
+        for item in s["runs_retried"]:
+            print(f"  retried {model} run-{item['run']} ({item['attempts']} attempts)")
+            for error in item["retry_errors"]:
+                print(f"    {model} run-{item['run']}: {error}")
 
     baselines = [m for m in names if summaries[m]["baseline"]]
     if baselines:
         info = summaries[baselines[0]]["info"]
-        print(f"\n== Prowler {info['version']}: {info['results']} results, {info['fails']} FAIL across the account")
-        print(f"FAIL results attributed to a scenario: {info['attributed_fails']}; not attributed (other resources, "
-              f"account-level, or informational): {info['unattributed_fails']}")
-        print("Checks ignored by prowler-filtered (fail for at least half of the scored scenarios): "
+        print(f"\n== Prowler {', '.join(info['versions'])}")
+        if info["schema_versions"]:
+            print(f"OCSF schema version: {', '.join(info['schema_versions'])}")
+        print(f"Results: {info['results']}; FAIL: {info['fails']}; FAILs attributed to a scenario: {info['attributed_fails']}; "
+              f"not attributed (other resources, account-level, or informational): {info['unattributed_fails']}; "
+              f"muted (Suppressed, still scored): {info['muted_fails']}")
+        print("Checks ignored by prowler-filtered (FAIL for at least half of the scored scenarios): "
               + (", ".join(info["universal_checks"]) or "none"))
-        print("Prowler severity is per check, not per exposure. Check(s) at the top severity, per scenario (primary column):")
+        print("Check(s) at the top severity, per scenario (prowler column):")
         for sid in scored:
             print(f"  {sid}: {', '.join(info['drivers'][sid]) or '(no FAIL)'}")
 
-    print("\n== Per scenario: severity over runs (expected | acceptable)")
-    rows = []
-    for sid in scored:
-        scenario = ground_truth[sid]
-        expected = scenario["expected"]["severity"] if scenario["expected"] else "NONE"
-        rows.append([sid, scenario["kind"], expected, "/".join(a[:4] for a in scenario["acceptable_severities"]),
-                     *[distribution(summaries[m]["per_scenario"][sid]["severities"]) for m in names]])
-    print(table(["scenario", "kind", "expected", "accept", *names], rows))
-
-    print("\n== Per scenario: recommended action over runs (expected | acceptable)")
-    rows = []
-    for sid in scored:
-        scenario = ground_truth[sid]
-        rows.append([sid, scenario["expected_action"], "/".join(a[:3] for a in scenario["acceptable_actions"]),
-                     *[distribution(summaries[m]["per_scenario"][sid]["actions"]) for m in names]])
-    print(table(["scenario", "expected", "accept", *names], rows))
-
-    candidates = [(m, n, s) for m in names for n, s in summaries[m]["intent_candidates"]]
-    if candidates:
-        print("\n== Intent-claim candidates (heuristic: 'intended'/'by design' without asking to confirm)")
-        for model, number, sentence in candidates:
-            print(f"  {model} run-{number}: {sentence[:220]}")
+    print("\n== Per scenario (severity over runs)")
+    rows = [[sid, ground_truth[sid]["condition"], ground_truth[sid]["coverage"], ground_truth[sid]["fsbp_severity"] or "-",
+             *[distribution(summaries[m]["per_scenario"][sid]) or "-" for m in names]] for sid in scored]
+    print(table(["scenario", "condition", "coverage", "fsbp_severity", *names], rows))
 
 
-# Write one row per model, run, and scenario.
+# Write one row per tool, run, and scenario.
 def write_csv(path: Path, results: dict) -> None:
-    columns = ["model", "run", "scenario", "kind", "cited", "severity", "expected_severity", "in_range", "exact",
-               "action", "expected_action", "action_strict", "action_tolerant", "category", "category_ok", "likelihood",
-               "impact", "likelihood_ok", "impact_ok", "confidence", "grouped", "grouped_inflated", "findings_citing"]
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=columns, extrasaction="ignore")
+        writer = csv.DictWriter(handle, fieldnames=["tool", "run", *CELL_COLUMNS])
         writer.writeheader()
-        for model, data in results.items():
+        for tool, data in results.items():
             for number, run in data["runs"].items():
                 for cell in run["scenarios"].values():
-                    writer.writerow({"model": model, "run": number, **cell})
+                    writer.writerow({"tool": tool, "run": number, **cell})
 
 
-# Parse arguments, score the runs, and print (and optionally save) the results.
+# Parse arguments, score Vista and Prowler, and print (and optionally save) the results.
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Score saved Vista review runs against ground truth.")
+    parser = argparse.ArgumentParser(description="Score saved Vista review runs and a Prowler scan against ground truth.")
     parser.add_argument("service", choices=SERVICES)
     parser.add_argument("runs", type=Path, help="folder with one subfolder per model, each holding run-N folders")
     parser.add_argument("map", type=Path, help="scenario ID -> resource identifier JSON (terraform output)")
     parser.add_argument("--ground-truth", type=Path, help="override terraform/modules/<service>/ground-truth.json")
     parser.add_argument("--tier", choices=("controlled", "realistic"), help="score only this tier")
     parser.add_argument("--max-findings", type=int, default=10, help="the review's finding cap (default 10)")
-    parser.add_argument("--prowler", type=Path, metavar="PATH", help="Prowler OCSF JSON to score as the rule-based comparison")
+    parser.add_argument("--prowler", type=Path, metavar="PATH", help="Prowler JSON OCSF output to score as the rule-based comparison")
     parser.add_argument("--json", type=Path, metavar="PATH", help="also write full results as JSON")
-    parser.add_argument("--csv", type=Path, metavar="PATH", help="also write one CSV row per scenario-run")
+    parser.add_argument("--csv", type=Path, metavar="PATH", help="also write one CSV row per tool, run, and scenario")
     args = parser.parse_args()
 
     root = Path(__file__).resolve().parents[1]
@@ -566,35 +743,42 @@ def main() -> int:
         if not path.exists():
             raise SystemExit(f"{label} not found: {path}")
     ground_truth = load_ground_truth(truth_path, args.tier)
-    mapping = json.loads(args.map.read_text(encoding="utf-8"))
+    mapping = load_map(args.map)
     models = discover_runs(args.runs)
     if not models:
         raise SystemExit(f"no model folders with run-N subfolders under {args.runs}")
-    if not [sid for sid in ground_truth if sid in mapping]:
+    scored_ids = [sid for sid in ground_truth if sid in mapping]
+    if not scored_ids:
         raise SystemExit("no scenario appears in both the ground truth and the map")
-    payload = args.runs / "payload.json"
-    payload_text = payload.read_text(encoding="utf-8") if payload.exists() else None
+    payload_path = args.runs / "payload.json"
+    payload_text = payload_path.read_text(encoding="utf-8") if payload_path.exists() else None
 
-    results = score_all(models, ground_truth, mapping, payload_text, args.max_findings)
+    results = score_vista(models, ground_truth, mapping, payload_text, args.max_findings)
     if args.prowler:
         if not args.prowler.exists():
             raise SystemExit(f"Prowler output not found: {args.prowler}")
-        scored_ids = [sid for sid in ground_truth if sid in mapping]
-        if args.service == "ec2":
-            if payload_text is None:
-                raise SystemExit(f"--prowler needs {payload} to attribute security groups, ACLs, roles, and load balancers to instances")
-            related = ec2_related(json.loads(payload_text), mapping, scored_ids)
-        else:
-            print(f"Note: only each scenario's own resource is attributed to Prowler results for {args.service}.", file=sys.stderr)
-            related = {sid: {mapping[sid]} for sid in scored_ids}
-        version, total, fails = load_prowler(args.prowler)
-        results.update(score_prowler(version, total, fails, ground_truth, mapping, related))
-    summaries = {model: summarize(data, ground_truth) for model, data in results.items()}
-    report(args, ground_truth, mapping, results, summaries)
+        payload = read_json(payload_path, "payload") if payload_text is not None else None
+        if args.service == "ec2" and payload is None:
+            raise SystemExit(f"--prowler needs {payload_path} to attribute security groups, network ACLs, roles, "
+                             "volumes, load balancers, listeners, and target groups to instances")
+        if args.service == "rds" and payload is None:
+            print(f"Note: no {payload_path}; security groups, parameter groups, snapshot source instances, "
+                  "and proxy ARNs (prx-...) cannot be resolved to scenarios.", file=sys.stderr)
+        prowler = load_prowler(args.prowler)
+        related = related_identifiers(args.service, payload, mapping, scored_ids)
+        results.update(score_prowler(args.service, prowler, ground_truth, mapping, related))
+    summaries = {tool: summarize(data, scored_ids) for tool, data in results.items()}
+    report(args, ground_truth, mapping, summaries)
     if args.json:
-        args.json.write_text(json.dumps({"service": args.service, "results": results,
-                                         "summaries": {m: {k: v for k, v in s.items() if k != "per_scenario"} for m, s in summaries.items()}},
-                                        indent=2, default=lambda o: dict(o) if isinstance(o, Counter) else str(o)), encoding="utf-8")
+        output = {
+            "service": args.service,
+            "tier": args.tier,
+            "scored": scored_ids,
+            "skipped": [sid for sid in ground_truth if sid not in mapping],
+            "tools": {tool: {**results[tool], "summary": summaries[tool]} for tool in results},
+        }
+        args.json.write_text(json.dumps(output, indent=2, default=lambda o: dict(o) if isinstance(o, Counter) else sorted(o)) + "\n",
+                             encoding="utf-8")
     if args.csv:
         write_csv(args.csv, results)
     return 0

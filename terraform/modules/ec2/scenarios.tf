@@ -1,20 +1,22 @@
-# Expected ratings are in ground-truth.json. Every scenario starts hardened (private subnet, IMDSv2,
-# encrypted root volume, no role, no inbound rules) and lists only what differs.
+# ground-truth.json is the facts-only answer key: each scenario's condition, FSBP coverage, and
+# published FSBP control severities. Every scenario starts from the module's hardened default
+# (private subnet, IMDSv2, encrypted root volume, no role, no inbound rules) and lists only what
+# differs.
 #
-# controlled: the single-flaw severity ladder, one setting changed per instance.
-# realistic:  expected, ambiguous, and messy cases that share a load balancer, NAT, and security
-#             groups the way a real account does.
+# controlled: one setting changed per instance from that default.
+# realistic:  instances that share a load balancer, NAT, and security groups the way a real
+#             account does.
 locals {
   all_scenarios = {
     # ---------- controlled ----------
 
-    # LOW: private batch worker, but its root volume is unencrypted.
+    # Private batch worker with an unencrypted root volume.
     "ec2-01" = {
       tier      = "controlled"
       name      = "reporting-worker"
       encrypted = false
     }
-    # MEDIUM: public marketing site serving HTTP on 80, with 80 and 443 open to the world, no role.
+    # Marketing site in the public subnet serving HTTP on 80; TCP 80 and 443 from 0.0.0.0/0; no role.
     "ec2-02" = {
       tier     = "controlled"
       name     = "marketing-site"
@@ -25,7 +27,7 @@ locals {
         { port = 443, cidrs = ["0.0.0.0/0"], description = "HTTPS" },
       ]
     }
-    # MEDIUM: private image resizer with IMDSv1 and a role that reads the uploads bucket.
+    # Private image resizer with IMDSv1 accepted and a role that reads the uploads bucket.
     "ec2-03" = {
       tier        = "controlled"
       name        = "image-resizer"
@@ -35,7 +37,7 @@ locals {
         resources = [aws_s3_bucket.media.arn, "${aws_s3_bucket.media.arn}/*"]
       }]
     }
-    # HIGH: private CI runner whose role can attach any policy to any role, including itself.
+    # Private CI runner whose role allows iam:AttachRolePolicy and iam:PutRolePolicy on *.
     "ec2-04" = {
       tier = "controlled"
       name = "ci-runner"
@@ -44,7 +46,7 @@ locals {
         resources = ["*"]
       }]
     }
-    # CRITICAL: old bastion in the legacy VPC with SSH open to the world and a leftover admin role.
+    # Bastion in the legacy VPC with TCP 22 from 0.0.0.0/0 and AdministratorAccess on its role.
     "ec2-05" = {
       tier                = "controlled"
       name                = "legacy-bastion"
@@ -55,7 +57,7 @@ locals {
 
     # ---------- realistic ----------
 
-    # EXPECTED: storefront behind the HTTPS load balancer; only the ALB can reach it.
+    # Storefront behind the HTTPS load balancer; TCP 8080 only from the ALB security group.
     "ec2-06" = {
       tier                     = "realistic"
       name                     = "storefront-web"
@@ -66,8 +68,8 @@ locals {
       extra_security_group_ids = [aws_security_group.monitoring.id]
       managed_policy_arns      = [local.ssm_core]
     }
-    # HIGH: orders API reached from the Internet through the ALB (/api/*), with IMDSv1 and a role
-    # that can read every secret in the account.
+    # Orders API behind the same load balancer (/api/*), with IMDSv1 accepted and a role that allows
+    # secretsmanager:GetSecretValue and secretsmanager:DescribeSecret on *.
     "ec2-07" = {
       tier                     = "realistic"
       name                     = "orders-api"
@@ -90,7 +92,7 @@ locals {
         },
       ]
     }
-    # AMBIGUOUS: public admin bastion, but SSH is limited to the office network.
+    # Admin bastion in the ops subnet with a public IP; TCP 22 only from the office CIDR.
     "ec2-08" = {
       tier                = "realistic"
       name                = "admin-bastion"
@@ -98,16 +100,15 @@ locals {
       ingress             = [{ port = 22, cidrs = [var.office_cidr], description = "Office VPN" }]
       managed_policy_arns = [local.ssm_core]
     }
-    # EXPECTED: public metrics collector whose security group opens 9100 to the world, but the
-    # ops subnet's network ACL denies 9100 inbound, so nothing outside can reach it.
+    # Metrics collector in the ops subnet with a public IP; its security group allows TCP 9100 from
+    # 0.0.0.0/0, and the ops network ACL denies inbound TCP 9100 (rule 90).
     "ec2-09" = {
       tier    = "realistic"
       name    = "metrics-collector"
       subnet  = "ops"
       ingress = [{ port = 9100, cidrs = ["0.0.0.0/0"], description = "Prometheus scrape" }]
     }
-    # HIGH: private Jupyter notebook open to the whole 10.0.0.0/8 range, with a role that was
-    # given s3:* on everything to unblock an analyst.
+    # Private Jupyter notebook with TCP 8888 from 10.0.0.0/8 and a role that allows s3:* on *.
     "ec2-10" = {
       tier                = "realistic"
       name                = "analytics-notebook"
@@ -120,7 +121,7 @@ locals {
         resources = ["*"]
       }]
     }
-    # EXPECTED: private queue worker scoped to one SQS queue, reachable only by the monitoring SG.
+    # Private queue worker with the monitoring security group and a role limited to one SQS queue.
     "ec2-11" = {
       tier                     = "realistic"
       name                     = "queue-worker"

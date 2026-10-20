@@ -1,8 +1,8 @@
 """Save a complete record of one assessment run: the payload, the raw review, and run metadata.
 
 A run directory holds payload.json (live runs only; the exact JSON sent to the model), analysis.md
-(the model's Markdown, before terminal formatting), and run.json (model, timing, tokens, hashes, and
-the validation error behind any corrective retry).
+(the model's Markdown, before terminal formatting), and run.json (model, timing, tokens, the payload
+hash, and the validation error behind any corrective retry).
 Files are written private (0600) and never overwrite an earlier run.
 """
 from __future__ import annotations
@@ -59,7 +59,6 @@ def write_run(
     resource_count: int,
     replay: bool,
     payload_file: Path | None,
-    intent: str | None,
     started_at: str,
     finished_at: str,
     review_seconds: float,
@@ -80,7 +79,6 @@ def write_run(
         "resource_count": resource_count,
         "payload_file": str(payload_file) if has_payload else None,
         "payload_sha256": _sha256_file(payload_file) if has_payload else None,
-        "intent_sha256": hashlib.sha256(intent.encode("utf-8")).hexdigest() if intent else None,
         "started_at": started_at,
         "finished_at": finished_at,
         "review_seconds": round(review_seconds, 2),

@@ -1,6 +1,6 @@
-# rds-07: RDS Proxy in front of the orders database (rds-06). Someone turned on debug logging to
-# troubleshoot connection errors and never turned it off, and TLS between clients and the proxy
-# is optional. The proxy authenticates to the database with the instance's managed secret.
+# rds-07: RDS Proxy in front of the orders database (rds-06), with debug logging on and TLS between
+# clients and the proxy optional (require_tls false). The proxy authenticates to the database with
+# the instance's managed secret.
 
 resource "aws_security_group" "proxy" {
   count       = local.proxy_enabled ? 1 : 0

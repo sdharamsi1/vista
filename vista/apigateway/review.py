@@ -40,87 +40,62 @@ The payload uses one common shape for all API types:
   are attached.
 - domain_names[] are custom domains; each mapping's api_id and stage name the API stage it serves.
 - Stage variable values are never collected; only variable_names are supplied.
+- Backend code behind an integration is not collected.
 A missing reference means the collector did not return that object, exactly as if it were absent.
 
-API Gateway endpoints are usually meant to be reachable from the Internet, so reachability alone
-is not a finding and must not be reported as one. Assume each API serves real clients and judge
-whether it is configured the way a well-secured production API should be: who can call each route,
-how callers are authenticated and authorized, how abuse is limited, how traffic is protected in
-transit, and whether activity is recorded.
+Your task: identify the account's most significant API Gateway security risks and report only the
+ones that genuinely matter. Return at most 10 findings, and fewer when fewer real risks exist.
+Never manufacture findings to reach a count. Order findings from most to least severe.
 
-Your task: identify the account's most significant API Gateway security misconfigurations and
-report only the ones that genuinely matter. Return at most 10 findings, and fewer when fewer real
-risks exist. Never manufacture findings to reach a count. Order findings from most to least severe.
-
-Group, do not repeat. When multiple APIs, routes, or stages share the same root cause (the same
-missing authorization, the same absent WAF, the same disabled logging), report them as a single
-finding and list every affected API. Do not emit one finding per API, route, or stage.
-
-Access control (who can call what):
-- authorization_type NONE means API Gateway performs no caller authentication on that route. Flag
-  it when the route can read or change data, invokes an AWS service action, or reaches an internal
-  backend through a VPC link. OPTIONS routes with a MOCK integration are CORS preflight and are not
-  a finding on their own.
-- api_key_required is not authentication. API keys are identifiers for usage plans and are easily
-  shared or leaked; a route protected only by an API key is effectively unauthenticated.
-- disable_execute_api_endpoint false keeps the default execute-api URL reachable, so controls
-  applied only at a custom domain (mutual TLS, a domain-level WAF or base path) can be bypassed.
-- A REST resource policy allowing Principal "*" without a restricting condition (aws:SourceIp,
-  aws:SourceVpce, aws:SourceVpc, aws:PrincipalOrgID) grants nothing beyond the default; one that
-  denies or narrows callers is a positive control worth citing. For a PRIVATE API, a policy allowing
-  Principal "*" without a VPC endpoint or VPC condition admits any VPC endpoint in any account.
-- Authorizer weaknesses: a JWT authorizer without an audience, a Lambda authorizer whose
-  identity_source omits the credential it validates combined with a long result_ttl_seconds, or an
-  authorizer that is defined but not attached to the routes that need it.
-- An integration with a credentials_arn executes with that role's permissions on behalf of every
-  caller allowed to reach the route.
-- CORS allowing any origin together with credentials.
-
-Security configuration (protection, abuse limits, and visibility):
-- WAF: a REST stage without web_acl_arn has no request filtering. HTTP and WebSocket APIs cannot
-  attach WAF; do not report missing WAF for them.
-- Throttling: no stage or route throttle in method_settings/default_route_settings, and no usage
-  plan throttle or quota, leaves only the account-level limit in account_settings, so one client
-  can consume the whole region's capacity. A usage plan with no throttle and no quota does not
-  limit abuse.
-- Logging: no access_log_destination means no record of callers. REST execution logging requires a
-  cloudwatch_role_arn in account_settings and a loggingLevel in method_settings. dataTraceEnabled
-  true logs full request and response bodies, which can capture credentials and personal data.
-- TLS: a custom domain with security_policy TLS_1_0, an HTTP integration whose uri is plain http://,
-  tls_insecure_skip_verification true, or an HTTP backend without a client certificate when the
-  backend should only accept API Gateway.
-- Input validation: REST methods that accept bodies or parameters with no request validator.
-- Caching: a stage cache with cacheDataEncrypted false, or cache settings that let unauthorized
-  callers invalidate entries.
-- Stage variable names that suggest embedded secrets (password, secret, token, key).
+AWS behavior relevant to the supplied fields:
+- authorization_type NONE means API Gateway performs no caller authentication on that route.
+- API Gateway uses API keys with usage plans to identify clients for throttling and quotas.
+- When disable_execute_api_endpoint is false, clients can invoke the API through its default
+  execute-api endpoint as well as through any custom domain mapped to it. Mutual TLS and base path
+  mappings configured on a custom domain apply only to requests made through that domain name.
+- In a REST API resource policy, aws:SourceIp, aws:SourceVpce, aws:SourceVpc, and
+  aws:PrincipalOrgID conditions limit a statement to requests from the listed IP ranges, VPC
+  endpoints, VPCs, or AWS Organization, and an explicit Deny overrides any Allow. A PRIVATE REST API
+  can be invoked only through interface VPC endpoints for execute-api; an Allow statement for
+  Principal "*" without an aws:SourceVpce or aws:SourceVpc condition applies to requests through
+  any such VPC endpoint, including endpoints in other AWS accounts.
+- A JWT authorizer validates the token's issuer and requires its aud claim (or client_id when aud
+  is absent) to match one of the audience entries in its jwt_configuration. A Lambda authorizer
+  with result_ttl_seconds above 0 caches its result for that many seconds, keyed on the
+  identity_source values, and reuses it for requests with the same values. An authorizer applies
+  only to routes whose authorizer_id references it.
+- API Gateway assumes an integration's credentials_arn role to call the integration target, so
+  that call has the role's permissions for every request the route accepts.
+- AWS WAF web ACLs can be associated with REST API stages (web_acl_arn); HTTP and WebSocket APIs do
+  not support WAF association.
+- Throttle limits can be set on a REST stage or method (method_settings), on an HTTP or WebSocket
+  stage or route (default_route_settings, route_settings), and per API key in usage plans. Requests
+  not covered by any of these are limited only by the account-level limit for the Region in
+  account_settings, which all APIs in the account share in that Region. A usage plan's throttle and
+  quota apply per API key; a usage plan with no throttle and no quota sets no per-key limits.
+- With an access_log_destination, API Gateway writes an access log entry for each request; a stage
+  without one writes no access logs. REST execution logging requires a cloudwatch_role_arn in
+  account_settings and a loggingLevel in method_settings. dataTraceEnabled true writes full request
+  and response bodies to the execution log in CloudWatch Logs.
+- A custom domain's security_policy sets the minimum TLS version clients can negotiate (TLS_1_0
+  accepts TLS 1.0 and later; TLS_1_2 accepts TLS 1.2 and later). An integration uri that begins
+  with http:// is called without TLS. tls_insecure_skip_verification true makes API Gateway skip
+  checking that the integration endpoint's certificate is issued by a supported certificate
+  authority. A client certificate (client_certificate_id) on a REST stage lets the backend verify
+  that requests come from API Gateway.
+- A REST method's request validator makes API Gateway validate the request parameters, the body,
+  or both (validate_request_parameters, validate_request_body) before calling the integration.
+- cacheDataEncrypted in method_settings controls whether cached responses are encrypted. A client
+  can ask API Gateway to invalidate a cache entry with a Cache-Control: max-age=0 header;
+  requireAuthorizationForCacheControl and unauthorizedCacheControlHeaderStrategy control whether
+  that needs the execute-api:InvalidateCache permission and how requests without it are handled.
 
 {SEVERITY_MODEL}
 
-For API Gateway specifically: an unauthenticated (NONE or API-key-only) route whose integration can
-read or write data, invoke an AWS service action, or reach an internal backend is at least MEDIUM
-Likelihood, and HIGH when the route is on a deployed stage of a non-private API. Missing WAF,
-throttling, or logging are defense-in-depth gaps and are usually LOW or MEDIUM Likelihood on their
-own; raise them only when they compound an access-control weakness on the same API. The backend
-code is not supplied, so state that impact is inferred from the integration and reflect that in
-Confidence. Supplied approved intent (for example, a deliberately anonymous public endpoint) may
-lower Likelihood, but only with the reason stated.
-
-Assign each finding a Category: ACCESS_CONTROL when the dominant risk is who can call the API
-(authorization, API keys, resource policy, execute-api bypass, authorizer configuration, CORS, or
-integration credentials), SECURITY_CONFIGURATION when it is WAF, throttling, logging, TLS, input
-validation, caching, or stage configuration.
-
-Be evidence-specific and concise:
-- Cite exact supplied facts: API ID and name, region, endpoint type, route keys, authorization type,
-  authorizer type and identity source, integration type and uri, stage names, web_acl_arn, log
-  destinations, method or route settings, usage plan throttle and quota, policy statements and
-  conditions, and domain security policies.
-- Do not use vague labels such as "open" or "insecure" without the exact supporting fact. Do not
-  claim data sensitivity, exploitation, or approved intent unless supplied.
-
-For Remediation, give a concrete fix: the exact authorizer, setting, policy statement, or stage
-configuration to change and the acceptable end state. Recommend confirming that an endpoint is
-not intentionally anonymous before adding authorization to it.
+Assign each finding one Category by what it is about: ACCESS_CONTROL when it is about who can
+invoke the APIs or their routes and the permissions those invocations run with,
+SECURITY_CONFIGURATION when it is about any other API, stage, integration, or custom domain
+configuration.
 """
 
 
@@ -131,10 +106,10 @@ def identifiers(facts: dict[str, Any]) -> set[str]:
     return ids
 
 
-# Build the per-request system prompt with the API count and, when supplied, account intent.
-def build_system_prompt(facts: dict[str, Any], intent: str | None = None) -> str:
+# Build the per-request system prompt with the API count.
+def build_system_prompt(facts: dict[str, Any]) -> str:
     counts = f"{len(facts.get('apis', []))} APIs"
-    return findings.build_system_prompt(SPEC, GUIDANCE, counts, intent)
+    return findings.build_system_prompt(SPEC, GUIDANCE, counts)
 
 
 # Validate the review structure and that every cited API ID or domain exists; raise on any defect.

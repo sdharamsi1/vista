@@ -58,9 +58,6 @@ DEFAULT_BOOTSTRAP_REGION = "us-east-1"
 # Regions never enumerated.
 SKIP_REGIONS = {"me-south-1", "me-central-1"}
 
-# Largest accepted intent file, to bound token cost.
-MAX_INTENT_BYTES = 16 * 1024
-
 
 # Build the top-level argument parser and its subcommands.
 def build_parser() -> argparse.ArgumentParser:
@@ -136,12 +133,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="named AWS profile to use (defaults to the standard credential chain)",
     )
     assess.add_argument(
-        "--intent",
-        type=Path,
-        metavar="PATH",
-        help="text file describing the account's purpose; sent to Bedrock as extra context",
-    )
-    assess.add_argument(
         "--save-json",
         type=Path,
         metavar="PATH",
@@ -153,7 +144,7 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="DIR",
         help=(
             "save this run to DIR: payload.json (live runs), analysis.md (the model's raw "
-            "Markdown), and run.json (model, timing, tokens, hashes); existing runs are never "
+            "Markdown), and run.json (model, timing, tokens, payload hash); existing runs are never "
             "overwritten"
         ),
     )
@@ -201,27 +192,6 @@ def bootstrap_region(args: argparse.Namespace) -> str:
     )
 
 
-# Read and validate the optional intent file; returns its text or None when no path is given.
-def load_intent(path: Path | None) -> str | None:
-    if path is None:
-        return None
-    try:
-        raw = path.read_bytes()
-    except (FileNotFoundError, IsADirectoryError, PermissionError, OSError) as error:
-        raise SystemExit(f"Could not read intent file {path}: {error}")
-    if len(raw) > MAX_INTENT_BYTES:
-        raise SystemExit(
-            f"Intent file {path} is {len(raw)} bytes; the limit is {MAX_INTENT_BYTES}."
-        )
-    try:
-        intent = raw.decode("utf-8").strip()
-    except UnicodeDecodeError:
-        raise SystemExit(f"Intent file {path} is not valid UTF-8 text.")
-    if not intent:
-        raise SystemExit(f"Intent file {path} is empty.")
-    return intent
-
-
 # Enabled regions minus SKIP_REGIONS.
 def list_enabled_regions(session: boto3.Session, region: str) -> list[str]:
     response = session.client("ec2", region_name=region).describe_regions()
@@ -257,7 +227,6 @@ def review_facts(
     bedrock_region: str,
     save_json: Path | None,
     plain: bool,
-    intent: str | None = None,
     *,
     save_run: Path | None = None,
     replay_path: Path | None = None,
@@ -294,7 +263,6 @@ def review_facts(
             resource_count=total,
             replay=replay,
             payload_file=payload_file,
-            intent=intent,
             started_at=started_at,
             finished_at=now(),
             review_seconds=time.monotonic() - began,
@@ -311,7 +279,7 @@ def review_facts(
             enabled=spinner_enabled,
         ):
             analysis, usage = service.analyze(
-                session, bedrock_region, model_id, facts, save_json, intent, prepared=replay
+                session, bedrock_region, model_id, facts, save_json, prepared=replay
             )
     except Exception as error:
         if save_run is not None:
@@ -354,7 +322,6 @@ def run_scan(
     bedrock_region: str,
     save_json: Path | None,
     plain: bool,
-    intent: str | None = None,
     save_run: Path | None = None,
 ) -> int:
     multi = len(regions) > 1
@@ -365,7 +332,7 @@ def run_scan(
 
     facts = service.collect(session, regions, on_region)
     return review_facts(
-        service, session, facts, model_id, bedrock_region, save_json, plain, intent,
+        service, session, facts, model_id, bedrock_region, save_json, plain,
         save_run=save_run,
     )
 
@@ -378,13 +345,12 @@ def run_replay(
     model_id: str,
     bedrock_region: str,
     plain: bool,
-    intent: str | None = None,
     save_run: Path | None = None,
 ) -> int:
     facts = load_payload(path)
     ui.info(f"Reviewing saved payload {path} (no AWS collection)")
     return review_facts(
-        service, session, facts, model_id, bedrock_region, None, plain, intent,
+        service, session, facts, model_id, bedrock_region, None, plain,
         save_run=save_run, replay_path=path,
     )
 
@@ -394,7 +360,6 @@ def run_assess(args: argparse.Namespace) -> int:
     if not args.model:
         raise SystemExit("No Bedrock model given; pass --model or set BEDROCK_MODEL_ID.")
 
-    intent = load_intent(args.intent)
     if args.save_run is not None:
         runlog.ensure_unused(args.save_run, check_payload=not args.from_json)
         runlog.prepare(args.save_run)
@@ -403,13 +368,11 @@ def run_assess(args: argparse.Namespace) -> int:
     session = boto3.Session(profile_name=args.profile, region_name=bootstrap)
     identity = session.client("sts", region_name=bootstrap).get_caller_identity()
     ui.status(identity)
-    if intent:
-        ui.info(f"Using account intent from {args.intent} ({len(intent)} chars)")
 
     service = SERVICES[args.service]
     if args.from_json:
         return run_replay(
-            service, session, args.from_json, args.model, bootstrap, args.plain, intent,
+            service, session, args.from_json, args.model, bootstrap, args.plain,
             args.save_run,
         )
     if args.all_regions:
@@ -421,7 +384,7 @@ def run_assess(args: argparse.Namespace) -> int:
         regions = args.regions
 
     return run_scan(
-        service, session, regions, args.model, bootstrap, args.save_json, args.plain, intent,
+        service, session, regions, args.model, bootstrap, args.save_json, args.plain,
         args.save_run,
     )
 

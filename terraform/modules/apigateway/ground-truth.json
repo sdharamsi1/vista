@@ -1,349 +1,196 @@
 {
   "service": "apigateway",
-  "scoring": "Match findings to scenarios by the API ID in terraform output scenario_resources. Score each scenario against the highest-severity finding that cites it, or NONE if no finding cites it. A scenario passes when that result is in acceptable_severities and, if cited, the finding's category is expected.category or in acceptable_categories. NONE on a scenario that does not accept NONE is a false negative; a rating above acceptable_severities on an expected or minor scenario is a false positive. When deferral_acceptable is true, PARTIAL or INSUFFICIENT confidence counts as an appropriate deferral.",
-  "rating_method": "Likelihood follows CCSS (NIST IR 7502) exploitability concepts aligned with Vista's definitions: HIGH when reachable from the Internet and usable without credentials; MEDIUM when one precondition must hold first (a credential or API key, a foothold inside the network, an application flaw, or compromise of the resource); LOW when prior account-level access is needed or the issue is defense in depth only. Impact follows CCSS confidentiality, integrity, and availability impact, widened by the mapped ATT&CK technique's outcome: HIGH for account-wide reach, privilege escalation, or full read/write/delete of data; MEDIUM when confined to the resource or one data store; LOW for minor or visibility-only impact. Severity comes from Vista's likelihood x impact matrix. fsbp_reference_severity is the highest published FSBP severity among controls that fail because of the scenario's change (controls that fail on every resource are listed in baseline_controls and excluded). acceptable_severities is the expected severity plus one adjacent level: toward the FSBP reference when one exists and differs, otherwise toward the axis the rationale marks as uncertain. Expected scenarios accept NONE and LOW; ambiguous scenarios accept one level on each side plus deferral. A context_override means documented context removes the attack path FSBP assumes, so the range moves at most one level toward the reference.",
-  "action_method": "expected_action is what a person should do about the scenario: REMEDIATE for dangerous and minor, REVIEW for ambiguous, NO_ACTION for expected. It is derived from kind, not rated separately. acceptable_actions lists every action that counts as a tolerant match, derived by four rules: (1) expected_action is always accepted; (2) if NONE is an acceptable severity, NO_ACTION is accepted, because not reporting a resource is the same as recommending no action; (3) for an expected scenario, REMEDIATE is also accepted when the finding's severity is LOW, since a LOW hygiene note is allowed; (4) REVIEW is also accepted for ec2-02, whose planted flaw is ordinary public web hosting, because whether that is intended depends on information the data cannot show. Report both strict (expected_action) and tolerant (acceptable_actions) results. Severity and action are scored independently.",
+  "scoring": "Answer key for comparing Vista (LLM review) with Prowler (rule-based scanner). It holds facts and published AWS Security Hub FSBP control severities only; it contains no ratings of its own. A tool's output is matched to a scenario by the identifier in terraform output scenario_resources (the API ID). condition flaw: reporting the scenario counts as a detection. condition flaw_blocked: a misconfiguration is present but another deployed control removes the path it opens; reporting it is shown as a separate report rate, counted as neither a detection nor a false positive. condition hardened: no misconfiguration was planted; reporting it is a false positive. fsbp lists the FSBP controls that fail because of the scenario's configuration: a setting in which the scenario differs from its module's hardened default, or a resource its configuration associates with it (its stages, routes, and integrations). fsbp_severity is the highest published severity in that list. On coverage fsbp scenarios the reported severity (NONE when the scenario is not reported) is compared with fsbp_severity on the order NONE < LOW < MEDIUM < HIGH < CRITICAL; outside_fsbp scenarios are scored for detection and false positives only. Controls in baseline_controls fail regardless of scenario and are in no scenario's fsbp. scripts/score.py applies these rules.",
   "framework_sources": {
     "fsbp": "https://docs.aws.amazon.com/securityhub/latest/userguide/fsbp-standard.html",
     "attack": "https://attack.mitre.org/matrices/enterprise/cloud/iaas/",
-    "owasp_api": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
-    "ccss": "https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nistir7502.pdf"
+    "owasp_api": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
   },
   "baseline_controls": {
-    "note": "Fail regardless of scenario on REST stages; excluded from per-scenario references.",
+    "note": "FSBP controls known to fail regardless of scenario, for example account-level settings, the VPCs the scenario resources run in, settings left at the module's hardened default that every scenario starts from, and deletion protection, which every resource leaves off so one terraform destroy removes everything. The list is not exhaustive: other FSBP controls can also fail regardless of scenario, depending on account settings at scan time. They are in no scenario's fsbp list. Backing resources no scenario is scored on (for example the S3 access-log bucket, the DynamoDB table, the SQS queue, the KMS key) are not evaluated here.",
     "controls": [
       {
         "control": "APIGateway.2",
+        "title": "API Gateway REST API stages should be configured to use SSL certificates for backend authentication",
         "severity": "MEDIUM",
-        "scope": "No backend client certificate"
+        "scope": "No client certificate for backend authentication on the prod stage of all eight REST APIs"
       },
       {
         "control": "APIGateway.3",
+        "title": "API Gateway REST API stages should have AWS X-Ray tracing enabled",
         "severity": "LOW",
-        "scope": "X-Ray tracing not enabled"
+        "scope": "X-Ray tracing off on the prod stage of all eight REST APIs"
       }
     ]
   },
-  "kinds": {
-    "dangerous": "A real weakness Vista must report within the acceptable range.",
-    "ambiguous": "Defensible either way; the model should explain the tradeoff or defer. NONE and over-rating are both wrong.",
-    "expected": "A correctly configured resource; NONE or a LOW hygiene note.",
-    "minor": "A small, real gap; LOW or no finding."
-  },
-  "change_log": [
-    {
-      "date": "2026-10-14",
-      "change": "Added expected_action to every scenario.",
-      "reason": "The research question asks Vista to separate resources needing remediation from expected configurations and cases needing human review. The review format previously had no way to say the last two, so Vista now emits a Recommended action field and the ground truth records the matching answer."
-    },
-    {
-      "date": "2026-10-14",
-      "change": "Added acceptable_actions to every scenario, and an action_method describing how it is derived.",
-      "reason": "Action-field pilot runs showed that deriving expected_action from kind alone is too coarse: both evaluated models gave the public marketing site (ec2-02) REVIEW rather than REMEDIATE, and one gave the NACL-blocked port (ec2-09) a LOW REMEDIATE that Vista's own guidance supports. The tolerant list is made after seeing the pilot outputs and before the benchmark; strict expected_action is unchanged and both are reported."
-    }
-  ],
   "scenarios": [
     {
       "id": "apigw-01",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "inventory-api",
       "title": "IAM-authenticated API with no access logging",
-      "expected": {
-        "category": "SECURITY_CONFIGURATION",
-        "likelihood": "LOW",
-        "impact": "LOW",
-        "severity": "LOW"
-      },
-      "acceptable_severities": [
-        "LOW",
-        "MEDIUM"
-      ],
-      "rationale": "Every route requires IAM authorization, WAF and throttling are on, and execution logging is on; the missing access log only costs visibility into who called the API.",
-      "framework_mappings": {
-        "fsbp": [],
-        "fsbp_reference_severity": null,
-        "attack": [],
-        "owasp_api": [
-          "API8:2023"
-        ],
-        "context_override": null,
-        "note": "APIGateway.9 covers HTTP and WebSocket stages only; APIGateway.1 (execution logging) passes."
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "description": "Regional REST API whose GET /items route uses AWS_IAM authorization and calls DynamoDB Scan on the shared table through an execution role limited to that action, with request validation, a WAF web ACL on stage prod, stage throttling (rate 25, burst 50), and execution logging at ERROR. Misconfigured: the prod stage has no access log destination.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "outside_fsbp",
+      "fsbp": [],
+      "fsbp_severity": null,
+      "attack": [],
+      "owasp_api": [
+        "API8:2023"
       ]
     },
     {
       "id": "apigw-02",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "support-tickets-api",
       "title": "Execution logging records full request and response bodies",
-      "expected": {
-        "category": "SECURITY_CONFIGURATION",
-        "likelihood": "MEDIUM",
-        "impact": "MEDIUM",
-        "severity": "MEDIUM"
-      },
-      "acceptable_severities": [
-        "LOW",
-        "MEDIUM"
-      ],
-      "rationale": "dataTraceEnabled on */* writes every Scan result and request body to CloudWatch Logs, where anyone who can read the log group sees stored data; reading the logs needs account access first.",
-      "framework_mappings": {
-        "fsbp": [],
-        "fsbp_reference_severity": null,
-        "attack": [],
-        "owasp_api": [
-          "API8:2023"
-        ],
-        "context_override": null,
-        "note": "APIGateway.1 passes; no FSBP control covers dataTraceEnabled."
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "description": "Regional REST API whose GET /items route uses AWS_IAM authorization and calls DynamoDB Scan on the shared table through an execution role limited to that action, with request validation, a WAF web ACL on stage prod, stage throttling (rate 25, burst 50), and access logging. Misconfigured: method settings for */* set dataTraceEnabled true and logging level INFO.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "outside_fsbp",
+      "fsbp": [],
+      "fsbp_severity": null,
+      "attack": [],
+      "owasp_api": [
+        "API8:2023"
       ]
     },
     {
       "id": "apigw-03",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "reporting-api",
       "title": "IAM-authenticated API with no WAF and no throttling",
-      "expected": {
-        "category": "SECURITY_CONFIGURATION",
-        "likelihood": "MEDIUM",
-        "impact": "MEDIUM",
-        "severity": "MEDIUM"
-      },
-      "acceptable_severities": [
-        "LOW",
-        "MEDIUM"
+      "description": "Regional REST API whose GET /items route uses AWS_IAM authorization and calls DynamoDB Scan on the shared table through an execution role limited to that action, with request validation, access logging, and execution logging at ERROR on stage prod. Misconfigured: the prod stage has no WAF web ACL, and method settings set the throttling rate and burst limits to -1 (no stage throttle).",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "APIGateway.4",
+          "title": "API Gateway should be associated with a WAF Web ACL",
+          "severity": "MEDIUM",
+          "scope": "prod stage has no WAF web ACL"
+        }
       ],
-      "rationale": "No web_acl_arn and no stage throttle, so only the account-level limit applies and one client can consume regional capacity; callers are still authenticated.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "APIGateway.4",
-            "severity": "MEDIUM"
-          }
-        ],
-        "fsbp_reference_severity": "MEDIUM",
-        "attack": [
-          "T1499.003"
-        ],
-        "owasp_api": [
-          "API4:2023"
-        ],
-        "context_override": null
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "fsbp_severity": "MEDIUM",
+      "attack": [
+        "T1499.003"
+      ],
+      "owasp_api": [
+        "API4:2023"
       ]
     },
     {
       "id": "apigw-04",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "orders-api",
       "title": "Route with no authorization reads the DynamoDB table",
-      "expected": {
-        "category": "ACCESS_CONTROL",
-        "likelihood": "HIGH",
-        "impact": "MEDIUM",
-        "severity": "HIGH"
-      },
-      "acceptable_severities": [
-        "HIGH",
-        "CRITICAL"
-      ],
-      "rationale": "GET /items has authorization_type NONE on a deployed stage of a regional API and calls dynamodb Scan with an execution role, so anyone can read every item. Vista may group this with apigw-05, which is why CRITICAL is accepted.",
-      "framework_mappings": {
-        "fsbp": [],
-        "fsbp_reference_severity": null,
-        "attack": [],
-        "owasp_api": [
-          "API2:2023"
-        ],
-        "context_override": null,
-        "note": "APIGateway.8 covers HTTP and WebSocket routes only. CRITICAL is accepted because Vista may group this with apigw-05, which has the same root cause."
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "description": "Regional REST API deployed to stage prod with a WAF web ACL, stage throttling, request validation, and access and execution logging. Misconfigured: GET /items has authorization type NONE and calls DynamoDB Scan on the shared table through the execution role.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "outside_fsbp",
+      "fsbp": [],
+      "fsbp_severity": null,
+      "attack": [],
+      "owasp_api": [
+        "API2:2023"
       ]
     },
     {
       "id": "apigw-05",
       "tier": "controlled",
-      "kind": "dangerous",
       "resource": "loyalty-points-api",
       "title": "Routes with no authorization read, write, and delete DynamoDB items",
-      "expected": {
-        "category": "ACCESS_CONTROL",
-        "likelihood": "HIGH",
-        "impact": "HIGH",
-        "severity": "CRITICAL"
-      },
-      "acceptable_severities": [
-        "HIGH",
-        "CRITICAL"
+      "description": "Regional REST API deployed to stage prod with a WAF web ACL, stage throttling, request validation, and access and execution logging. Misconfigured: GET, PUT, and DELETE /items have authorization type NONE and call DynamoDB Scan, PutItem, and DeleteItem through the execution role.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "outside_fsbp",
+      "fsbp": [],
+      "fsbp_severity": null,
+      "attack": [
+        "T1485",
+        "T1565.001"
       ],
-      "rationale": "GET, PUT, and DELETE /items all have authorization_type NONE and call Scan, PutItem, and DeleteItem, so anyone can steal, tamper with, or destroy the data.",
-      "framework_mappings": {
-        "fsbp": [],
-        "fsbp_reference_severity": null,
-        "attack": [
-          "T1485",
-          "T1565.001"
-        ],
-        "owasp_api": [
-          "API2:2023",
-          "API5:2023"
-        ],
-        "context_override": null
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "owasp_api": [
+        "API2:2023",
+        "API5:2023"
       ]
     },
     {
       "id": "apigw-06",
       "tier": "realistic",
-      "kind": "expected",
       "resource": "customer-api",
       "title": "Cognito-protected API with an anonymous MOCK health check",
-      "expected": null,
-      "acceptable_severities": [
-        "NONE",
-        "LOW"
-      ],
-      "rationale": "GET and PUT /items use a Cognito user pool authorizer, with WAF, throttling, logging, and request validation. GET /health is anonymous but backed by a MOCK integration that touches no data, which Vista's guidance says is not a finding on its own.",
-      "framework_mappings": {
-        "fsbp": [],
-        "fsbp_reference_severity": null,
-        "attack": [],
-        "owasp_api": [],
-        "context_override": null
-      },
-      "expected_action": "NO_ACTION",
-      "acceptable_actions": [
-        "NO_ACTION",
-        "REMEDIATE"
-      ]
+      "description": "Regional REST API whose GET and PUT /items routes use a Cognito user pool authorizer, with a WAF web ACL, stage throttling, request validation, and access and execution logging; GET /health has authorization type NONE and a MOCK integration that returns a fixed response without calling a backend. Hardened: no misconfiguration was planted.",
+      "condition": "hardened",
+      "context": null,
+      "coverage": "outside_fsbp",
+      "fsbp": [],
+      "fsbp_severity": null,
+      "attack": [],
+      "owasp_api": []
     },
     {
       "id": "apigw-07",
       "tier": "realistic",
-      "kind": "dangerous",
       "resource": "partner-api",
-      "title": "Partner API protected only by an API key",
-      "expected": {
-        "category": "ACCESS_CONTROL",
-        "likelihood": "MEDIUM",
-        "impact": "MEDIUM",
-        "severity": "MEDIUM"
-      },
-      "acceptable_severities": [
-        "MEDIUM",
-        "HIGH"
+      "title": "Partner API whose routes require only an API key",
+      "description": "Regional REST API with a usage plan (rate 10, burst 20, quota 100,000 requests per month) and one API key, plus a WAF web ACL, stage throttling, and logging. Misconfigured: GET and PUT /items have authorization type NONE with api_key_required true, and call DynamoDB Scan and PutItem through the execution role.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "outside_fsbp",
+      "fsbp": [],
+      "fsbp_severity": null,
+      "attack": [
+        "T1565.001"
       ],
-      "rationale": "GET and PUT /items have authorization_type NONE with api_key_required true. The usage plan throttles and caps the key, but an API key identifies a caller rather than authenticating one (OWASP API2:2023), and a leaked key reads and writes the table. Obtaining a key is one precondition, so Likelihood is MEDIUM.",
-      "framework_mappings": {
-        "fsbp": [],
-        "fsbp_reference_severity": null,
-        "attack": [
-          "T1565.001"
-        ],
-        "owasp_api": [
-          "API2:2023"
-        ],
-        "context_override": null,
-        "note": "CCSS treats obtaining the key as a precondition (MEDIUM likelihood). Vista's prompt treats API-key-only routes as HIGH likelihood, so this scenario directly tests that prompt rule."
-      },
-      "expected_action": "REMEDIATE",
-      "acceptable_actions": [
-        "REMEDIATE"
+      "owasp_api": [
+        "API2:2023"
       ]
     },
     {
       "id": "apigw-08",
       "tier": "realistic",
-      "kind": "ambiguous",
       "resource": "internal-admin-api",
       "title": "Unauthenticated admin API restricted to the office IP range",
-      "expected": {
-        "category": "ACCESS_CONTROL",
-        "likelihood": "LOW",
-        "impact": "MEDIUM",
-        "severity": "LOW"
-      },
-      "acceptable_severities": [
-        "LOW",
-        "MEDIUM"
+      "description": "Regional REST API deployed to stage prod with a WAF web ACL, stage throttling, request validation, and access and execution logging. Misconfigured: GET and DELETE /items have authorization type NONE and call DynamoDB Scan and DeleteItem through the execution role.",
+      "condition": "flaw",
+      "context": "The REST API resource policy allows execute-api:Invoke for Principal * and explicitly denies it when aws:SourceIp is not in var.office_cidr (default 203.0.113.0/24).",
+      "coverage": "outside_fsbp",
+      "fsbp": [],
+      "fsbp_severity": null,
+      "attack": [
+        "T1485"
       ],
-      "deferral_acceptable": true,
-      "rationale": "GET and DELETE /items have no authorization, but the resource policy denies every source outside the office CIDR. Network location replaces identity, so anyone on the office network can delete data; the model should credit the allowlist and recommend real authorization, not call it Internet-exposed.",
-      "framework_mappings": {
-        "fsbp": [],
-        "fsbp_reference_severity": null,
-        "attack": [
-          "T1485"
-        ],
-        "owasp_api": [
-          "API2:2023",
-          "API5:2023"
-        ],
-        "context_override": "The resource policy denies every source outside the office CIDR."
-      },
-      "expected_action": "REVIEW",
-      "acceptable_actions": [
-        "REVIEW"
+      "owasp_api": [
+        "API2:2023",
+        "API5:2023"
       ]
     },
     {
       "id": "apigw-09",
       "tier": "realistic",
-      "kind": "ambiguous",
       "resource": "webhooks",
       "title": "HTTP API webhook route with no authorization that writes to SQS",
-      "expected": {
-        "category": "ACCESS_CONTROL",
-        "likelihood": "HIGH",
-        "impact": "LOW",
-        "severity": "MEDIUM"
-      },
-      "acceptable_severities": [
-        "LOW",
-        "MEDIUM",
-        "HIGH"
+      "description": "HTTP API whose route POST /webhooks/payments has an AWS_PROXY integration (SQS-SendMessage) that sends the request body to an SQS queue through a role limited to sqs:SendMessage on that queue; the $default stage has route throttling (rate 10, burst 20) and access logging. Misconfigured: the route has authorization type NONE.",
+      "condition": "flaw",
+      "context": null,
+      "coverage": "fsbp",
+      "fsbp": [
+        {
+          "control": "APIGateway.8",
+          "title": "API Gateway routes should specify an authorization type",
+          "severity": "MEDIUM",
+          "scope": "Route POST /webhooks/payments has authorization type NONE"
+        }
       ],
-      "deferral_acceptable": true,
-      "rationale": "POST /webhooks/payments is anonymous and sends the body to an SQS queue; payment providers usually sign webhooks and the signature is checked downstream, which the facts cannot show. Anyone can inject messages but cannot read anything. Missing WAF must not be reported because HTTP APIs cannot attach it.",
-      "framework_mappings": {
-        "fsbp": [
-          {
-            "control": "APIGateway.8",
-            "severity": "MEDIUM"
-          }
-        ],
-        "fsbp_reference_severity": "MEDIUM",
-        "attack": [
-          "T1565.001"
-        ],
-        "owasp_api": [
-          "API2:2023"
-        ],
-        "context_override": null
-      },
-      "expected_action": "REVIEW",
-      "acceptable_actions": [
-        "REVIEW"
+      "fsbp_severity": "MEDIUM",
+      "attack": [
+        "T1565.001"
+      ],
+      "owasp_api": [
+        "API2:2023"
       ]
     }
   ]

@@ -1,25 +1,27 @@
-# Expected ratings are in ground-truth.json. Every bucket starts hardened (Block Public Access,
-# ACLs disabled, SSE-KMS, versioning, access logging, TLS-only) and lists only what differs.
+# ground-truth.json is the facts-only answer key: each scenario's condition, FSBP coverage, and
+# published FSBP control severities. Every bucket starts from the module's hardened default (Block
+# Public Access, ACLs disabled, SSE-KMS, versioning, access logging, TLS-only) and lists only what
+# differs.
 #
-# controlled: the single-flaw severity ladder.
-# realistic:  expected, ambiguous, and messy cases mixed in with ordinary well-configured buckets.
+# controlled: one setting changed per bucket from that default.
+# realistic:  website, media, invoice, configuration, backup, and scratch buckets.
 locals {
   all_scenarios = {
     # ---------- controlled ----------
 
-    # LOW: CORS lets any origin send PUT and DELETE requests.
+    # CORS rule allows origin * to send GET, PUT, and DELETE requests.
     "s3-01" = {
       tier = "controlled"
       name = "design-assets"
       cors = { origins = ["*"], methods = ["GET", "PUT", "DELETE"] }
     }
-    # MEDIUM: public-read ACL lets anyone list object names, but not read objects.
+    # public-read ACL: an AllUsers READ grant on the bucket, which permits listing object keys.
     "s3-02" = {
       tier       = "controlled"
       name       = "build-artifacts"
       public_acl = true
     }
-    # MEDIUM: wildcard principal can read and write objects from any account in the organization.
+    # Policy allows Principal * s3:GetObject and s3:PutObject when aws:PrincipalOrgID is var.org_id.
     "s3-03" = {
       tier = "controlled"
       name = "shared-datasets"
@@ -28,13 +30,13 @@ locals {
         condition = { StringEquals = { "aws:PrincipalOrgID" = var.org_id } }
       }]
     }
-    # HIGH: bucket policy lets anyone on the Internet read every object.
+    # Policy allows Principal * s3:GetObject on every object with no condition.
     "s3-04" = {
       tier              = "controlled"
       name              = "customer-exports"
       policy_statements = [{ actions = ["s3:GetObject"] }]
     }
-    # CRITICAL: bucket policy lets anyone on the Internet read, overwrite, and delete objects.
+    # Policy allows Principal * s3:GetObject, s3:PutObject, and s3:DeleteObject with no condition.
     "s3-05" = {
       tier              = "controlled"
       name              = "partner-uploads"
@@ -43,8 +45,8 @@ locals {
 
     # ---------- realistic ----------
 
-    # EXPECTED: static website bucket. Anonymous read is the point; SSE-S3 and no TLS-only rule
-    # because S3 website endpoints serve plain HTTP.
+    # Static website bucket. Policy allows Principal * s3:GetObject; SSE-S3 and no TLS-only
+    # statement (S3 website endpoints serve HTTP only).
     "s3-06" = {
       tier              = "realistic"
       name              = "www"
@@ -53,14 +55,14 @@ locals {
       tls_only          = false
       policy_statements = [{ actions = ["s3:GetObject"] }]
     }
-    # AMBIGUOUS: media library where only the public/ prefix is anonymously readable.
+    # Media library; policy allows Principal * s3:GetObject only under the public/ prefix.
     "s3-07" = {
       tier              = "realistic"
       name              = "media-library"
       sse               = "AES256"
       policy_statements = [{ actions = ["s3:GetObject"], prefix = "public/" }]
     }
-    # HIGH: "only our website can read invoices", enforced with aws:Referer, which any client can set.
+    # Invoices; policy allows Principal * s3:GetObject with only an aws:Referer StringLike condition.
     "s3-08" = {
       tier = "realistic"
       name = "invoices"
@@ -70,18 +72,18 @@ locals {
         condition = { StringLike = { "aws:Referer" = "https://www.${var.name}.example/*" } }
       }]
     }
-    # EXPECTED: application configuration, fully hardened.
+    # Application configuration; no setting differs from the module defaults.
     "s3-09" = {
       tier = "realistic"
       name = "app-config"
     }
-    # EXPECTED: database backups with Object Lock enabled, fully hardened.
+    # Database backups with Object Lock enabled; no other setting differs from the module defaults.
     "s3-10" = {
       tier        = "realistic"
       name        = "db-backups"
       object_lock = true
     }
-    # LOW: scratch space with no versioning and no access logging, otherwise private.
+    # Scratch space with versioning and server access logging off.
     "s3-11" = {
       tier       = "realistic"
       name       = "tmp-scratch"

@@ -67,7 +67,6 @@ flags are:
   [Repeatable runs](#repeatable-runs)).
 - `--model MODEL_ID` — Bedrock model or inference-profile ID (or set `BEDROCK_MODEL_ID`).
 - `--profile NAME` — use a named AWS profile instead of the default credential chain.
-- `--intent PATH` — a text file describing the account's purpose and justification (see below).
 - `--save-json PATH` — write the exact factual JSON sent to Bedrock to a private (0600) file.
 - `--save-run DIR` — save the whole run to a directory (see [Repeatable runs](#repeatable-runs)).
 - `--plain` — print the model's raw Markdown without terminal formatting.
@@ -81,13 +80,13 @@ To compare models, or measure how much one model varies, send the same evidence 
 
 - `payload.json` — the exact JSON sent to Bedrock (live runs only).
 - `analysis.md` — the model's raw Markdown review, before any terminal formatting.
-- `run.json` — the model, Bedrock region, time, token usage, resource count, and SHA-256 hashes of
-  the payload and intent. A review that fails validation is recorded here with its error, and when
-  the first answer fails validation but the corrective retry passes, `retry_errors` lists why.
+- `run.json` — the model, Bedrock region, time, token usage, resource count, and a SHA-256 hash of
+  the payload. A review that fails validation is recorded here with its error, and when the first
+  answer fails validation but the corrective retry passes, `retry_errors` lists why.
 
 `--from-json` then reviews a saved payload without touching AWS, so the evidence is identical
 across runs and the resources can be destroyed in the meantime. It still needs AWS credentials
-for Bedrock, and `--intent` can be supplied again because intent is not part of the payload.
+for Bedrock.
 
 ```bash
 vista assess ec2 --regions us-east-1 --model us.anthropic.claude-opus-5 --save-run runs/ec2/opus/1
@@ -99,35 +98,15 @@ Use a new directory for every run. Run directories can contain account IDs, ARNs
 so keep them out of version control. Vista does not set a temperature, so models use their own
 defaults, and the same payload can still produce different reviews.
 
-### Account intent
-
-`--intent PATH` lets the account owner supply free-text context about what the account is for and
-why things are configured the way they are. Vista sends that text to Bedrock alongside the facts,
-so the model can ease up on findings the owner explains as expected while still reporting genuine
-risks and misconfigurations. A public path or open port that the intent credibly justifies is
-downgraded (with the reason stated in the finding); a dangerous exposure such as world-open
-SSH/RDP/database is never downgraded on intent alone.
-
-The intent text is treated strictly as untrusted context, never as instructions: it cannot change
-the output format, hide a risk, or reduce the number of findings.
-
-```bash
-vista assess ec2 --all-regions --model us.anthropic.claude-opus-5 --intent intent.txt
-```
-
-Omit `--intent` and Vista behaves exactly as before — nothing extra is sent to Bedrock. The file
-must be UTF-8 text and at most 16 KB. Name it `intent.txt` or `*.intent.txt` and it is ignored by
-git out of the box (it can contain sensitive account details, so keep it out of version control).
-
 ### Services
 
 - **EC2** — instances and their network path, IAM, IMDS, storage, and load-balancer exposure.
 - **S3** — buckets and their public-access controls (Block Public Access, policy, ACL, ownership),
   encryption, versioning, logging, replication, and CORS.
-- **API Gateway** — REST, HTTP, and WebSocket APIs. APIs are expected to be Internet-facing, so
-  the review focuses on how well each one is secured: per-route authorization and authorizers,
-  resource policies, API-key-only routes, execute-api bypass, WAF, throttling and usage plans,
-  access/execution logging, TLS (custom domains and backends), request validation, and CORS.
+- **API Gateway** — REST, HTTP, and WebSocket APIs: per-route authorization and authorizers,
+  resource policies, API keys and usage plans, the default execute-api endpoint setting, WAF,
+  throttling, access/execution logging, TLS (custom domains and backends), request validation,
+  caching, and CORS.
 - **RDS** — DB instances, clusters, RDS Proxies, and manual snapshots: public accessibility and the
   full network path (security groups, routes, NACLs), encryption and KMS key ownership, TLS
   parameters, IAM authentication, Secrets Manager use, backups, deletion protection, associated IAM
@@ -203,18 +182,9 @@ Anything denied is recorded per resource under `collection_errors` rather than a
 ## Output
 
 Vista prints an account-level review: a short risk summary followed by up to ten findings ordered
-by severity. Each finding lists its severity, likelihood, impact, confidence, category, recommended
-action, the affected resources, the supporting evidence, why it matters, and a concrete remediation
-step. Resources that share a root cause are grouped into a single finding.
-
-The recommended action is separate from severity and says what a person should do:
-
-- `REMEDIATE` — the evidence shows a weakness that should be changed.
-- `REVIEW` — a person must decide first: the evidence is incomplete, the right answer depends on
-  approved intent or application behavior the data does not show, or it is defensible either way.
-- `NO_ACTION` — the configuration matches normal design for that kind of resource; it is listed only
-  to keep a notable path or setting visible. It requires `LOW` severity, and it is justified from the
-  configuration, never from intent that was not supplied.
+by severity. Each finding lists its severity, likelihood, impact, confidence, category, the affected
+resources, the supporting evidence, why it matters, and a concrete remediation step. Resources are
+grouped into a single finding only when they share a root cause and would get the same severity.
 
 Every service uses the same review format and validation; only the category names differ:
 
@@ -247,9 +217,7 @@ The two map to severity through a fixed matrix:
 | **Likelihood LOW** | LOW | LOW | MEDIUM |
 
 **Confidence** (CONFIRMED / PARTIAL / INSUFFICIENT) is reported separately and reflects how complete
-the evidence was — for example a failed collector lowers confidence rather than severity. Supplied
-account intent can lower a finding's likelihood (and so its severity), but never downgrades a
-CRITICAL or HIGH dangerous exposure on its own.
+the evidence was — for example a failed collector lowers confidence rather than severity.
 
 ## Project layout
 
@@ -264,9 +232,9 @@ Every service is a package under `vista/` with the same pieces, and the CLI only
 - `examples/sample-payload.json` — a full example of the JSON sent to Bedrock.
 
 Shared modules hold everything else: `facts.py` (collector helpers), `regions.py` (parallel region
-scanning and the `scan` header), `findings.py` (the review format, prompt assembly, and
-validation), `severity.py`, `bedrock.py`, and `render.py`. To add a service, create the package
-and register its `service` module in `SERVICES` in `vista/cli.py`.
+scanning and the `scan` header), `findings.py` (the review format, shared review rules, prompt
+assembly, and validation), `severity.py`, `bedrock.py`, and `render.py`. To add a service, create
+the package and register its `service` module in `SERVICES` in `vista/cli.py`.
 
 Every payload starts with the same `scan` header: `account_id`, `caller_arn`, `regions`,
 `started_at`, `completed_at`, and `collection_errors_by_region` (null when nothing failed).
@@ -343,7 +311,8 @@ A full populated example is in
 S3 exposure is decided by the interaction of Block Public Access, bucket policy, ACL, and object
 ownership — not a network path — so the payload carries those controls plus configuration signals.
 Identical bucket policies are de-duplicated into `shared.policies` and referenced by `policy_ref`.
-Account-level Block Public Access is under `account` and overrides per-bucket settings.
+Account-level Block Public Access is under `account`; S3 applies the most restrictive combination of
+the account-level and bucket-level settings.
 
 ```json
 {
@@ -377,13 +346,14 @@ Account-level Block Public Access is under `account` and overrides per-bucket se
 }
 ```
 
-- **account.public_access_block** — account-level Block Public Access; overrides bucket settings.
+- **account.public_access_block** — account-level Block Public Access; S3 combines it with each
+  bucket's own settings and applies the most restrictive result.
 - **buckets[]** — one entry per bucket in the selected regions, with its own Block Public Access,
-  `policy_ref` (into `shared.policies`), AWS-computed `policy_is_public`, ACL (public grants
-  flagged), object ownership, website, encryption, versioning, logging, replication, object lock,
-  and CORS.
-- **collection_errors** — per-resource map of any field that could not be read (e.g. `AccessDenied`);
-  the model treats those as unknown rather than safe.
+  `policy_ref` (into `shared.policies`), `policy_is_public` (the `PolicyStatus.IsPublic` value AWS
+  returns from `GetBucketPolicyStatus`), ACL (`public_grants` lists the grants to the AllUsers or
+  AuthenticatedUsers group), object ownership, website, encryption, versioning, logging,
+  replication, object lock, and CORS.
+- **collection_errors** — per-resource map of any field that could not be read (e.g. `AccessDenied`).
 
 A full populated example is in
 [`vista/s3/examples/sample-payload.json`](vista/s3/examples/sample-payload.json).
@@ -470,8 +440,8 @@ Only user-modified parameters are listed; default parameter groups use engine de
 
 - **snapshots[]** — manual snapshots only. `shared_with` of `["all"]` means the snapshot is public;
   account IDs are cross-account shares; `null` means the sharing attribute could not be read.
-- **db_proxies[]** — RDS Proxies, which are VPC-only; reviewed for TLS, client auth, and debug
-  logging.
+- **db_proxies[]** — RDS Proxies, which are VPC-only, with their TLS requirement, client
+  authentication, and debug logging settings.
 
 A full populated example is in
 [`vista/rds/examples/sample-payload.json`](vista/rds/examples/sample-payload.json).

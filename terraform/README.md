@@ -1,517 +1,597 @@
-# Test scenarios and ground truth
+# Test scenarios and answer key
 
-This folder deploys 40 deliberately built AWS scenarios with Terraform and records the correct answer for each one. They are the answer key for evaluating how well Vista's LLM review rates real exposure, tells expected configurations from risks, and routes uncertain cases to a person.
+This folder deploys 40 AWS scenarios with Terraform. They are the answer key for comparing Vista
+(LLM review) with Prowler (rule-based scanner) on the same resources. The answer key holds facts and
+the published severities of AWS Security Hub Foundational Security Best Practices (FSBP) controls
+only; it contains no ratings of its own.
 
-Each module under `modules/` (`ec2`, `s3`, `apigateway`, `rds`) creates its scenarios and has a `ground-truth.json` that holds the expected result for every scenario. This README restates that file in prose. If the two differ, `ground-truth.json` is the source of truth. The `scenario_resources` Terraform output maps each scenario ID to the resource identifier Vista cites, which is how a finding is matched to a scenario.
+Each module under `modules/` (`ec2`, `s3`, `apigateway`, `rds`) creates its scenarios and has a
+`ground-truth.json` that is the source of truth. This README is generated from those four files. The
+`scenario_resources` Terraform output maps each scenario ID to the resource identifier a tool cites,
+which is how a finding is matched to a scenario.
 
-## How the scenarios are organized
+## Fields
 
-Every scenario belongs to one of two tiers:
+- **Tier:** `controlled` scenarios are a ladder of single changes from the module's hardened
+  default, one setting per resource. `realistic` scenarios share infrastructure such as a load
+  balancer, a NAT gateway, network ACLs, and data stores the way a real account does.
+- **Condition:** `flaw` means a misconfiguration was planted; reporting the scenario counts as a
+  detection. `flaw_blocked` means a misconfiguration is present but another deployed control
+  removes the path it opens; reporting it is shown as a separate report rate, counted as neither a
+  detection nor a false positive. `hardened` means no misconfiguration was planted; reporting it is
+  a false positive.
+- **Context:** deployed facts next to the misconfiguration that narrow or remove what it opens, or
+  None.
+- **Coverage:** `fsbp` when at least one FSBP control fails because of the scenario's
+  configuration, otherwise `outside_fsbp`.
+- **FSBP controls:** each entry gives the control ID, its published title, its published severity,
+  and the failing resource and setting. A control is attributed to a scenario when it fails because
+  of a setting in which the scenario differs from its module's hardened default, or because of a
+  resource its configuration associates with it (EC2: its security groups, its subnet's network
+  ACL, its IAM role, and the load balancer, listeners, and target group it is registered with; S3:
+  none beyond the bucket; API Gateway: its stages, routes, and integrations; RDS: its security group
+  and parameter group, and for a snapshot its source DB instance). The highest published severity in
+  the list is the scenario's `fsbp_severity`.
+- **Baseline controls:** FSBP controls known to fail regardless of scenario (for example
+  account-level settings, the VPCs the scenario resources run in, settings left at the hardened
+  default, and deletion protection, which every resource leaves off so one `terraform destroy`
+  removes everything). The lists are not exhaustive. They are listed per module and are in no
+  scenario's FSBP list.
+- **ATT&CK:** MITRE ATT&CK techniques the misconfiguration maps to.
+- **OWASP API:** OWASP API Security Top 10 (2023) entries, for API Gateway scenarios only.
 
-- **controlled:** A ladder of single flaws, from a low-impact misconfiguration up to a critical one, so severity ratings can be compared like for like.
-- **realistic:** Messier setups that share infrastructure such as a load balancer, a NAT gateway, and data stores. They include safe-looking resources that are risky, risky-looking resources that are safe, and cases that depend on intent.
+## Coverage groups and conditions
 
-Every scenario also has one of four kinds:
+| Module | Scenarios | fsbp | outside_fsbp | flaw | flaw_blocked | hardened |
+| --- | --- | --- | --- | --- | --- | --- |
+| EC2 | 11 | 8 | 3 | 9 | 1 | 1 |
+| S3 | 11 | 7 | 4 | 9 | 0 | 2 |
+| API Gateway | 9 | 2 | 7 | 8 | 0 | 1 |
+| RDS | 9 | 6 | 3 | 8 | 0 | 1 |
+| Total | 40 | 23 | 17 | 34 | 1 | 5 |
 
-- **dangerous (26):** A real weakness Vista must report within the acceptable severity range, and a person should fix it (REMEDIATE).
-- **ambiguous (7):** Defensible either way. The model should explain the tradeoff or defer to a person (REVIEW). Reporting nothing and over-rating are both wrong.
-- **expected (6):** A correctly configured resource, or an exposure that another control blocks. The right result is no finding or a LOW hygiene note (NO_ACTION).
-- **minor (1):** A small, real gap. The right result is LOW or no finding (REMEDIATE).
+## How the scorer uses it
 
-Scenarios per module: EC2 11, S3 11, API Gateway 9, RDS 9.
-
-## How to read the expected values
-
-- **Category** is the kind of problem: `INTERNET_EXPOSURE`, `PUBLIC_EXPOSURE`, `ACCESS_CONTROL`, or `SECURITY_CONFIGURATION`.
-- **Likelihood** follows CCSS (NIST IR 7502) exploitability, aligned with Vista's definitions. HIGH means reachable from the Internet and usable without credentials. MEDIUM means one precondition must hold first, such as a credential or API key, a foothold inside the network, an application flaw, or compromise of the resource. LOW means prior account-level access is needed or the issue is defense in depth only.
-- **Impact** follows CCSS confidentiality, integrity, and availability impact, widened by the outcome of the mapped ATT&CK technique. HIGH means account-wide reach, privilege escalation, or full read, write, and delete of data. MEDIUM means confined to the resource or one data store. LOW means minor or visibility-only impact.
-- **Severity** comes from Vista's likelihood by impact matrix.
-- **Acceptable severities** are the expected severity plus one adjacent level. The extra level goes toward the AWS Security Hub FSBP reference severity when one exists, otherwise toward the axis the rationale marks as uncertain. Expected scenarios accept NONE and LOW. Ambiguous scenarios accept one level on each side, and a deferral counts as appropriate.
-- **Expected action** is what a person should do: REMEDIATE for dangerous and minor scenarios, REVIEW for ambiguous ones, NO_ACTION for expected ones. It comes from the kind and is not rated separately. **Acceptable actions** lists every action that counts as a tolerant match. Reports give both the strict result (expected action) and the tolerant result (acceptable actions).
-- **Frameworks** show where each scenario is anchored: AWS Security Hub Foundational Security Best Practices (FSBP) controls and their published severities, MITRE ATT&CK techniques, the OWASP API Security Top 10 (API Gateway), and CCSS for the likelihood and impact rules. Controls that fail on every resource in a module are listed in `baseline_controls` in the JSON and are left out of the per-scenario references. A context override means documented context removes the attack path FSBP assumes.
-
-A scenario passes when the highest-severity finding that cites its resource, or NONE if no finding cites it, is in the acceptable severities and, if cited, has an expected or acceptable category. `scripts/score.py` applies these rules.
-
-## Revisions made after the pilot
-
-Two changes were made after seeing pilot output and before the benchmark runs. Each is logged in the `change_log` of the affected JSON file.
-
-- `ec2-06` was reclassified from expected to ambiguous. Both evaluated models and Prowler reported the load balancer path, and Vista's guidance requires a confirmed public path to be at least MEDIUM likelihood.
-- `acceptable_actions` was added to every scenario. The `ec2-02` rule that also accepts REVIEW is the one rule fitted to model outputs.
-
-The framework-anchored severity ranges were set before any model run.
+`scripts/score.py` counts a report on a `flaw` scenario as a detection, shows reports on
+`flaw_blocked` scenarios as a separate report rate, and counts reports on `hardened` scenarios as
+false positives. On `fsbp` scenarios it also compares the reported severity (NONE when the scenario
+is not reported) with `fsbp_severity` on the order NONE < LOW < MEDIUM < HIGH < CRITICAL. On
+`outside_fsbp` scenarios it scores detection and false positives only.
 
 ## EC2 scenarios
+
+### Baseline controls
+
+- EC2.2 VPC default security groups should not allow inbound or outbound traffic (HIGH; Default security group of the prod and legacy VPCs, which keeps its AWS default rules)
+- EC2.6 VPC flow logging should be enabled in all VPCs (MEDIUM; No flow logs on the prod and legacy VPCs)
+- EC2.10 Amazon EC2 should be configured to use VPC endpoints that are created for the Amazon EC2 service (MEDIUM; No Amazon EC2 VPC endpoint in the prod and legacy VPCs)
+- EC2.55 VPCs should be configured with an interface endpoint for ECR API (MEDIUM; No ECR API interface endpoint in the prod and legacy VPCs)
+- EC2.56 VPCs should be configured with an interface endpoint for Docker Registry (MEDIUM; No Docker Registry interface endpoint in the prod and legacy VPCs)
+- EC2.57 VPCs should be configured with an interface endpoint for Systems Manager (MEDIUM; No Systems Manager interface endpoint in the prod and legacy VPCs)
+- EC2.58 VPCs should be configured with an interface endpoint for Systems Manager Incident Manager Contacts (MEDIUM; No Systems Manager Incident Manager Contacts interface endpoint in the prod and legacy VPCs)
+- EC2.60 VPCs should be configured with an interface endpoint for Systems Manager Incident Manager (MEDIUM; No Systems Manager Incident Manager interface endpoint in the prod and legacy VPCs)
+- EC2.7 EBS default encryption should be enabled (MEDIUM; Account setting not managed by this Terraform; fails while EBS encryption by default is off, the AWS default; with it on, ec2-01's root volume would be encrypted regardless of Terraform)
+- EC2.172 EC2 VPC Block Public Access settings should block internet gateway traffic (MEDIUM; Account setting not managed by this Terraform; fails while VPC Block Public Access is off, the AWS default)
+- EC2.182 Block public access settings should be enabled for Amazon EBS snapshots (HIGH; Account setting, per Region, not managed by this Terraform; fails while block public access for EBS snapshots is not enabled in the Region)
+- ELB.6 Application, Gateway, and Network Load Balancers should have deletion protection enabled (MEDIUM; Deletion protection off on the storefront Application Load Balancer)
+- SSM.1 Amazon EC2 instances should be managed by AWS Systems Manager (MEDIUM; Instances whose hardened default gives no Systems Manager permissions: ec2-01, ec2-02, ec2-03, ec2-04, ec2-09; the result depends on Systems Manager registration at run time)
 
 ### ec2-01: Private instance with an unencrypted root volume
 
 - **Resource:** `reporting-worker`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A private reporting worker with no inbound security-group rules and no IAM role.
-- **What is wrong:** The root volume is unencrypted. Reading it requires prior account access, so this is a defense-in-depth gap, not an exposure.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood LOW, impact MEDIUM, severity LOW
-- **Acceptable severities:** LOW, MEDIUM
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** FSBP EC2.3 (reference severity MEDIUM); ATT&CK T1578.001
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Private instance in a NAT-routed subnet with no public IP, no inbound security-group rules, no IAM role, no key pair, and IMDSv2 required.
+- **What is misconfigured:** the root EBS volume is not encrypted.
+- **Context:** None.
+- **FSBP controls:** EC2.3 Attached Amazon EBS volumes should be encrypted at-rest (MEDIUM; Root EBS volume of the instance is not encrypted). Highest: MEDIUM.
+- **ATT&CK:** T1578.001
 
 ### ec2-02: Public instance with HTTP and HTTPS open to 0.0.0.0/0
 
 - **Resource:** `marketing-site`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A marketing site on an instance with a public IP.
-- **What is wrong:** Ports 80 and 443 are open to 0.0.0.0/0, which is a confirmed direct Internet path. They are ordinary web ports, IMDSv2 is enforced, and no role is attached, so the blast radius is the instance itself. Whether public hosting is intended cannot be seen in the data, so REVIEW is accepted along with REMEDIATE.
-- **Expected rating:** category INTERNET_EXPOSURE, likelihood MEDIUM, impact MEDIUM, severity MEDIUM
-- **Acceptable severities:** MEDIUM, HIGH
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE, REVIEW)
-- **Frameworks:** FSBP EC2.9 (reference severity HIGH); ATT&CK T1190
-- **Note:** EC2.18 passes because 80 and 443 are its default authorized ports.
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Instance in a subnet routed to an Internet gateway, serving HTTP on port 80, with IMDSv2 required, an encrypted root volume, and no IAM role.
+- **What is misconfigured:** the instance has a public IPv4 address and its security group allows TCP 80 and 443 from 0.0.0.0/0.
+- **Context:** None.
+- **FSBP controls:** EC2.9 Amazon EC2 instances should not have a public IPv4 address (HIGH; Instance has a public IPv4 address). Highest: HIGH.
+- **ATT&CK:** T1190
 
 ### ec2-03: Private instance with IMDSv1 and a role that reads the uploads bucket
 
 - **Resource:** `image-resizer`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A private image-resizer instance whose role can read the uploads bucket.
-- **What is wrong:** IMDSv1 is enabled, so an SSRF or local foothold could steal the role credentials. The instance is private and the role is limited to one bucket.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood MEDIUM, impact MEDIUM, severity MEDIUM
-- **Acceptable severities:** MEDIUM, HIGH
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** FSBP EC2.8 (reference severity HIGH); ATT&CK T1552.005
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Private instance with no public IP and no inbound rules; its role allows s3:GetObject and s3:ListBucket on one uploads bucket.
+- **What is misconfigured:** instance metadata http_tokens is optional, so IMDSv1 requests are accepted.
+- **Context:** None.
+- **FSBP controls:** EC2.8 EC2 instances should use Instance Metadata Service Version 2 (IMDSv2) (HIGH; Instance metadata http_tokens is optional). Highest: HIGH.
+- **ATT&CK:** T1552.005
 
 ### ec2-04: Private CI runner whose role can attach any policy to any role
 
 - **Resource:** `ci-runner`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A private CI runner.
-- **What is wrong:** Its role can attach any policy to any role (iam:AttachRolePolicy and iam:PutRolePolicy on *), so it can grant itself AdministratorAccess. Exploiting this requires the instance to be compromised first.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood MEDIUM, impact HIGH, severity HIGH
-- **Acceptable severities:** MEDIUM, HIGH
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** ATT&CK T1098.003, T1078.004
-- **Note:** No FSBP control applies: IAM.1 evaluates customer-managed policies that grant *:*.
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** outside_fsbp
+- **What it is:** Private instance with no public IP and no inbound rules.
+- **What is misconfigured:** its role's inline policy allows iam:AttachRolePolicy and iam:PutRolePolicy on resource *.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** T1098.003, T1078.004
 
 ### ec2-05: Legacy bastion with SSH open to 0.0.0.0/0 and an AdministratorAccess role
 
 - **Resource:** `legacy-bastion`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A legacy bastion in the legacy VPC with an AdministratorAccess role.
-- **What is wrong:** SSH is open to 0.0.0.0/0 over a confirmed direct path, and compromise yields full account control. The rule description calls the rule temporary, which does not reduce the risk.
-- **Expected rating:** category INTERNET_EXPOSURE, likelihood HIGH, impact HIGH, severity CRITICAL
-- **Acceptable severities:** HIGH, CRITICAL
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** FSBP EC2.19, EC2.13, EC2.53, EC2.9 (reference severity CRITICAL); ATT&CK T1110, T1021.004, T1078.004
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Instance in the legacy VPC's subnet, which is routed to an Internet gateway and uses the default network ACL.
+- **What is misconfigured:** the instance has a public IPv4 address, its security group allows TCP 22 from 0.0.0.0/0 (rule description "SSH - temporary for migration"), and its role has the AWS managed AdministratorAccess policy.
+- **Context:** None.
+- **FSBP controls:** EC2.19 Security groups should not allow unrestricted access to ports with high risk (CRITICAL; Instance security group allows TCP 22 from 0.0.0.0/0; 22 is in the control's blockedPorts); EC2.18 Security groups should only allow unrestricted incoming traffic for authorized ports (HIGH; Same rule; 22 is not an authorized port (default 80 and 443)); EC2.9 Amazon EC2 instances should not have a public IPv4 address (HIGH; Instance has a public IPv4 address). Highest: CRITICAL.
+- **ATT&CK:** T1110, T1021.004, T1078.004
 
 ### ec2-06: Storefront behind an internet-facing HTTPS load balancer
 
 - **Resource:** `storefront-web`
-- **Tier and kind:** realistic, ambiguous
-- **What it is:** A storefront web instance behind an internet-facing HTTPS load balancer. It has no public IP, port 8080 accepts traffic only from the load balancer's security group, the load balancer terminates TLS 1.2+ and redirects HTTP, and IMDSv2 and encryption are on.
-- **What is wrong:** This looks like a normal public web tier, but there is still a confirmed public path, the load balancer has no WAF or access logs, and whether the exposure is intended depends on approved intent that is not supplied. REVIEW at LOW is the expected answer; NO_ACTION or MEDIUM is also defensible.
-- **Expected rating:** category INTERNET_EXPOSURE, likelihood MEDIUM, impact LOW, severity LOW
-- **Acceptable severities:** NONE, LOW, MEDIUM
-- **Expected action:** REVIEW (acceptable: REVIEW, NO_ACTION)
-- **Deferral:** accepted (PARTIAL or INSUFFICIENT confidence counts as an appropriate deferral)
-- **Frameworks:** FSBP ELB.5, ELB.16 (reference severity MEDIUM)
-- **Note:** The instance itself passes EC2.3, EC2.8, and EC2.9; ELB.5 and ELB.16 apply to the ALB in front of it.
+- **Tier:** realistic
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Private instance with no public IP, IMDSv2 required, an encrypted root volume, the AmazonSSMManagedInstanceCore policy, and the node-exporter security group (TCP 9100 from the VPC CIDR 10.80.0.0/16); it accepts TCP 8080 only from the load balancer's security group and is the target of the default action of the HTTPS:443 listener on the internet-facing Application Load Balancer, which also has an HTTP:80 listener that redirects to HTTPS.
+- **What is misconfigured:** the load balancer has access logging off, its HTTPS listener uses security policy ELBSecurityPolicy-TLS13-1-2-2021-06, its HTTP:80 listener does not use HTTPS, and the instance's target group uses HTTP for traffic and health checks.
+- **Context:** None.
+- **FSBP controls:** ELB.5 Application and Classic Load Balancers logging should be enabled (MEDIUM; Access logging off on the storefront Application Load Balancer); ELB.17 Application and Network Load Balancers with listeners should use recommended security policies (MEDIUM; HTTPS:443 listener uses security policy ELBSecurityPolicy-TLS13-1-2-2021-06, which is not in the control's sslPolicies list); ELB.18 Application and Network Load Balancer listeners should use secure protocols to encrypt data in transit (MEDIUM; HTTP:80 listener (redirect to HTTPS) does not use HTTPS); ELB.21 Application and Network Load Balancer target groups should use encrypted health check protocols (MEDIUM; storefront target group health check protocol is HTTP); ELB.22 ELB target groups should use encrypted transport protocols (MEDIUM; storefront target group protocol is HTTP). Highest: MEDIUM.
+- **ATT&CK:** None.
 
 ### ec2-07: Internet-reachable orders API with IMDSv1 and a role that reads every secret
 
 - **Resource:** `orders-api`
-- **Tier and kind:** realistic, dangerous
-- **What it is:** An orders API instance with no public IP, behind the internet-facing load balancer, which forwards /api/* to it.
-- **What is wrong:** IMDSv1 is on and the role has secretsmanager:GetSecretValue on *. An SSRF in the application would expose credentials that reach every workload's secrets. It needs an application flaw first, so likelihood is MEDIUM. The scenario tests whether the model follows the load balancer path and chains it with IMDS and IAM.
-- **Expected rating:** category INTERNET_EXPOSURE, likelihood MEDIUM, impact HIGH, severity HIGH
-- **Acceptable severities:** MEDIUM, HIGH
-- **Acceptable categories:** INTERNET_EXPOSURE, SECURITY_CONFIGURATION
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** FSBP EC2.8, ELB.16 (reference severity HIGH); ATT&CK T1190, T1552.005, T1555.006
+- **Tier:** realistic
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Private instance with no public IP and the node-exporter security group (TCP 9100 from the VPC CIDR 10.80.0.0/16) that accepts TCP 8080 only from the load balancer's security group and is the target of the /api/* rule on the same load balancer's HTTPS:443 listener; its role has AmazonSSMManagedInstanceCore and four DynamoDB actions on the orders table.
+- **What is misconfigured:** instance metadata http_tokens is optional; the role allows secretsmanager:GetSecretValue and secretsmanager:DescribeSecret on resource *; the load balancer has access logging off, uses ELBSecurityPolicy-TLS13-1-2-2021-06 on HTTPS, and has an HTTP:80 listener; the instance's target group uses HTTP for traffic and health checks.
+- **Context:** None.
+- **FSBP controls:** EC2.8 EC2 instances should use Instance Metadata Service Version 2 (IMDSv2) (HIGH; Instance metadata http_tokens is optional); ELB.5 Application and Classic Load Balancers logging should be enabled (MEDIUM; Access logging off on the storefront Application Load Balancer); ELB.17 Application and Network Load Balancers with listeners should use recommended security policies (MEDIUM; HTTPS:443 listener uses security policy ELBSecurityPolicy-TLS13-1-2-2021-06, which is not in the control's sslPolicies list); ELB.18 Application and Network Load Balancer listeners should use secure protocols to encrypt data in transit (MEDIUM; HTTP:80 listener (redirect to HTTPS) does not use HTTPS); ELB.21 Application and Network Load Balancer target groups should use encrypted health check protocols (MEDIUM; orders target group health check protocol is HTTP); ELB.22 ELB target groups should use encrypted transport protocols (MEDIUM; orders target group protocol is HTTP). Highest: HIGH.
+- **ATT&CK:** T1190, T1552.005, T1555.006
 
 ### ec2-08: Public bastion with SSH limited to the office network
 
 - **Resource:** `admin-bastion`
-- **Tier and kind:** realistic, ambiguous
-- **What it is:** An admin bastion with a public IP. SSH is allowed only from the office /24, the role is the SSM core policy, and there is no key pair.
-- **What is wrong:** A narrow, documented source is a common accepted pattern. Suggesting SSM Session Manager instead is reasonable, but rating it HIGH or CRITICAL is over-rating.
-- **Expected rating:** category INTERNET_EXPOSURE, likelihood LOW, impact MEDIUM, severity LOW
-- **Acceptable severities:** NONE, LOW, MEDIUM
-- **Expected action:** REVIEW (acceptable: REVIEW, NO_ACTION)
-- **Deferral:** accepted (PARTIAL or INSUFFICIENT confidence counts as an appropriate deferral)
-- **Frameworks:** FSBP EC2.9 (reference severity HIGH); ATT&CK T1021.004
-- **Context override:** SSH is allowed only from the office /24, so EC2.13, EC2.19, and EC2.53 pass and the public IP alone does not give an Internet path to SSH.
+- **Tier:** realistic
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Instance in the ops subnet, which is routed to an Internet gateway and has a custom network ACL, with the AmazonSSMManagedInstanceCore policy and no key pair.
+- **What is misconfigured:** the instance has a public IPv4 address, its security group allows TCP 22 from the office CIDR, and the ops network ACL allows all inbound traffic from 0.0.0.0/0 except TCP 9100.
+- **Context:** The security group's only inbound rule allows TCP 22 from var.office_cidr (default 203.0.113.0/24, the RFC 5737 TEST-NET-3 range).
+- **FSBP controls:** EC2.9 Amazon EC2 instances should not have a public IPv4 address (HIGH; Instance has a public IPv4 address); EC2.21 Network ACLs should not allow ingress from 0.0.0.0/0 to port 22 or port 3389 (MEDIUM; Ops subnet custom network ACL rule 100 allows all protocols from 0.0.0.0/0, which includes TCP 22). Highest: HIGH.
+- **ATT&CK:** T1021.004
 
 ### ec2-09: Security group opens 9100 to the world, but the subnet's network ACL denies it
 
 - **Resource:** `metrics-collector`
-- **Tier and kind:** realistic, expected
-- **What it is:** A metrics collector with a public IP whose security group allows port 9100 from 0.0.0.0/0.
-- **What is wrong:** The ops subnet's network ACL denies TCP 9100 inbound at rule 90, before rule 100 allows everything else, so there is no Internet path. A model that rates this MEDIUM or above ignored the network ACL. A LOW note about the broad security group is fine.
-- **Expected rating:** no finding (NONE); no category, likelihood, or impact
-- **Acceptable severities:** NONE, LOW
-- **Expected action:** NO_ACTION (acceptable: NO_ACTION, REMEDIATE)
-- **Frameworks:** FSBP EC2.9, EC2.18 (reference severity HIGH)
-- **Context override:** The ops subnet's network ACL denies TCP 9100 inbound, so the security group rule FSBP flags is not reachable from the Internet.
+- **Tier:** realistic
+- **Condition:** flaw_blocked
+- **Coverage:** fsbp
+- **What it is:** Instance in the ops subnet with no IAM role.
+- **What is misconfigured:** the instance has a public IPv4 address, its security group allows TCP 9100 from 0.0.0.0/0, and the ops network ACL's rule 100 allows all other inbound traffic from 0.0.0.0/0.
+- **Context:** The ops subnet's network ACL rule 90 denies inbound TCP 9100 from 0.0.0.0/0 before rule 100 allows all other traffic; the security group has no other inbound rule.
+- **FSBP controls:** EC2.9 Amazon EC2 instances should not have a public IPv4 address (HIGH; Instance has a public IPv4 address); EC2.18 Security groups should only allow unrestricted incoming traffic for authorized ports (HIGH; Instance security group allows TCP 9100 from 0.0.0.0/0; 9100 is not an authorized port (default 80 and 443)); EC2.21 Network ACLs should not allow ingress from 0.0.0.0/0 to port 22 or port 3389 (MEDIUM; Ops subnet custom network ACL rule 100 allows all protocols from 0.0.0.0/0, which includes TCP 22). Highest: HIGH.
+- **ATT&CK:** None.
 
 ### ec2-10: Private notebook open to 10.0.0.0/8 with s3:* on every bucket
 
 - **Resource:** `analytics-notebook`
-- **Tier and kind:** realistic, dangerous
-- **What it is:** A private analytics notebook running Jupyter on port 8888.
-- **What is wrong:** The port is open to all of 10.0.0.0/8, far wider than the VPC, and the role can read, write, and delete every bucket in the account. It is not Internet-reachable, so it needs an internal foothold first.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood MEDIUM, impact HIGH, severity HIGH
-- **Acceptable severities:** MEDIUM, HIGH
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** ATT&CK T1530, T1485
-- **Note:** No FSBP control applies: EC2.19 checks 0.0.0.0/0 only, and IAM.21 skips inline policies.
+- **Tier:** realistic
+- **Condition:** flaw
+- **Coverage:** outside_fsbp
+- **What it is:** Private instance with no public IP and the AmazonSSMManagedInstanceCore policy.
+- **What is misconfigured:** its security group allows TCP 8888 (rule description "Jupyter") from 10.0.0.0/8 while the VPC is 10.80.0.0/16, and its role's inline policy data-access allows s3:* on resource *.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** T1530, T1485
 
 ### ec2-11: Private queue worker scoped to one SQS queue
 
 - **Resource:** `queue-worker`
-- **Tier and kind:** realistic, expected
-- **What it is:** A private queue worker with no public IP, only the VPC-internal monitoring security group, IMDSv2, encryption, and a role limited to receive and delete on one queue plus the SSM core policy.
-- **What is wrong:** Nothing. It is correctly configured and should produce no finding.
-- **Expected rating:** no finding (NONE); no category, likelihood, or impact
-- **Acceptable severities:** NONE, LOW
-- **Expected action:** NO_ACTION (acceptable: NO_ACTION, REMEDIATE)
-- **Frameworks:** none apply
+- **Tier:** realistic
+- **Condition:** hardened
+- **Coverage:** outside_fsbp
+- **What it is:** Private instance with no public IP, IMDSv2 required, an encrypted root volume, and the node-exporter security group (TCP 9100 from the VPC CIDR 10.80.0.0/16); its role has AmazonSSMManagedInstanceCore and sqs:ReceiveMessage, sqs:DeleteMessage, and sqs:GetQueueAttributes on one queue.
+- **What is misconfigured:** Nothing; hardened.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** None.
 
 ## S3 scenarios
+
+### Baseline controls
+
+- S3.1 S3 general purpose buckets should have block public access settings enabled (MEDIUM; Account setting; account-level Block Public Access cannot be fully on, otherwise the public bucket policies and ACL in s3-02 and s3-04 to s3-08 could not be applied)
+- S3.13 S3 general purpose buckets should have Lifecycle configurations (LOW; No Lifecycle configuration on any scenario bucket)
 
 ### s3-01: CORS allows any origin to send GET, PUT, and DELETE
 
 - **Resource:** `design-assets`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A private, TLS-only design-assets bucket.
-- **What is wrong:** The CORS configuration allows any origin to send GET, PUT, and DELETE. CORS grants no access on its own, so it only matters if a caller already has credentials or a presigned URL.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood LOW, impact MEDIUM, severity LOW
-- **Acceptable severities:** LOW, MEDIUM
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** none apply
-- **Note:** No FSBP control covers CORS.
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** outside_fsbp
+- **What it is:** Bucket with the module's hardened settings.
+- **What is misconfigured:** its CORS rule allows origin * to send GET, PUT, and DELETE requests with any header.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** None.
 
 ### s3-02: public-read ACL lets anyone list object names
 
 - **Resource:** `build-artifacts`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A build-artifacts bucket.
-- **What is wrong:** A public-read ACL grants AllUsers READ on the bucket, so anyone can list object names. The grant survives Block Public Access and BucketOwnerPreferred ownership. Object contents stay private, so the expected severity is MEDIUM even though FSBP rates the public grant Critical.
-- **Expected rating:** category PUBLIC_EXPOSURE, likelihood HIGH, impact LOW, severity MEDIUM
-- **Acceptable severities:** MEDIUM, HIGH
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** FSBP S3.2, S3.8, S3.12 (reference severity CRITICAL); ATT&CK T1619
-- **Context override:** The public grant allows listing object names only; object contents stay private.
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Bucket with SSE-KMS, versioning, server access logging, a TLS-only policy, and object ownership BucketOwnerPreferred.
+- **What is misconfigured:** the bucket ACL is public-read (an AllUsers READ grant) and its BlockPublicAcls and IgnorePublicAcls settings are off.
+- **Context:** The AllUsers grant is READ on the bucket, which permits listing object keys; neither the grant nor the bucket policy grants reading object data.
+- **FSBP controls:** S3.2 S3 general purpose buckets should block public read access (CRITICAL; Bucket ACL grants AllUsers READ while BlockPublicAcls and IgnorePublicAcls are off); S3.8 S3 general purpose buckets should block public access (HIGH; BlockPublicAcls and IgnorePublicAcls are off); S3.12 ACLs should not be used to manage user access to S3 general purpose buckets (MEDIUM; Bucket ACL (public-read) grants access; object ownership is BucketOwnerPreferred). Highest: CRITICAL.
+- **ATT&CK:** T1619
 
 ### s3-03: Wildcard principal can read and write objects from any account in the organization
 
 - **Resource:** `shared-datasets`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A shared-datasets bucket whose policy uses a wildcard principal limited by aws:PrincipalOrgID.
-- **What is wrong:** It is not public, but any principal in any account in the organization can read and overwrite objects. Exploiting it needs an organization foothold first.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood MEDIUM, impact MEDIUM, severity MEDIUM
-- **Acceptable severities:** MEDIUM, HIGH
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** ATT&CK T1530, T1565.001
-- **Note:** S3.6 does not fail: its fixed denylist covers policy- and ACL-changing actions, not GetObject or PutObject.
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** outside_fsbp
+- **What it is:** Bucket with the module's hardened settings.
+- **What is misconfigured:** its policy allows Principal * to call s3:GetObject and s3:PutObject on all objects, with the condition aws:PrincipalOrgID equal to var.org_id.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** T1530, T1565.001
 
 ### s3-04: Bucket policy allows anonymous s3:GetObject
 
 - **Resource:** `customer-exports`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A customer-exports bucket.
-- **What is wrong:** The bucket policy allows s3:GetObject to Principal * with no condition, and the Block Public Access policy flags are off, so every object is readable by anyone on the Internet.
-- **Expected rating:** category PUBLIC_EXPOSURE, likelihood HIGH, impact MEDIUM, severity HIGH
-- **Acceptable severities:** HIGH, CRITICAL
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** FSBP S3.2, S3.8 (reference severity CRITICAL); ATT&CK T1530
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Bucket with SSE-KMS, versioning, server access logging, ACLs disabled, and a TLS-only policy.
+- **What is misconfigured:** its policy allows Principal * to call s3:GetObject on all objects with no condition, and its BlockPublicPolicy and RestrictPublicBuckets settings are off.
+- **Context:** None.
+- **FSBP controls:** S3.2 S3 general purpose buckets should block public read access (CRITICAL; Bucket policy allows Principal * s3:GetObject with no condition); S3.8 S3 general purpose buckets should block public access (HIGH; BlockPublicPolicy and RestrictPublicBuckets are off). Highest: CRITICAL.
+- **ATT&CK:** T1530
 
 ### s3-05: Bucket policy allows anonymous read, write, and delete
 
 - **Resource:** `partner-uploads`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A partner-uploads bucket.
-- **What is wrong:** The bucket policy allows anonymous read, write, and delete. Anyone can steal, overwrite, or destroy objects and host malware without credentials.
-- **Expected rating:** category PUBLIC_EXPOSURE, likelihood HIGH, impact HIGH, severity CRITICAL
-- **Acceptable severities:** HIGH, CRITICAL
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** FSBP S3.2, S3.3, S3.8 (reference severity CRITICAL); ATT&CK T1530, T1565.001, T1485
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Bucket with SSE-KMS, versioning, server access logging, ACLs disabled, and a TLS-only policy.
+- **What is misconfigured:** its policy allows Principal * to call s3:GetObject, s3:PutObject, and s3:DeleteObject on all objects with no condition, and its BlockPublicPolicy and RestrictPublicBuckets settings are off.
+- **Context:** None.
+- **FSBP controls:** S3.2 S3 general purpose buckets should block public read access (CRITICAL; Bucket policy allows Principal * s3:GetObject with no condition); S3.3 S3 general purpose buckets should block public write access (CRITICAL; Bucket policy allows Principal * s3:PutObject and s3:DeleteObject with no condition); S3.8 S3 general purpose buckets should block public access (HIGH; BlockPublicPolicy and RestrictPublicBuckets are off). Highest: CRITICAL.
+- **ATT&CK:** T1530, T1565.001, T1485
 
 ### s3-06: Static website bucket with anonymous read
 
 - **Resource:** `www`
-- **Tier and kind:** realistic, ambiguous
-- **What it is:** A static website bucket named www, with website hosting enabled and anonymous read.
-- **What is wrong:** Anonymous GetObject is the purpose of the bucket, and website endpoints require SSE-S3 and no TLS-only rule. Without account intent the model cannot confirm the content is meant to be public, so MEDIUM or HIGH with that caveat, or a deferral, is correct. CRITICAL treats a website as a data leak.
-- **Expected rating:** category PUBLIC_EXPOSURE, likelihood HIGH, impact LOW, severity MEDIUM
-- **Acceptable severities:** LOW, MEDIUM, HIGH
-- **Expected action:** REVIEW (acceptable: REVIEW)
-- **Deferral:** accepted (PARTIAL or INSUFFICIENT confidence counts as an appropriate deferral)
-- **Frameworks:** FSBP S3.2, S3.8, S3.5, S3.17 (reference severity CRITICAL); ATT&CK T1530
-- **Context override:** Static website hosting is enabled and anonymous read is its purpose; S3 website endpoints require HTTP and SSE-S3.
+- **Tier:** realistic
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Bucket with static website hosting (index.html, error.html), SSE-S3 (AES256), versioning, server access logging, and ACLs disabled.
+- **What is misconfigured:** its policy allows Principal * to call s3:GetObject on all objects with no condition, its BlockPublicPolicy and RestrictPublicBuckets settings are off, and the policy has no statement denying non-TLS requests.
+- **Context:** Static website hosting is enabled on the bucket; Amazon S3 website endpoints do not support HTTPS.
+- **FSBP controls:** S3.2 S3 general purpose buckets should block public read access (CRITICAL; Bucket policy allows Principal * s3:GetObject with no condition); S3.8 S3 general purpose buckets should block public access (HIGH; BlockPublicPolicy and RestrictPublicBuckets are off); S3.5 S3 general purpose buckets should require requests to use TLS (MEDIUM; Bucket policy has no statement requiring aws:SecureTransport). Highest: CRITICAL.
+- **ATT&CK:** T1530
 
 ### s3-07: Anonymous read limited to the public/ prefix
 
 - **Resource:** `media-library`
-- **Tier and kind:** realistic, ambiguous
-- **What it is:** A media-library bucket where only objects under the public/ prefix are anonymously readable and the rest is private.
-- **What is wrong:** Whether this is a leak depends on what is stored under public/, which the data does not show. The model should name the prefix scope and ask for confirmation instead of calling the whole bucket public.
-- **Expected rating:** category PUBLIC_EXPOSURE, likelihood HIGH, impact LOW, severity MEDIUM
-- **Acceptable severities:** LOW, MEDIUM, HIGH
-- **Expected action:** REVIEW (acceptable: REVIEW)
-- **Deferral:** accepted (PARTIAL or INSUFFICIENT confidence counts as an appropriate deferral)
-- **Frameworks:** FSBP S3.2, S3.8, S3.17 (reference severity CRITICAL); ATT&CK T1530
-- **Context override:** Only objects under public/ are anonymously readable.
+- **Tier:** realistic
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Bucket with SSE-S3, versioning, server access logging, ACLs disabled, and a TLS-only policy.
+- **What is misconfigured:** its policy allows Principal * to call s3:GetObject on objects under the public/ prefix with no condition, and its BlockPublicPolicy and RestrictPublicBuckets settings are off.
+- **Context:** The anonymous grant covers only objects whose keys begin with public/.
+- **FSBP controls:** S3.2 S3 general purpose buckets should block public read access (CRITICAL; Bucket policy allows Principal * s3:GetObject on public/* with no condition); S3.8 S3 general purpose buckets should block public access (HIGH; BlockPublicPolicy and RestrictPublicBuckets are off). Highest: CRITICAL.
+- **ATT&CK:** T1530
 
 ### s3-08: Anonymous read restricted only by aws:Referer
 
 - **Resource:** `invoices`
-- **Tier and kind:** realistic, dangerous
-- **What it is:** An invoices bucket whose policy allows anonymous read only when the aws:Referer header matches.
-- **What is wrong:** The Referer header is set by the client, so anyone can send it. The policy is effectively anonymous read of every object, and AWS reports the bucket as public. The scenario tests whether the model treats a spoofable condition as a real restriction.
-- **Expected rating:** category PUBLIC_EXPOSURE, likelihood HIGH, impact MEDIUM, severity HIGH
-- **Acceptable severities:** HIGH, CRITICAL
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** FSBP S3.2, S3.8, S3.17 (reference severity CRITICAL); ATT&CK T1530
+- **Tier:** realistic
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Bucket with SSE-S3, versioning, server access logging, ACLs disabled, and a TLS-only policy.
+- **What is misconfigured:** its policy allows Principal * to call s3:GetObject on all objects with only an aws:Referer StringLike condition (https://www.<var.name>.example/*, var.name default brightpath), and its BlockPublicPolicy and RestrictPublicBuckets settings are off.
+- **Context:** None.
+- **FSBP controls:** S3.2 S3 general purpose buckets should block public read access (CRITICAL; Bucket policy allows Principal * s3:GetObject with only an aws:Referer StringLike condition, which contains a wildcard; the control does not evaluate conditions that use wildcards); S3.8 S3 general purpose buckets should block public access (HIGH; BlockPublicPolicy and RestrictPublicBuckets are off). Highest: CRITICAL.
+- **ATT&CK:** T1530
 
 ### s3-09: Fully hardened application configuration bucket
 
 - **Resource:** `app-config`
-- **Tier and kind:** realistic, expected
-- **What it is:** A fully hardened application configuration bucket: Block Public Access on, ACLs disabled, SSE-KMS, versioning, access logging, and TLS-only.
-- **What is wrong:** Nothing. It should produce no finding.
-- **Expected rating:** no finding (NONE); no category, likelihood, or impact
-- **Acceptable severities:** NONE, LOW
-- **Expected action:** NO_ACTION (acceptable: NO_ACTION, REMEDIATE)
-- **Frameworks:** none apply
+- **Tier:** realistic
+- **Condition:** hardened
+- **Coverage:** outside_fsbp
+- **What it is:** Bucket with all four Block Public Access settings on, ACLs disabled (BucketOwnerEnforced), SSE-KMS, versioning, server access logging, and a policy denying non-TLS requests.
+- **What is misconfigured:** Nothing; hardened.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** None.
 
 ### s3-10: Fully hardened backup bucket with Object Lock
 
 - **Resource:** `db-backups`
-- **Tier and kind:** realistic, expected
-- **What it is:** A fully hardened backup bucket, the same as app-config plus Object Lock.
-- **What is wrong:** Nothing. A note that no default retention is set is reasonable but no more than LOW.
-- **Expected rating:** no finding (NONE); no category, likelihood, or impact
-- **Acceptable severities:** NONE, LOW
-- **Expected action:** NO_ACTION (acceptable: NO_ACTION, REMEDIATE)
-- **Frameworks:** none apply
+- **Tier:** realistic
+- **Condition:** hardened
+- **Coverage:** outside_fsbp
+- **What it is:** Bucket with the same settings as app-config plus Object Lock enabled, with no default retention.
+- **What is misconfigured:** Nothing; hardened.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** None.
 
 ### s3-11: Private scratch bucket without versioning or access logging
 
 - **Resource:** `tmp-scratch`
-- **Tier and kind:** realistic, minor
-- **What it is:** A private, encrypted, TLS-only scratch bucket.
-- **What is wrong:** Versioning and access logging are missing. This only reduces recoverability and visibility. FSBP rates missing server access logging (S3.9) Medium, so MEDIUM is also accepted.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood LOW, impact LOW, severity LOW
-- **Acceptable severities:** NONE, LOW, MEDIUM
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE, NO_ACTION)
-- **Frameworks:** FSBP S3.9, S3.14 (reference severity MEDIUM)
+- **Tier:** realistic
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Bucket with all four Block Public Access settings on, ACLs disabled, SSE-KMS, and a TLS-only policy.
+- **What is misconfigured:** versioning is not enabled and server access logging is off.
+- **Context:** None.
+- **FSBP controls:** S3.9 S3 general purpose buckets should have server access logging enabled (MEDIUM; Server access logging is off). Highest: MEDIUM.
+- **ATT&CK:** None.
 
 ## API Gateway scenarios
+
+### Baseline controls
+
+- APIGateway.2 API Gateway REST API stages should be configured to use SSL certificates for backend authentication (MEDIUM; No client certificate for backend authentication on the prod stage of all eight REST APIs)
+- APIGateway.3 API Gateway REST API stages should have AWS X-Ray tracing enabled (LOW; X-Ray tracing off on the prod stage of all eight REST APIs)
 
 ### apigw-01: IAM-authenticated API with no access logging
 
 - **Resource:** `inventory-api`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** An inventory API where every route requires IAM authorization, WAF and throttling are on, and execution logging is on.
-- **What is wrong:** Access logging is missing, which only costs visibility into who called the API.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood LOW, impact LOW, severity LOW
-- **Acceptable severities:** LOW, MEDIUM
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** OWASP API API8:2023
-- **Note:** APIGateway.9 covers HTTP and WebSocket stages only; APIGateway.1 (execution logging) passes.
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** outside_fsbp
+- **What it is:** Regional REST API whose GET /items route uses AWS_IAM authorization and calls DynamoDB Scan on the shared table through an execution role limited to that action, with request validation, a WAF web ACL on stage prod, stage throttling (rate 25, burst 50), and execution logging at ERROR.
+- **What is misconfigured:** the prod stage has no access log destination.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** None.
+- **OWASP API:** API8:2023
 
 ### apigw-02: Execution logging records full request and response bodies
 
 - **Resource:** `support-tickets-api`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A support-tickets API.
-- **What is wrong:** dataTraceEnabled on */* writes every Scan result and request body to CloudWatch Logs, where anyone who can read the log group sees stored data. Reading the logs needs account access first.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood MEDIUM, impact MEDIUM, severity MEDIUM
-- **Acceptable severities:** LOW, MEDIUM
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** OWASP API API8:2023
-- **Note:** APIGateway.1 passes; no FSBP control covers dataTraceEnabled.
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** outside_fsbp
+- **What it is:** Regional REST API whose GET /items route uses AWS_IAM authorization and calls DynamoDB Scan on the shared table through an execution role limited to that action, with request validation, a WAF web ACL on stage prod, stage throttling (rate 25, burst 50), and access logging.
+- **What is misconfigured:** method settings for */* set dataTraceEnabled true and logging level INFO.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** None.
+- **OWASP API:** API8:2023
 
 ### apigw-03: IAM-authenticated API with no WAF and no throttling
 
 - **Resource:** `reporting-api`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A reporting API with IAM authorization on every route.
-- **What is wrong:** There is no web ACL and no stage throttle, so only the account-level limit applies and one client can consume regional capacity. Callers are still authenticated.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood MEDIUM, impact MEDIUM, severity MEDIUM
-- **Acceptable severities:** LOW, MEDIUM
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** FSBP APIGateway.4 (reference severity MEDIUM); ATT&CK T1499.003; OWASP API API4:2023
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Regional REST API whose GET /items route uses AWS_IAM authorization and calls DynamoDB Scan on the shared table through an execution role limited to that action, with request validation, access logging, and execution logging at ERROR on stage prod.
+- **What is misconfigured:** the prod stage has no WAF web ACL, and method settings set the throttling rate and burst limits to -1 (no stage throttle).
+- **Context:** None.
+- **FSBP controls:** APIGateway.4 API Gateway should be associated with a WAF Web ACL (MEDIUM; prod stage has no WAF web ACL). Highest: MEDIUM.
+- **ATT&CK:** T1499.003
+- **OWASP API:** API4:2023
 
 ### apigw-04: Route with no authorization reads the DynamoDB table
 
 - **Resource:** `orders-api`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** An orders API on a deployed stage of a regional API.
-- **What is wrong:** GET /items has authorization_type NONE and calls DynamoDB Scan with an execution role, so anyone can read every item. CRITICAL is accepted because Vista may group this finding with apigw-05, which has the same root cause.
-- **Expected rating:** category ACCESS_CONTROL, likelihood HIGH, impact MEDIUM, severity HIGH
-- **Acceptable severities:** HIGH, CRITICAL
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** OWASP API API2:2023
-- **Note:** APIGateway.8 covers HTTP and WebSocket routes only. CRITICAL is accepted because Vista may group this with apigw-05, which has the same root cause.
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** outside_fsbp
+- **What it is:** Regional REST API deployed to stage prod with a WAF web ACL, stage throttling, request validation, and access and execution logging.
+- **What is misconfigured:** GET /items has authorization type NONE and calls DynamoDB Scan on the shared table through the execution role.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** None.
+- **OWASP API:** API2:2023
 
 ### apigw-05: Routes with no authorization read, write, and delete DynamoDB items
 
 - **Resource:** `loyalty-points-api`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A loyalty-points API.
-- **What is wrong:** GET, PUT, and DELETE /items all have authorization_type NONE and call Scan, PutItem, and DeleteItem, so anyone can steal, tamper with, or destroy the data.
-- **Expected rating:** category ACCESS_CONTROL, likelihood HIGH, impact HIGH, severity CRITICAL
-- **Acceptable severities:** HIGH, CRITICAL
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** ATT&CK T1485, T1565.001; OWASP API API2:2023, API5:2023
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** outside_fsbp
+- **What it is:** Regional REST API deployed to stage prod with a WAF web ACL, stage throttling, request validation, and access and execution logging.
+- **What is misconfigured:** GET, PUT, and DELETE /items have authorization type NONE and call DynamoDB Scan, PutItem, and DeleteItem through the execution role.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** T1485, T1565.001
+- **OWASP API:** API2:2023, API5:2023
 
 ### apigw-06: Cognito-protected API with an anonymous MOCK health check
 
 - **Resource:** `customer-api`
-- **Tier and kind:** realistic, expected
-- **What it is:** A customer API. GET and PUT /items use a Cognito user pool authorizer, with WAF, throttling, logging, and request validation. GET /health is anonymous but backed by a MOCK integration that touches no data.
-- **What is wrong:** Nothing. Vista's guidance says an anonymous MOCK health check is not a finding on its own.
-- **Expected rating:** no finding (NONE); no category, likelihood, or impact
-- **Acceptable severities:** NONE, LOW
-- **Expected action:** NO_ACTION (acceptable: NO_ACTION, REMEDIATE)
-- **Frameworks:** none apply
+- **Tier:** realistic
+- **Condition:** hardened
+- **Coverage:** outside_fsbp
+- **What it is:** Regional REST API whose GET and PUT /items routes use a Cognito user pool authorizer, with a WAF web ACL, stage throttling, request validation, and access and execution logging; GET /health has authorization type NONE and a MOCK integration that returns a fixed response without calling a backend.
+- **What is misconfigured:** Nothing; hardened.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** None.
+- **OWASP API:** None.
 
-### apigw-07: Partner API protected only by an API key
+### apigw-07: Partner API whose routes require only an API key
 
 - **Resource:** `partner-api`
-- **Tier and kind:** realistic, dangerous
-- **What it is:** A partner API where GET and PUT /items have authorization_type NONE and api_key_required true.
-- **What is wrong:** A usage plan throttles and caps the key, but an API key identifies a caller instead of authenticating one (OWASP API2:2023), and a leaked key can read and write the table. Obtaining a key is one precondition, so likelihood is MEDIUM. Vista's prompt treats API-key-only routes as HIGH likelihood, so this scenario directly tests that rule.
-- **Expected rating:** category ACCESS_CONTROL, likelihood MEDIUM, impact MEDIUM, severity MEDIUM
-- **Acceptable severities:** MEDIUM, HIGH
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** ATT&CK T1565.001; OWASP API API2:2023
-- **Note:** CCSS treats obtaining the key as a precondition (MEDIUM likelihood). Vista's prompt treats API-key-only routes as HIGH likelihood, so this scenario directly tests that prompt rule.
+- **Tier:** realistic
+- **Condition:** flaw
+- **Coverage:** outside_fsbp
+- **What it is:** Regional REST API with a usage plan (rate 10, burst 20, quota 100,000 requests per month) and one API key, plus a WAF web ACL, stage throttling, and logging.
+- **What is misconfigured:** GET and PUT /items have authorization type NONE with api_key_required true, and call DynamoDB Scan and PutItem through the execution role.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** T1565.001
+- **OWASP API:** API2:2023
 
 ### apigw-08: Unauthenticated admin API restricted to the office IP range
 
 - **Resource:** `internal-admin-api`
-- **Tier and kind:** realistic, ambiguous
-- **What it is:** An internal admin API where GET and DELETE /items have no authorization, but the resource policy denies every source outside the office CIDR.
-- **What is wrong:** Network location replaces identity, so anyone on the office network can delete data. The model should credit the allowlist and recommend real authorization instead of calling the API Internet-exposed.
-- **Expected rating:** category ACCESS_CONTROL, likelihood LOW, impact MEDIUM, severity LOW
-- **Acceptable severities:** LOW, MEDIUM
-- **Expected action:** REVIEW (acceptable: REVIEW)
-- **Deferral:** accepted (PARTIAL or INSUFFICIENT confidence counts as an appropriate deferral)
-- **Frameworks:** ATT&CK T1485; OWASP API API2:2023, API5:2023
-- **Context override:** The resource policy denies every source outside the office CIDR.
+- **Tier:** realistic
+- **Condition:** flaw
+- **Coverage:** outside_fsbp
+- **What it is:** Regional REST API deployed to stage prod with a WAF web ACL, stage throttling, request validation, and access and execution logging.
+- **What is misconfigured:** GET and DELETE /items have authorization type NONE and call DynamoDB Scan and DeleteItem through the execution role.
+- **Context:** The REST API resource policy allows execute-api:Invoke for Principal * and explicitly denies it when aws:SourceIp is not in var.office_cidr (default 203.0.113.0/24).
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** T1485
+- **OWASP API:** API2:2023, API5:2023
 
 ### apigw-09: HTTP API webhook route with no authorization that writes to SQS
 
 - **Resource:** `webhooks`
-- **Tier and kind:** realistic, ambiguous
-- **What it is:** An HTTP API webhook route, POST /webhooks/payments, that is anonymous and sends the request body to an SQS queue.
-- **What is wrong:** Payment providers usually sign webhooks and the signature is checked downstream, which the data cannot show. Anyone can inject messages but cannot read anything. A missing WAF must not be reported, because HTTP APIs cannot attach one.
-- **Expected rating:** category ACCESS_CONTROL, likelihood HIGH, impact LOW, severity MEDIUM
-- **Acceptable severities:** LOW, MEDIUM, HIGH
-- **Expected action:** REVIEW (acceptable: REVIEW)
-- **Deferral:** accepted (PARTIAL or INSUFFICIENT confidence counts as an appropriate deferral)
-- **Frameworks:** FSBP APIGateway.8 (reference severity MEDIUM); ATT&CK T1565.001; OWASP API API2:2023
+- **Tier:** realistic
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** HTTP API whose route POST /webhooks/payments has an AWS_PROXY integration (SQS-SendMessage) that sends the request body to an SQS queue through a role limited to sqs:SendMessage on that queue; the $default stage has route throttling (rate 10, burst 20) and access logging.
+- **What is misconfigured:** the route has authorization type NONE.
+- **Context:** None.
+- **FSBP controls:** APIGateway.8 API Gateway routes should specify an authorization type (MEDIUM; Route POST /webhooks/payments has authorization type NONE). Highest: MEDIUM.
+- **ATT&CK:** T1565.001
+- **OWASP API:** API2:2023
 
 ## RDS scenarios
+
+### Baseline controls
+
+- RDS.5 RDS DB instances should be configured with multiple Availability Zones (MEDIUM; Every DB instance is single-AZ)
+- RDS.6 Enhanced monitoring should be configured for RDS DB instances (LOW; Enhanced monitoring off on every DB instance)
+- RDS.8 RDS DB instances should have deletion protection enabled (LOW; Deletion protection off on every DB instance)
+- RDS.23 RDS instances should not use a database engine default port (LOW; Every DB instance uses its engine's default port (5432 or 3306))
+- EC2.2 VPC default security groups should not allow inbound or outbound traffic (HIGH; Default security group of the data VPC, which keeps its AWS default rules)
+- EC2.6 VPC flow logging should be enabled in all VPCs (MEDIUM; No flow logs on the data VPC)
+- EC2.10 Amazon EC2 should be configured to use VPC endpoints that are created for the Amazon EC2 service (MEDIUM; No Amazon EC2 VPC endpoint in the data VPC)
+- EC2.55 VPCs should be configured with an interface endpoint for ECR API (MEDIUM; No ECR API interface endpoint in the data VPC)
+- EC2.56 VPCs should be configured with an interface endpoint for Docker Registry (MEDIUM; No Docker Registry interface endpoint in the data VPC)
+- EC2.57 VPCs should be configured with an interface endpoint for Systems Manager (MEDIUM; No Systems Manager interface endpoint in the data VPC)
+- EC2.58 VPCs should be configured with an interface endpoint for Systems Manager Incident Manager Contacts (MEDIUM; No Systems Manager Incident Manager Contacts interface endpoint in the data VPC)
+- EC2.60 VPCs should be configured with an interface endpoint for Systems Manager Incident Manager (MEDIUM; No Systems Manager Incident Manager interface endpoint in the data VPC)
 
 ### rds-01: Private instance with unencrypted storage
 
 - **Resource:** `analytics-db`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A private analytics database with publicly_accessible false and no security group rule.
-- **What is wrong:** Storage is unencrypted. Reading it or its backups needs prior account access.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood LOW, impact MEDIUM, severity LOW
-- **Acceptable severities:** LOW, MEDIUM
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** FSBP RDS.3 (reference severity MEDIUM); ATT&CK T1578.001
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** PostgreSQL instance in the private subnet group with publicly_accessible false, no inbound security-group rule, rds.force_ssl 1, IAM authentication, a Secrets Manager managed password, 7-day backups, and log exports.
+- **What is misconfigured:** storage is not encrypted.
+- **Context:** None.
+- **FSBP controls:** RDS.3 RDS DB instances should have encryption at-rest enabled (MEDIUM; Storage is not encrypted). Highest: MEDIUM.
+- **ATT&CK:** T1578.001
 
 ### rds-02: Private instance that does not enforce TLS
 
 - **Resource:** `billing-db`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A private billing database.
-- **What is wrong:** rds.force_ssl is 0, so clients can connect without encryption and credentials or data can be read in transit. Exploiting it needs a network position inside the VPC first.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood MEDIUM, impact MEDIUM, severity MEDIUM
-- **Acceptable severities:** LOW, MEDIUM
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** ATT&CK T1040
-- **Note:** No FSBP control covers rds.force_ssl.
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** outside_fsbp
+- **What it is:** PostgreSQL instance in the private subnet group with publicly_accessible false, no inbound security-group rule, customer-managed KMS encryption, IAM authentication, a Secrets Manager managed password, 7-day backups, and log exports.
+- **What is misconfigured:** the parameter group sets rds.force_ssl to 0.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** T1040
 
 ### rds-03: Private instance with an associated role that writes to the exports bucket
 
 - **Resource:** `events-db`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A private events database with an associated s3Export role limited to one exports bucket.
-- **What is wrong:** Anyone who can run SQL can copy data out to S3. Vista sees only the role ARN and the feature, not the policy, so it may rate this lower.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood MEDIUM, impact MEDIUM, severity MEDIUM
-- **Acceptable severities:** LOW, MEDIUM
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** none apply
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** outside_fsbp
+- **What it is:** PostgreSQL instance in the private subnet group with publicly_accessible false, no inbound security-group rule, customer-managed KMS encryption, rds.force_ssl 1, IAM authentication, a Secrets Manager managed password, 7-day backups, and log exports.
+- **What is misconfigured:** an IAM role whose inline policy allows s3:PutObject and s3:AbortMultipartUpload on the exports bucket's objects is associated with the instance for feature s3Export.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** None.
 
 ### rds-04: Public instance with port 5432 open to 0.0.0.0/0
 
 - **Resource:** `crm-db`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A CRM database with publicly_accessible true.
-- **What is wrong:** The security group allows port 5432 from anywhere, the subnet routes to an Internet gateway, and the network ACL allows it. Logging in still needs the Secrets Manager password or an IAM token.
-- **Expected rating:** category PUBLIC_EXPOSURE, likelihood HIGH, impact MEDIUM, severity HIGH
-- **Acceptable severities:** HIGH, CRITICAL
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** FSBP RDS.2, EC2.19 (reference severity CRITICAL); ATT&CK T1110
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** PostgreSQL instance in the public subnet group, whose subnets have a 0.0.0.0/0 route to an Internet gateway and use the default network ACL, with encryption, IAM authentication, and a managed password.
+- **What is misconfigured:** publicly_accessible is true and its security group allows TCP 5432 from 0.0.0.0/0.
+- **Context:** None.
+- **FSBP controls:** RDS.2 RDS DB Instances should prohibit public access, as determined by the PubliclyAccessible configuration (CRITICAL; publicly_accessible is true); EC2.19 Security groups should not allow unrestricted access to ports with high risk (CRITICAL; DB security group allows TCP 5432 from 0.0.0.0/0; 5432 is in the control's blockedPorts); RDS.46 RDS DB instances should not be deployed in public subnets with routes to internet gateways (HIGH; Instance is in the public subnet group, whose subnets have a 0.0.0.0/0 route to an Internet gateway); EC2.18 Security groups should only allow unrestricted incoming traffic for authorized ports (HIGH; Same rule; 5432 is not an authorized port (default 80 and 443)). Highest: CRITICAL.
+- **ATT&CK:** T1110
 
 ### rds-05: Unencrypted manual snapshot shared with all AWS accounts
 
 - **Resource:** `staging-db-pre-migration`
-- **Tier and kind:** controlled, dangerous
-- **What it is:** A manual snapshot of a staging database whose source instance is private.
-- **What is wrong:** The snapshot is unencrypted and shared_with contains all, so any AWS account can restore it and read all of its data. The finding is about the snapshot, not the instance.
-- **Expected rating:** category PUBLIC_EXPOSURE, likelihood HIGH, impact HIGH, severity CRITICAL
-- **Acceptable severities:** HIGH, CRITICAL
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** FSBP RDS.1, RDS.4 (reference severity CRITICAL); ATT&CK T1537
+- **Tier:** controlled
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** Manual snapshot staging-db-pre-migration of the private PostgreSQL instance staging-db, whose storage is not encrypted.
+- **What is misconfigured:** the snapshot is not encrypted and is shared with all AWS accounts.
+- **Context:** None.
+- **FSBP controls:** RDS.1 RDS snapshot should be private (CRITICAL; Snapshot is shared with all AWS accounts); RDS.4 RDS cluster snapshots and database snapshots should be encrypted at rest (MEDIUM; Snapshot is not encrypted); RDS.3 RDS DB instances should have encryption at-rest enabled (MEDIUM; Source DB instance staging-db storage is not encrypted). Highest: CRITICAL.
+- **ATT&CK:** T1537
 
 ### rds-06: Hardened orders database reachable only through its proxy
 
 - **Resource:** `orders-db`
-- **Tier and kind:** realistic, expected
-- **What it is:** A hardened orders database: private, customer-managed KMS key, TLS enforced, IAM and Secrets Manager authentication, backups, and log exports. Its only inbound rule is from the proxy's security group.
-- **What is wrong:** Nothing. Deletion protection is off for easy teardown and is excluded as a baseline item. Problems with the proxy belong to rds-07, not this instance.
-- **Expected rating:** no finding (NONE); no category, likelihood, or impact
-- **Acceptable severities:** NONE, LOW
-- **Expected action:** NO_ACTION (acceptable: NO_ACTION, REMEDIATE)
-- **Frameworks:** none apply
+- **Tier:** realistic
+- **Condition:** hardened
+- **Coverage:** outside_fsbp
+- **What it is:** PostgreSQL instance in the private subnet group with customer-managed KMS encryption, rds.force_ssl 1, IAM authentication, a managed password, 7-day backups, and log exports; its only inbound rule allows TCP 5432 from the RDS Proxy's security group, and it is the proxy's target.
+- **What is misconfigured:** Nothing; hardened.
+- **Context:** None.
+- **FSBP controls:** None (outside FSBP).
+- **ATT&CK:** None.
 
 ### rds-07: RDS Proxy with debug logging left on and TLS optional
 
 - **Resource:** `orders-db-proxy`
-- **Tier and kind:** realistic, dangerous
-- **What it is:** An RDS Proxy in front of the orders database.
-- **What is wrong:** debug_logging is true, which writes SQL statements to CloudWatch Logs, and require_tls is false, which lets clients connect in plaintext. The proxy is VPC-only, so both need internal access first.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood MEDIUM, impact MEDIUM, severity MEDIUM
-- **Acceptable severities:** LOW, MEDIUM
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** ATT&CK T1040
-- **Note:** No RDS Proxy control appears in the FSBP RDS control list.
+- **Tier:** realistic
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** RDS Proxy for PostgreSQL in the private subnets in front of orders-db, authenticating to it with the instance's Secrets Manager secret; its security group allows TCP 5432 from the VPC CIDR 10.81.0.0/16.
+- **What is misconfigured:** require_tls is false and debug_logging is true.
+- **Context:** None.
+- **FSBP controls:** RDS.43 RDS DB proxies should require TLS encryption for connections (MEDIUM; Proxy require_tls is false). Highest: MEDIUM.
+- **ATT&CK:** T1040
 
 ### rds-08: Public database open to a single office IP
 
 - **Resource:** `bi-reporting-db`
-- **Tier and kind:** realistic, ambiguous
-- **What it is:** A BI reporting database with publicly_accessible true and an Internet route.
-- **What is wrong:** Port 5432 is allowed only from one /32. Vista's guidance says a narrow /32 is not automatically HIGH. The model should note it and suggest a private path, not treat the database as world-open.
-- **Expected rating:** category PUBLIC_EXPOSURE, likelihood LOW, impact MEDIUM, severity LOW
-- **Acceptable severities:** LOW, MEDIUM
-- **Expected action:** REVIEW (acceptable: REVIEW)
-- **Deferral:** accepted (PARTIAL or INSUFFICIENT confidence counts as an appropriate deferral)
-- **Frameworks:** FSBP RDS.2 (reference severity CRITICAL); ATT&CK T1110
-- **Context override:** Port 5432 is allowed from a single /32 only, so EC2.19 passes and the publicly accessible flag alone does not open the database to the Internet.
+- **Tier:** realistic
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** PostgreSQL instance in the public subnet group with encryption, IAM authentication, and a managed password.
+- **What is misconfigured:** publicly_accessible is true.
+- **Context:** Its security group allows TCP 5432 only from one /32 address, cidrhost(var.office_cidr, 10) (default 203.0.113.10/32).
+- **FSBP controls:** RDS.2 RDS DB Instances should prohibit public access, as determined by the PubliclyAccessible configuration (CRITICAL; publicly_accessible is true); RDS.46 RDS DB instances should not be deployed in public subnets with routes to internet gateways (HIGH; Instance is in the public subnet group, whose subnets have a 0.0.0.0/0 route to an Internet gateway). Highest: CRITICAL.
+- **ATT&CK:** T1110
 
-### rds-09: Legacy MySQL with several compounding configuration gaps
+### rds-09: Legacy MySQL open to 10.0.0.0/8 with TLS optional, a static password, and 1-day backups
 
 - **Resource:** `legacy-inventory-db`
-- **Tier and kind:** realistic, dangerous
-- **What it is:** A private legacy MySQL database.
-- **What is wrong:** Port 3306 is open to all of 10.0.0.0/8, require_secure_transport is OFF, the master password is static with no master_user_secret, IAM authentication is off, backups are kept for 1 day, and no logs are exported. Each gap alone is LOW or MEDIUM; together they make credential theft in transit and unrecoverable loss plausible.
-- **Expected rating:** category SECURITY_CONFIGURATION, likelihood MEDIUM, impact MEDIUM, severity MEDIUM
-- **Acceptable severities:** MEDIUM, HIGH
-- **Expected action:** REMEDIATE (acceptable: REMEDIATE)
-- **Frameworks:** FSBP RDS.9, RDS.10, RDS.11 (reference severity MEDIUM); ATT&CK T1040
+- **Tier:** realistic
+- **Condition:** flaw
+- **Coverage:** fsbp
+- **What it is:** MySQL instance in the private subnet group with customer-managed KMS encryption.
+- **What is misconfigured:** its security group allows TCP 3306 from 10.0.0.0/8 while the VPC is 10.81.0.0/16; require_secure_transport is OFF; the master password is static rather than managed by Secrets Manager; IAM authentication is off; backup retention is 1 day; and no logs are exported.
+- **Context:** None.
+- **FSBP controls:** RDS.9 RDS DB instances should publish logs to CloudWatch Logs (MEDIUM; No logs are exported to CloudWatch Logs); RDS.10 IAM authentication should be configured for RDS instances (MEDIUM; IAM database authentication is off); RDS.11 RDS instances should have automatic backups enabled (MEDIUM; Backup retention is 1 day, below the control's default minimum of 7 days). Highest: MEDIUM.
+- **ATT&CK:** T1040

@@ -37,10 +37,12 @@ To avoid duplication, network, parameter, and key context is de-duplicated into 
 - parameter_group_refs -> shared.parameter_groups[ref]; cluster_parameter_group_ref ->
   shared.cluster_parameter_groups[ref]. Only user-modified parameters are listed; a default group
   (is_default true) or an unlisted parameter uses the engine default for that engine version.
-- kms_key_id -> shared.kms_keys[id]; key_manager AWS means the AWS-managed aws/rds key, which
-  cannot be shared cross-account and whose key policy the account cannot restrict.
+- kms_key_id -> shared.kms_keys[id]; key_manager AWS means the AWS managed aws/rds key.
 - A DB instance with a cluster_identifier is a member of that db_clusters entry; for Aurora the
   cluster's encryption, IAM authentication, backup, and deletion-protection settings apply.
+- A snapshot's shared_with lists the AWS account IDs it is shared with, or "all"; shared_with null
+  means the sharing attribute could not be read.
+- master_user_secret is set when RDS manages the master user password in AWS Secrets Manager.
 A missing reference means the collector did not return that object, exactly as if it were absent.
 
 Your task: identify the account's most significant RDS security risks, whether they arise from
@@ -48,56 +50,39 @@ public exposure or from security configuration, and report only the ones that ge
 Return at most 10 findings, and fewer when fewer real risks exist. Never manufacture findings to
 reach a count. Order findings from most to least severe.
 
-Group, do not repeat. When multiple resources share the same root cause (the same open security
-group, the same missing encryption, the same disabled deletion protection), report them as a single
-finding and list every affected resource. Do not emit one finding per resource.
-
-Determine public exposure from evidence only:
-- A DB instance is Internet-reachable only when every element holds: publicly_accessible is true,
-  an attached security group allows inbound traffic on the database port from a globally routable
-  source, a subnet in its subnet group routes to an Internet gateway, and the subnet's network ACL
-  does not deny that traffic. For an Aurora member, publicly_accessible is set per instance.
-- When publicly_accessible is false the database has no public address, so subnet routing or an
-  allow-all NACL alone is not PUBLIC_EXPOSURE; mention it only as context for another finding.
-- A snapshot whose shared_with contains "all" is public: any AWS account can restore it. An
-  unencrypted public snapshot exposes its data outright. Account IDs in shared_with are cross-account
-  shares; name them. shared_with null means the sharing attribute could not be read.
-- RDS Proxies are reachable only inside their VPC; they are never Internet-exposed on their own.
-- Security-group rules that reference other security groups or private CIDRs are internal access,
-  not Internet exposure.
-
-Security-configuration risks worth a finding include: storage_encrypted false, unencrypted
-snapshots, TLS not enforced (rds.force_ssl or require_secure_transport off by default or by
-parameter, or a proxy with require_tls false), IAM authentication disabled where it would replace
-static passwords, a master password not managed by Secrets Manager (master_user_secret null),
-deletion_protection false or backup_retention_days of 0 on production-looking databases, no log
-exports, a proxy with debug_logging true (it logs SQL statements), the Data API enabled on a
-cluster, associated_roles that let the database reach S3 or Lambda, a CA certificate past or near
-valid_till, and an engine on extended support (engine_lifecycle_support open-source-rds-extended-support)
-or an end-of-support version.
+AWS behavior relevant to the supplied fields:
+- publicly_accessible true means the endpoint's DNS name resolves to a public IP address from
+  outside the VPC and to the private IP address from inside it; false means it resolves to a
+  private IP address. For an Aurora member, publicly_accessible is set per instance.
+- Connections to DB instances and RDS Proxies are filtered by their VPC security groups, which are
+  stateful and contain only allow rules. A rule whose source is another security group matches
+  traffic from the private IP addresses of network interfaces that have that group attached.
+  10.0.0.0/8, 172.16.0.0/12, and 192.168.0.0/16 are private (RFC 1918) address ranges, which are
+  not routed on the public Internet.
+- A resource with a public IP address in a subnet can communicate with the Internet only when the
+  subnet's route table has a route to an Internet gateway. Network ACLs filter traffic entering and
+  leaving a subnet.
+- An RDS Proxy endpoint is created in the VPC and is not publicly accessible.
+- shared_with containing "all" on a manual snapshot means any AWS account can copy or restore it.
+- AWS managed KMS keys such as aws/rds cannot be used across accounts, and their key policies cannot
+  be changed.
+- rds.force_ssl (RDS for PostgreSQL and SQL Server) and require_secure_transport (RDS for MySQL and
+  MariaDB) control whether the database accepts only SSL/TLS client connections. require_tls on an
+  RDS Proxy controls whether the proxy accepts only TLS client connections.
+- debug_logging true on an RDS Proxy makes the proxy include detailed information about SQL
+  statements in its logs.
+- associated_roles lists IAM roles attached to a DB instance or cluster for a named feature (for
+  example s3Import, s3Export, or Lambda); the database uses that role's permissions to call the AWS
+  service for that feature.
+- engine_lifecycle_support open-source-rds-extended-support means the resource is enrolled in RDS
+  Extended Support, under which RDS keeps running its major engine version past the end of standard
+  support; open-source-rds-extended-support-disabled means it is not enrolled.
 
 {SEVERITY_MODEL}
 
-For RDS specifically: treat a confirmed Internet path to the database port from a broad source as
-HIGH Likelihood, and a public snapshot as HIGH Likelihood. A narrow /32 source or a
-publicly_accessible flag without an open security group or Internet-gateway route is not
-automatically HIGH. Supplied approved intent may lower Likelihood, but only with the reason stated.
-
-Assign each finding a Category: PUBLIC_EXPOSURE when the dominant risk is Internet reachability or
-a public/cross-account snapshot, SECURITY_CONFIGURATION when it is encryption, TLS, authentication,
-logging, backup, or lifecycle configuration.
-
-Be evidence-specific and concise:
-- Cite exact supplied facts: resource identifiers, region, engine and version, endpoint and port,
-  publicly_accessible, security-group IDs with CIDRs and ports, route targets, encryption and KMS
-  key manager, parameter names and values, snapshot shared_with values, and backup or deletion
-  settings.
-- Do not use vague labels such as "public", "open", or "insecure" without the exact supporting
-  fact. Do not claim data sensitivity, exploitation, or approved intent unless supplied.
-
-For Remediation, give a concrete fix: the exact setting, rule, parameter, or sharing attribute to
-change and the acceptable end state. Recommend confirming operational need before any change that
-affects connectivity or availability, such as removing public access or modifying a security group.
+Assign each finding one Category by what it is about: PUBLIC_EXPOSURE when it is about reachability
+of resources from the Internet or access to snapshots by other AWS accounts,
+SECURITY_CONFIGURATION when it is about any other resource configuration.
 """
 
 
@@ -106,10 +91,10 @@ def identifiers(facts: dict[str, Any]) -> set[str]:
     return {item["identifier"] for kind in RESOURCE_KINDS for item in facts.get(kind, [])}
 
 
-# Build the per-request system prompt with resource counts and, when supplied, account intent.
-def build_system_prompt(facts: dict[str, Any], intent: str | None = None) -> str:
+# Build the per-request system prompt with resource counts.
+def build_system_prompt(facts: dict[str, Any]) -> str:
     counts = ", ".join(f"{len(facts.get(kind, []))} {kind}" for kind in RESOURCE_KINDS)
-    return findings.build_system_prompt(SPEC, GUIDANCE, counts, intent)
+    return findings.build_system_prompt(SPEC, GUIDANCE, counts)
 
 
 # Validate the review structure and that every cited identifier exists; raise on any defect.
