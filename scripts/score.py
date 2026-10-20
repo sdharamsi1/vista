@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Score saved Vista review runs against a service's ground truth.
 
-Each scenario is scored against the highest-severity finding that cites its resource (earliest
-finding wins a tie); a scenario no finding cites is scored NONE and NO_ACTION. Reviews are parsed with
+Each scenario is scored against the highest-severity finding that cites its resource. On a severity
+tie, the finding citing the fewest scenario resources wins, then the earliest (changed 2026-10-19
+after the S3 benchmark; EC2 scores are unchanged by it). A scenario no finding cites is scored NONE
+and NO_ACTION. Reviews are parsed with
 the same helpers the validator uses, so the harness reads them exactly as Vista does.
 
 Usage:
@@ -133,7 +135,13 @@ def score_scenario(
     scenario_resources: set[str],
 ) -> dict[str, Any]:
     citing = [item for item in parsed if identifier in item["cited"]]
-    best = max(citing, key=lambda item: (rank(item["severity"]), -item["position"]), default=None)
+    # Highest severity wins; on a tie, the finding citing the fewest scenario resources (the one
+    # most specific to this scenario), then the earliest.
+    best = max(
+        citing,
+        key=lambda item: (rank(item["severity"]), -len(item["cited"] & scenario_resources), -item["position"]),
+        default=None,
+    )
     severity = best["severity"] if best else "NONE"
     action = best["action"] if best else "NO_ACTION"
     expected = scenario["expected"]
