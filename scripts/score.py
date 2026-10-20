@@ -5,7 +5,8 @@ The ground truth (terraform/modules/<service>/ground-truth.json) holds facts and
 Security Hub FSBP severities only. Each scenario has a condition (flaw, flaw_blocked, hardened), a
 coverage (fsbp, outside_fsbp), and, on fsbp scenarios, fsbp_severity: the highest published severity
 of the FSBP controls that fail because of the scenario. Vista (the LLM review) and Prowler (the
-rule-based scanner) are scored by the same rules, so the comparison measures what the LLM adds.
+rule-based scanner) are scored by the same rules, so the comparison shows where each approach
+agrees with the answer key and where it does not.
 
 Usage:
     python scripts/score.py SERVICE RUNS MAP [--ground-truth PATH] [--tier controlled|realistic]
@@ -50,9 +51,11 @@ the groups all, fsbp, outside_fsbp:
   detection          reported cells over flaw cells
   flaw_blocked rate  reported cells over flaw_blocked cells; neither a detection nor a false positive
   false positives    reported cells over hardened cells
-Severity agreement, fsbp cells only (flaw and flaw_blocked; not reported = NONE): exact (distance
-0), above (> 0), below (< 0), and the mean signed distance. outside_fsbp cells get no severity
-comparison.
+Severity relative to FSBP, fsbp cells only (flaw and flaw_blocked; not reported = NONE): same as
+FSBP (distance 0), above FSBP (> 0), below FSBP (< 0), and the mean signed distance. This is a
+description of where each tool's severity sits relative to the FSBP control-level severity, not an
+accuracy score: FSBP severity is fixed per control and does not reflect deployed context, and
+Prowler's check severities follow FSBP's. outside_fsbp cells get no severity comparison.
 Vista only (Prowler is deterministic or has no such measure):
   consistency        scenarios with the same severity in every scored run over scored scenarios;
                      mean modal agreement (mean of modal count / scored runs); non-identical list
@@ -62,7 +65,9 @@ Vista only (Prowler is deterministic or has no such measure):
                      ("not checked" without payload.json)
   grouped            cells scored from a grouped finding, and their scenario IDs
   cost               review seconds and total tokens per run
-Per scenario: condition, coverage, fsbp_severity, and each tool's severity distribution over runs.
+Per scenario: condition, coverage, fsbp_severity, each tool's severity distribution over runs, and
+the scenario's context from the ground truth (deployed facts that narrow or remove what the
+misconfiguration opens, or "-").
 
 Prowler OCSF field access (Prowler 4.x and 5.x; v4 names in the Prowler deprecation table):
   status    status_code (PASS, FAIL, MANUAL); only FAIL is used. A file where no record has
@@ -110,10 +115,9 @@ Always: candidate equals the identifier. Per service:
               are not attributed: no answer-key control is attributed through them, and they are
               shared by many scenarios.
 A shared object (a security group, load balancer, listener, or parameter group referenced by
-several scenarios) counts for each scenario that references it.
-Columns: "prowler" counts every attributed FAIL (primary). "prowler-filtered" ignores any check that
-FAILs for at least half of the scored scenarios (2 * count >= scored), checks that fire on nearly
-every resource; it is secondary and shown next to the primary, never instead of it.
+several scenarios) counts for each scenario that references it. The "prowler" column counts every
+attributed FAIL; no checks are filtered out. Checks that fail on many scenarios stay visible in the
+per-scenario list of checks at the top severity.
 """
 
 from __future__ import annotations
@@ -489,8 +493,7 @@ def matches(service: str, candidate: str, identifier: str) -> bool:
     return False
 
 
-# Score Prowler's FAILs as two columns, "prowler" (every attributed FAIL) and "prowler-filtered"
-# (ignoring checks that fail for at least half of the scored scenarios).
+# Score Prowler's FAILs as one "prowler" column counting every attributed FAIL.
 def score_prowler(
     service: str,
     prowler: dict[str, Any],
@@ -506,23 +509,20 @@ def score_prowler(
               if any(matches(service, candidate, ident) for candidate in item["candidates"] for ident in related[sid])]
         for sid in scored_ids
     }
-    per_check = Counter(check for sid in scored_ids for check in {item["check"] for item in hits[sid]})
-    universal = sorted(check for check, count in per_check.items() if 2 * count >= len(scored_ids))
     attributed = {item["index"] for sid in scored_ids for item in hits[sid]}
-    columns: dict[str, dict[str, Any]] = {}
-    for name, ignore in (("prowler", set()), ("prowler-filtered", set(universal))):
-        cells: dict[str, Any] = {}
-        drivers: dict[str, list[str]] = {}
-        for sid in scored_ids:
-            kept = [item for item in hits[sid] if item["check"] not in ignore]
-            top = max((rank(item["severity"]) for item in kept), default=0)
-            # Prowler's result for a scenario is one finding at its top severity citing only it.
-            parsed = [{"position": 1, "severity": SEVERITIES[top], "cited": {mapping[sid]}}] if kept else []
-            cell = score_scenario(ground_truth[sid], mapping[sid], parsed, resources)
-            cell["findings_citing"] = len(kept)
-            cells[sid] = cell
-            drivers[sid] = sorted({item["check"] for item in kept if rank(item["severity"]) == top})
-        columns[name] = {
+    cells: dict[str, Any] = {}
+    drivers: dict[str, list[str]] = {}
+    for sid in scored_ids:
+        kept = hits[sid]
+        top = max((rank(item["severity"]) for item in kept), default=0)
+        # Prowler's result for a scenario is one finding at its top severity citing only it.
+        parsed = [{"position": 1, "severity": SEVERITIES[top], "cited": {mapping[sid]}}] if kept else []
+        cell = score_scenario(ground_truth[sid], mapping[sid], parsed, resources)
+        cell["findings_citing"] = len(kept)
+        cells[sid] = cell
+        drivers[sid] = sorted({item["check"] for item in kept if rank(item["severity"]) == top})
+    return {
+        "prowler": {
             "baseline": True,
             "info": {
                 "versions": prowler["versions"],
@@ -532,8 +532,6 @@ def score_prowler(
                 "attributed_fails": len(attributed),
                 "unattributed_fails": len(prowler["fails"]) - len(attributed),
                 "muted_fails": prowler["muted"],
-                "universal_checks": universal,
-                "ignored_checks": sorted(ignore),
                 "drivers": drivers,
             },
             "runs": {
@@ -544,7 +542,7 @@ def score_prowler(
                 }
             },
         }
-    return columns
+    }
 
 
 # n/N for one rate over cells of one condition, split by coverage group.
@@ -652,10 +650,12 @@ def report(args: argparse.Namespace, ground_truth: dict, mapping: dict, summarie
     section("Detection and false positives")
 
     add("fsbp cells", lambda s: str(s["severity"]["N"]))
-    for key, label in (("exact", "exact"), ("above", "above FSBP"), ("below", "below FSBP")):
+    for key, label in (("exact", "same as FSBP"), ("above", "above FSBP"), ("below", "below FSBP")):
         add(label, lambda s, key=key: ratio(s["severity"][key], s["severity"]["N"]))
     add("mean signed distance", lambda s: f"{s['severity']['mean_distance']:.2f}" if s["severity"]["mean_distance"] is not None else "-")
-    section("Severity agreement with FSBP (fsbp scenarios; not reported = NONE)")
+    section("Severity relative to FSBP (fsbp scenarios; not reported = NONE)")
+    print("FSBP severity is fixed per control and does not reflect deployed context; Prowler's check "
+          "severities follow FSBP's. This describes where each tool sits, not accuracy.")
 
     det = "deterministic"
     add("scored runs", lambda s: str(s["runs_scored"]), na=det)
@@ -700,16 +700,15 @@ def report(args: argparse.Namespace, ground_truth: dict, mapping: dict, summarie
         print(f"Results: {info['results']}; FAIL: {info['fails']}; FAILs attributed to a scenario: {info['attributed_fails']}; "
               f"not attributed (other resources, account-level, or informational): {info['unattributed_fails']}; "
               f"muted (Suppressed, still scored): {info['muted_fails']}")
-        print("Checks ignored by prowler-filtered (FAIL for at least half of the scored scenarios): "
-              + (", ".join(info["universal_checks"]) or "none"))
-        print("Check(s) at the top severity, per scenario (prowler column):")
+        print("Check(s) at the top severity, per scenario:")
         for sid in scored:
             print(f"  {sid}: {', '.join(info['drivers'][sid]) or '(no FAIL)'}")
 
     print("\n== Per scenario (severity over runs)")
     rows = [[sid, ground_truth[sid]["condition"], ground_truth[sid]["coverage"], ground_truth[sid]["fsbp_severity"] or "-",
-             *[distribution(summaries[m]["per_scenario"][sid]) or "-" for m in names]] for sid in scored]
-    print(table(["scenario", "condition", "coverage", "fsbp_severity", *names], rows))
+             *[distribution(summaries[m]["per_scenario"][sid]) or "-" for m in names],
+             " ".join((ground_truth[sid].get("context") or "-").split())] for sid in scored]
+    print(table(["scenario", "condition", "coverage", "fsbp_severity", *names, "context"], rows))
 
 
 # Write one row per tool, run, and scenario.

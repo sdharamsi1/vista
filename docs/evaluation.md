@@ -190,10 +190,9 @@ Always: candidate equals the identifier. Per service:
 A shared object (a security group, load balancer, listener, or parameter group referenced by
 several scenarios) counts for each scenario that references it.
 
-Two Prowler columns are reported. `prowler` counts every attributed FAIL (primary).
-`prowler-filtered` ignores any check that FAILs for at least half of the scored scenarios
-(2 * count >= scored), checks that fire on nearly every resource; it is secondary and shown next to
-the primary, never instead of it.
+One Prowler column is reported: `prowler` counts every attributed FAIL, and no checks are filtered
+out. Checks that fail on many scenarios stay visible in the report's per-scenario list of checks at
+the top severity.
 
 ## What score.py reports
 
@@ -210,9 +209,13 @@ the groups all, fsbp, outside_fsbp:
   positive.
 - **false positives** — reported cells over hardened cells.
 
-Severity agreement, fsbp cells only (flaw and flaw_blocked; not reported = NONE): exact (distance
-0), above (> 0), below (< 0), and the mean signed distance. outside_fsbp cells get no severity
-comparison.
+Severity relative to FSBP, fsbp cells only (flaw and flaw_blocked; not reported = NONE): same as
+FSBP (distance 0), above FSBP (> 0), below FSBP (< 0), and the mean signed distance. This describes
+where each tool's severity sits relative to the FSBP control-level severity; it is not an accuracy
+score. FSBP severity is fixed per control and does not reflect deployed context, and Prowler's check
+severities follow FSBP's, so Prowler sits at or near FSBP by construction. The per-scenario table
+shows each scenario's context so differences can be read against it. outside_fsbp cells get no
+severity comparison.
 
 Vista only (Prowler is deterministic or has no such measure):
 
