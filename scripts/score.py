@@ -1,123 +1,32 @@
 #!/usr/bin/env python3
-"""Score saved Vista review runs and a Prowler scan side by side against a service's ground truth.
-
-The ground truth (terraform/modules/<service>/ground-truth.json) holds facts and published AWS
-Security Hub FSBP severities only. Each scenario has a condition (flaw, flaw_blocked, hardened), a
-coverage (fsbp, outside_fsbp), and, on fsbp scenarios, fsbp_severity: the highest published severity
-of the FSBP controls that fail because of the scenario. Vista (the LLM review) and Prowler (the
-rule-based scanner) are scored by the same rules, so the comparison shows where each approach
-agrees with the answer key and where it does not.
+"""Score saved Vista runs and a Prowler scan against a service's ground truth.
 
 Usage:
-    python scripts/score.py SERVICE RUNS MAP [--ground-truth PATH] [--tier controlled|realistic]
-                            [--max-findings N] [--prowler PATH] [--json PATH] [--csv PATH]
-    python scripts/score.py ec2 runs/ec2 runs/ec2/scenario_resources.json \\
-        --prowler runs/ec2/prowler/prowler-output.ocsf.json --json out.json --csv out.csv
+    python scripts/score.py SERVICE RUNS MAP [--prowler PATH] [--tier controlled|realistic]
+                            [--ground-truth PATH] [--max-findings N] [--json PATH] [--csv PATH]
 
-Inputs:
   SERVICE  ec2, s3, apigateway, or rds.
-  RUNS     one folder per model, each with run-1, run-2, ... folders written by `--save-run`
-           (analysis.md and run.json), plus an optional RUNS/payload.json (the payload the runs
-           reviewed). payload.json is used to flag cited identifiers absent from the evidence and,
-           for EC2 and RDS, to attribute Prowler results.
-  MAP      `terraform output -json scenario_resources`: a JSON object of scenario ID -> the
-           identifier Vista cites (EC2 instance ID, S3 bucket name, API Gateway API ID, RDS
-           identifier). Ground-truth scenarios missing from the map are listed and not scored.
-  --ground-truth  overrides the default ground-truth path. The file is validated on load: every
-           scenario needs condition in {flaw, flaw_blocked, hardened}, coverage in {fsbp,
-           outside_fsbp}, fsbp_severity LOW..CRITICAL on fsbp and null on outside_fsbp, and no
-           hardened scenario may be fsbp.
-  --tier   score only the scenarios of one tier.
-  --max-findings  the review's finding cap (default 10); runs that reach it are counted.
-  --prowler  Prowler JSON OCSF output (prowler aws --output-formats json-ocsf). Scan without a
-           mutelist: muted (Suppressed) FAILs are still scored and only counted.
-  --json / --csv  also write full results (service, tier, scored IDs, per-tool runs, cells, and
-           summaries) as JSON, and one CSV row per (tool, run, scenario) cell.
+  RUNS     one folder per model, each holding run-N folders from `--save-run`, plus an optional
+           RUNS/payload.json. EC2 needs payload.json to attribute Prowler results.
+  MAP      `terraform output -json scenario_resources` (scenario ID -> identifier Vista cites).
+  --prowler  Prowler JSON OCSF output, scanned without a mutelist.
 
-Vista matching. Each review is parsed with the validator's helpers (vista.findings): position,
-title, Severity, and the backticked identifiers in the "Affected ..." field. A scenario is scored
-against the highest-severity finding citing its identifier; on a tie, the finding citing the fewest
-scored-scenario resources, then the earliest. No citing finding: not reported, severity NONE. A run
-is scored when run.json status is ok (or run.json is missing) and analysis.md exists; otherwise it
-is failed and run.json's error is shown.
+Scoring:
+  - Vista: a scenario is scored against the highest-severity finding that cites its identifier.
+    On a tie, the finding citing the fewest scenario resources wins, then the earliest. No citing
+    finding means not reported (NONE).
+  - Prowler: a scenario's severity is the highest severity among the FAILs attributed to it.
+    Informational FAILs are ignored. A FAIL is attributed through every resource whose FSBP
+    control the answer key attributes to the scenario (rules in related_identifiers()).
+  - Detection is reported over `flaw` scenarios, false positives over `hardened` ones, and
+    `flaw_blocked` scenarios get their own report rate.
+  - On `fsbp` scenarios, severity is compared with fsbp_severity on NONE < LOW < MEDIUM < HIGH <
+    CRITICAL. This describes where a tool sits relative to FSBP's control-level severity; it is
+    not an accuracy score.
+  - Vista only: consistency across runs, retries, the finding cap, unknown identifiers, grouped
+    findings, time, and tokens.
 
-Cell, one per (tool, run, scenario): scenario, condition, coverage, reported, severity,
-fsbp_severity, distance, grouped, findings_citing. distance = rank(severity) - rank(fsbp_severity)
-on fsbp scenarios, else null, with ranks NONE 0 < LOW 1 < MEDIUM 2 < HIGH 3 < CRITICAL 4. grouped:
-the scoring finding cites more than one scored-scenario resource.
-
-Metrics per tool (a model pools the cells of all its scored runs; Prowler is one run), each n/N for
-the groups all, fsbp, outside_fsbp:
-  detection          reported cells over flaw cells
-  flaw_blocked rate  reported cells over flaw_blocked cells; neither a detection nor a false positive
-  false positives    reported cells over hardened cells
-Severity relative to FSBP, fsbp cells only (flaw and flaw_blocked; not reported = NONE): same as
-FSBP (distance 0), above FSBP (> 0), below FSBP (< 0), and the mean signed distance. This is a
-description of where each tool's severity sits relative to the FSBP control-level severity, not an
-accuracy score: FSBP severity is fixed per control and does not reflect deployed context, and
-Prowler's check severities follow FSBP's. outside_fsbp cells get no severity comparison.
-Vista only (Prowler is deterministic or has no such measure):
-  consistency        scenarios with the same severity in every scored run over scored scenarios;
-                     mean modal agreement (mean of modal count / scored runs); non-identical list
-  runs               scored and failed (with error text); retried (tokens.attempts > 1) with each
-                     run.json retry_errors entry; findings per run; runs at the --max-findings cap
-  unknown ids        AWS IDs and ARNs in analysis.md absent from payload.json, total and per run
-                     ("not checked" without payload.json)
-  grouped            cells scored from a grouped finding, and their scenario IDs
-  cost               review seconds and total tokens per run
-Per scenario: condition, coverage, fsbp_severity, each tool's severity distribution over runs, and
-the scenario's context from the ground truth (deployed facts that narrow or remove what the
-misconfiguration opens, or "-").
-
-Prowler OCSF field access (Prowler 4.x and 5.x; v4 names in the Prowler deprecation table):
-  status    status_code (PASS, FAIL, MANUAL); only FAIL is used. A file where no record has
-            status_code is rejected.
-  check     metadata.event_code (CheckID); required on FAIL.
-  severity  severity string (Critical, High, Medium, Low, Informational), else severity_id
-            (1 Informational, 2 Low, 3 Medium, 4 High, 5 Critical); required on FAIL.
-  resource  every non-empty uid (ResourceArn) and name (ResourceId) of every entry in resources[];
-            at least one is required on FAIL.
-  version   metadata.product.version (printed; "unknown" with a warning when absent) and the OCSF
-            schema metadata.version when present.
-  muted     FAILs whose status is Suppressed are counted.
-Any missing required field or unknown severity exits with the record index and the field name.
-Informational FAILs are ignored. A scenario's Prowler severity is the highest severity among the
-FAILs attributed to it, mapped one to one; none attributed means not reported (NONE). A FAIL can be
-attributed to several scenarios (a shared object counts for each).
-
-Attribution: a FAIL belongs to a scenario when a resource candidate matches one of the scenario's
-related identifiers. The related identifiers cover every resource whose FSBP control the answer key
-attributes to the scenario (its fsbp list), so Prowler is attributed as broadly as the answer key.
-Always: candidate equals the identifier. Per service:
-  ec2         related, read from RUNS/payload.json (required): the instance; its EBS volumes
-              (storage.block_devices[].volume_id); its security groups (instance and interfaces); its
-              interfaces' network ACLs; its instance-profile role ARNs; and for each
-              load_balancer_relationships entry the listener_arn, the target_group_arn (and
-              shared.target_groups[arn].arn), the load_balancer_arn, that load balancer's security
-              groups, and every listener in shared.load_balancers[arn].listeners (an HTTP redirect
-              listener forwards to no instance but is still the instance's load balancer). Also
-              matches a candidate ending in "/<identifier>" (volume, security group, and network ACL
-              ARNs). Subnets, route tables, VPCs, and account-level checks are not attributed.
-  s3          related: the bucket name. Also matches an ARN ending in ":::<bucket>" (any
-              partition); a longer bucket name or an object ARN does not match.
-  apigateway  related: the API ID. Also matches an ARN containing "/restapis/<id>" or "/apis/<id>"
-              as a path segment (REST, HTTP, WebSocket APIs and their stages, routes, integrations).
-  rds         related: the identifier and, when payload.json is present, from the db_instances,
-              db_clusters, db_proxies, or snapshots record with that identifier: its arn (proxy
-              ARNs use prx-...), its security_group_ids, its parameter group names
-              (parameter_group_refs -> shared.parameter_groups[ref].name,
-              cluster_parameter_group_ref -> shared.cluster_parameter_groups[ref].name, else the
-              ref after "region/"), and for a snapshot its source identifier and the arn of the
-              db_instances or db_clusters record with that identifier. A security group ID matches
-              a candidate equal to it or ending in "/<sg-id>"; any other identifier also matches an
-              ARN ending in ":(db|cluster|snapshot|cluster-snapshot|db-proxy|pg|cluster-pg):<id>".
-              Subnet groups, subnets, route tables, network ACLs, VPCs, and account-level checks
-              are not attributed: no answer-key control is attributed through them, and they are
-              shared by many scenarios.
-A shared object (a security group, load balancer, listener, or parameter group referenced by
-several scenarios) counts for each scenario that references it. The "prowler" column counts every
-attributed FAIL; no checks are filtered out. Checks that fail on many scenarios stay visible in the
-per-scenario list of checks at the top severity.
+Full metric definitions, OCSF field access, and attribution rules: docs/evaluation.md.
 """
 
 from __future__ import annotations
