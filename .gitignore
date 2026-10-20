@@ -9,6 +9,7 @@ __pycache__/
 !vista/rds/examples/sample-payload.json
 !terraform/modules/*/ground-truth.json
 .terraform/
+.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
 *.tfplan
