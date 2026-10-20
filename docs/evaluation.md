@@ -3,7 +3,7 @@
 Vista's evaluation compares an LLM review with a deterministic rule-based scanner on the same AWS
 resources. Vista (the LLM review) and [Prowler](https://github.com/prowler-cloud/prowler) 5.44.0
 (the rule-based scanner) are scored by the same rules against the same answer key, so the
-comparison measures what the LLM adds.
+comparison shows where each approach agrees with the answer key and where it does not.
 
 ## Answer key
 
