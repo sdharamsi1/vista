@@ -394,7 +394,8 @@ def matches(service: str, candidate: str, identifier: str) -> bool:
     if service == "s3":
         return candidate.startswith("arn:") and candidate.endswith(":::" + identifier)
     if service == "apigateway":
-        return re.search(r"/(?:restapis|apis)/" + re.escape(identifier) + r"(?:/|$)", candidate) is not None
+        # REST ARNs use "::/restapis/<id>"; Prowler writes HTTP and WebSocket ARNs as "::apis/<id>".
+        return re.search(r"(?:/|::)(?:restapis|apis)/" + re.escape(identifier) + r"(?:/|$)", candidate) is not None
     if service == "rds":
         if RDS_SG_ID.fullmatch(identifier):
             return candidate.endswith("/" + identifier)

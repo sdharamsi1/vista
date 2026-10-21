@@ -172,9 +172,10 @@ Always: candidate equals the identifier. Per service:
   account-level checks are not attributed.
 - **s3** — related: the bucket name. Also matches an ARN ending in `:::<bucket>` (any partition); a
   longer bucket name or an object ARN does not match.
-- **apigateway** — related: the API ID. Also matches an ARN containing `/restapis/<id>` or
-  `/apis/<id>` as a path segment (REST, HTTP, WebSocket APIs and their stages, routes,
-  integrations).
+- **apigateway** — related: the API ID. Also matches an ARN containing `restapis/<id>` or
+  `apis/<id>` as a path segment preceded by `/` or `::` (REST, HTTP, WebSocket APIs and their
+  stages, routes, integrations). Prowler writes HTTP and WebSocket API ARNs as
+  `arn:aws:apigateway:<region>::apis/<id>`, with no `/` before `apis`.
 - **rds** — related: the identifier and, when `payload.json` is present, from the `db_instances`,
   `db_clusters`, `db_proxies`, or `snapshots` record with that identifier: its `arn` (proxy ARNs use
   `prx-...`), its `security_group_ids`, its parameter group names (`parameter_group_refs` ->
