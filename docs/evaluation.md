@@ -41,15 +41,15 @@ The steps need Terraform 1.11+, Prowler 5.44.0, and Bedrock access to both model
    ```bash
    terraform -chdir=terraform init
    terraform -chdir=terraform apply -var enable_s3=true -var enable_apigateway=true -var enable_rds=true
-   mkdir -p runs
-   terraform -chdir=terraform output -json scenario_resources > runs/scenario_resources.json
+   mkdir -p evaluation/runs
+   terraform -chdir=terraform output -json scenario_resources > evaluation/runs/scenario_resources.json
    ```
 
 2. Collect each service once with `--save-run`. Saving into the service's benchmark folder puts
    the payload where `score.py` looks for it (`RUNS/payload.json`).
 
    ```bash
-   vista assess ec2 --regions us-east-1 --model us.anthropic.claude-opus-5 --save-run runs/ec2/benchmark
+   vista assess ec2 --regions us-east-1 --model us.anthropic.claude-opus-5 --save-run evaluation/runs/ec2/benchmark
    ```
 
 3. Replay the saved payload five times per model with `--from-json`, one new `run-N` folder per
@@ -57,23 +57,23 @@ The steps need Terraform 1.11+, Prowler 5.44.0, and Bedrock access to both model
 
    ```bash
    for n in 1 2 3 4 5; do
-     vista assess ec2 --from-json runs/ec2/benchmark/payload.json --model us.anthropic.claude-opus-5 --save-run runs/ec2/benchmark/opus/run-$n
-     vista assess ec2 --from-json runs/ec2/benchmark/payload.json --model us.openai.gpt-5.6-sol --save-run runs/ec2/benchmark/gpt/run-$n
+     vista assess ec2 --from-json evaluation/runs/ec2/benchmark/payload.json --model us.anthropic.claude-opus-5 --save-run evaluation/runs/ec2/benchmark/opus/run-$n
+     vista assess ec2 --from-json evaluation/runs/ec2/benchmark/payload.json --model us.openai.gpt-5.6-sol --save-run evaluation/runs/ec2/benchmark/gpt/run-$n
    done
    ```
 
 4. Run Prowler once across all four services while the scenarios are deployed, with JSON OCSF
    output. Do not pass a mutelist (`--mutelist-file`); muted (Suppressed) FAILs are still scored
-   and only counted. This writes `runs/prowler/prowler-output.ocsf.json`.
+   and only counted. This writes `evaluation/runs/prowler/prowler-output.ocsf.json`.
 
    ```bash
-   prowler aws --region us-east-1 --output-formats json-ocsf --output-directory runs/prowler --output-filename prowler-output
+   prowler aws --region us-east-1 --output-formats json-ocsf --output-directory evaluation/runs/prowler --output-filename prowler-output
    ```
 
 5. Score each service with `python scripts/score.py <service> RUNS MAP --prowler PATH`. For EC2:
 
    ```bash
-   python scripts/score.py ec2 runs/ec2/benchmark runs/scenario_resources.json --prowler runs/prowler/prowler-output.ocsf.json
+   python scripts/score.py ec2 evaluation/runs/ec2/benchmark evaluation/runs/scenario_resources.json --prowler evaluation/runs/prowler/prowler-output.ocsf.json
    ```
 
 6. Destroy the scenarios with the same variables. Nothing has deletion protection, buckets are
@@ -88,14 +88,20 @@ deployed resources, so they can also run after step 6.
 
 ## Run folder layout
 
-`runs/` is gitignored. The steps above produce:
+The steps above produce the layout below. `evaluation/runs/` holds the committed benchmark: every
+run folder, the score reports, the Prowler OCSF scan, and only the FSBP report from Prowler's
+`compliance/` folder (the other framework reports are gitignored). A `runs/` folder at the repo
+root stays gitignored for ad-hoc local runs.
 
 ```text
-runs/
+evaluation/runs/
   scenario_resources.json        terraform output -json scenario_resources
+  replays.log                    console output of the step 3 replays
   prowler/
     prowler-output.ocsf.json     one Prowler scan for all four services
+    compliance/                  per-framework reports; only the FSBP CSV is tracked
   ec2/
+    score.txt, score.json, score.csv   score.py output (stdout, --json, --csv)
     benchmark/                   RUNS for score.py
       payload.json               the collected payload every replay reviews
       analysis.md, run.json      the collection run's own review (not scored)

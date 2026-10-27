@@ -1,0 +1,26 @@
+{
+  "bedrock_region": "us-east-1",
+  "error": null,
+  "finished_at": "2026-10-21T01:19:43.299724+00:00",
+  "model_id": "us.anthropic.claude-opus-5",
+  "payload_file": "runs/s3/benchmark/payload.json",
+  "payload_sha256": "4dfda59aff3529f746c52eb9c4604a938c17c25d658f253c16c0b1c4a04b0e22",
+  "regions": [
+    "us-east-1"
+  ],
+  "resource_count": 14,
+  "retry_errors": [],
+  "review_seconds": 79.32,
+  "service": "s3",
+  "source": "replay",
+  "started_at": "2026-10-21T01:18:23.977532+00:00",
+  "status": "ok",
+  "tokens": {
+    "attempts": 1,
+    "cache_read": 0,
+    "cache_write": 0,
+    "input": 13359,
+    "output": 7422
+  },
+  "vista_version": "0.1.0"
+}

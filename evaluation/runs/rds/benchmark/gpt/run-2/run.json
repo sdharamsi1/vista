@@ -1,0 +1,26 @@
+{
+  "bedrock_region": "us-east-1",
+  "error": null,
+  "finished_at": "2026-10-21T01:39:37.600237+00:00",
+  "model_id": "us.openai.gpt-5.6-sol",
+  "payload_file": "runs/rds/benchmark/payload.json",
+  "payload_sha256": "ae40e3b5a328e287a27b92c8e540ec55a918cb5b5be2a06853efe7af72aa534b",
+  "regions": [
+    "us-east-1"
+  ],
+  "resource_count": 10,
+  "retry_errors": [],
+  "review_seconds": 44.59,
+  "service": "rds",
+  "source": "replay",
+  "started_at": "2026-10-21T01:38:53.011658+00:00",
+  "status": "ok",
+  "tokens": {
+    "attempts": 1,
+    "cache_read": 8565,
+    "cache_write": 0,
+    "input": 2,
+    "output": 3623
+  },
+  "vista_version": "0.1.0"
+}

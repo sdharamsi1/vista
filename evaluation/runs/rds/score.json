@@ -1,0 +1,1798 @@
+{
+  "service": "rds",
+  "tier": null,
+  "scored": [
+    "rds-01",
+    "rds-02",
+    "rds-03",
+    "rds-04",
+    "rds-05",
+    "rds-06",
+    "rds-07",
+    "rds-08",
+    "rds-09"
+  ],
+  "skipped": [],
+  "tools": {
+    "gpt": {
+      "baseline": false,
+      "runs": {
+        "1": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 51.0,
+          "tokens_total": 12826,
+          "findings": 7,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "rds-01": {
+              "scenario": "rds-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-02": {
+              "scenario": "rds-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "rds-03": {
+              "scenario": "rds-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-04": {
+              "scenario": "rds-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-05": {
+              "scenario": "rds-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-06": {
+              "scenario": "rds-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-07": {
+              "scenario": "rds-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-08": {
+              "scenario": "rds-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-09": {
+              "scenario": "rds-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            }
+          }
+        },
+        "2": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 44.59,
+          "tokens_total": 12190,
+          "findings": 7,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "rds-01": {
+              "scenario": "rds-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-02": {
+              "scenario": "rds-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-03": {
+              "scenario": "rds-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "rds-04": {
+              "scenario": "rds-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-05": {
+              "scenario": "rds-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-06": {
+              "scenario": "rds-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "rds-07": {
+              "scenario": "rds-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-08": {
+              "scenario": "rds-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-09": {
+              "scenario": "rds-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            }
+          }
+        },
+        "3": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 44.45,
+          "tokens_total": 12054,
+          "findings": 6,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "rds-01": {
+              "scenario": "rds-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-02": {
+              "scenario": "rds-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-03": {
+              "scenario": "rds-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "rds-04": {
+              "scenario": "rds-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-05": {
+              "scenario": "rds-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-06": {
+              "scenario": "rds-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "rds-07": {
+              "scenario": "rds-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-08": {
+              "scenario": "rds-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-09": {
+              "scenario": "rds-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 1
+            }
+          }
+        },
+        "4": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 44.96,
+          "tokens_total": 12311,
+          "findings": 7,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "rds-01": {
+              "scenario": "rds-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-02": {
+              "scenario": "rds-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-03": {
+              "scenario": "rds-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-04": {
+              "scenario": "rds-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-05": {
+              "scenario": "rds-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-06": {
+              "scenario": "rds-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-07": {
+              "scenario": "rds-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-08": {
+              "scenario": "rds-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-09": {
+              "scenario": "rds-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": true,
+              "findings_citing": 2
+            }
+          }
+        },
+        "5": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 51.41,
+          "tokens_total": 12661,
+          "findings": 6,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "rds-01": {
+              "scenario": "rds-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "rds-02": {
+              "scenario": "rds-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "rds-03": {
+              "scenario": "rds-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-04": {
+              "scenario": "rds-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-05": {
+              "scenario": "rds-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-06": {
+              "scenario": "rds-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-07": {
+              "scenario": "rds-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-08": {
+              "scenario": "rds-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-09": {
+              "scenario": "rds-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": true,
+              "findings_citing": 2
+            }
+          }
+        }
+      },
+      "summary": {
+        "baseline": false,
+        "info": null,
+        "runs": 5,
+        "runs_scored": 5,
+        "cells": 45,
+        "detection": {
+          "all": {
+            "n": 38,
+            "N": 40
+          },
+          "fsbp": {
+            "n": 30,
+            "N": 30
+          },
+          "outside_fsbp": {
+            "n": 8,
+            "N": 10
+          }
+        },
+        "flaw_blocked": {
+          "all": {
+            "n": 0,
+            "N": 0
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 0
+          }
+        },
+        "false_positives": {
+          "all": {
+            "n": 3,
+            "N": 5
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 3,
+            "N": 5
+          }
+        },
+        "severity": {
+          "N": 30,
+          "exact": 11,
+          "above": 0,
+          "below": 19,
+          "mean_distance": -0.8
+        },
+        "per_scenario": {
+          "rds-01": {
+            "LOW": 4,
+            "MEDIUM": 1
+          },
+          "rds-02": {
+            "LOW": 4,
+            "MEDIUM": 1
+          },
+          "rds-03": {
+            "LOW": 2,
+            "NONE": 2,
+            "MEDIUM": 1
+          },
+          "rds-04": {
+            "HIGH": 5
+          },
+          "rds-05": {
+            "CRITICAL": 5
+          },
+          "rds-06": {
+            "LOW": 2,
+            "NONE": 2,
+            "MEDIUM": 1
+          },
+          "rds-07": {
+            "LOW": 2,
+            "MEDIUM": 3
+          },
+          "rds-08": {
+            "MEDIUM": 5
+          },
+          "rds-09": {
+            "LOW": 3,
+            "MEDIUM": 2
+          }
+        },
+        "identical": [
+          "rds-04",
+          "rds-05",
+          "rds-08"
+        ],
+        "not_identical": [
+          "rds-01",
+          "rds-02",
+          "rds-03",
+          "rds-06",
+          "rds-07",
+          "rds-09"
+        ],
+        "modal_agreement": 0.7333333333333334,
+        "runs_failed": [],
+        "runs_retried": [],
+        "findings": [
+          7,
+          7,
+          6,
+          7,
+          6
+        ],
+        "runs_at_cap": 0,
+        "identifiers_checked": true,
+        "unknown_identifiers": 0,
+        "unknown_by_run": {},
+        "grouped": 17,
+        "grouped_cells": [
+          "rds-02 run-1",
+          "rds-03 run-1",
+          "rds-06 run-1",
+          "rds-09 run-1",
+          "rds-02 run-2",
+          "rds-02 run-3",
+          "rds-09 run-3",
+          "rds-02 run-4",
+          "rds-03 run-4",
+          "rds-06 run-4",
+          "rds-09 run-4",
+          "rds-01 run-5",
+          "rds-02 run-5",
+          "rds-03 run-5",
+          "rds-06 run-5",
+          "rds-08 run-5",
+          "rds-09 run-5"
+        ],
+        "seconds": [
+          51.0,
+          44.59,
+          44.45,
+          44.96,
+          51.41
+        ],
+        "tokens": [
+          12826,
+          12190,
+          12054,
+          12311,
+          12661
+        ]
+      }
+    },
+    "opus": {
+      "baseline": false,
+      "runs": {
+        "1": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 69.81,
+          "tokens_total": 19641,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "rds-01": {
+              "scenario": "rds-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-02": {
+              "scenario": "rds-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "rds-03": {
+              "scenario": "rds-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-04": {
+              "scenario": "rds-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-05": {
+              "scenario": "rds-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-06": {
+              "scenario": "rds-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-07": {
+              "scenario": "rds-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "rds-08": {
+              "scenario": "rds-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-09": {
+              "scenario": "rds-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": true,
+              "findings_citing": 3
+            }
+          }
+        },
+        "2": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 69.42,
+          "tokens_total": 19716,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [
+            "arn:aws:secretsmanager:...rds"
+          ],
+          "scenarios": {
+            "rds-01": {
+              "scenario": "rds-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-02": {
+              "scenario": "rds-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "rds-03": {
+              "scenario": "rds-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-04": {
+              "scenario": "rds-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-05": {
+              "scenario": "rds-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-06": {
+              "scenario": "rds-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-07": {
+              "scenario": "rds-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-08": {
+              "scenario": "rds-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-09": {
+              "scenario": "rds-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 3
+            }
+          }
+        },
+        "3": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 58.41,
+          "tokens_total": 18784,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "rds-01": {
+              "scenario": "rds-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-02": {
+              "scenario": "rds-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "rds-03": {
+              "scenario": "rds-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-04": {
+              "scenario": "rds-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-05": {
+              "scenario": "rds-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-06": {
+              "scenario": "rds-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-07": {
+              "scenario": "rds-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-08": {
+              "scenario": "rds-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-09": {
+              "scenario": "rds-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": true,
+              "findings_citing": 3
+            }
+          }
+        },
+        "4": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 2,
+          "retry_errors": [
+            "Bedrock returned an incomplete review (finding 5 Severity LOW does not match the matrix result MEDIUM for Likelihood MEDIUM x Impact MEDIUM)."
+          ],
+          "seconds": 99.63,
+          "tokens_total": 42759,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "rds-01": {
+              "scenario": "rds-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-02": {
+              "scenario": "rds-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "rds-03": {
+              "scenario": "rds-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-04": {
+              "scenario": "rds-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-05": {
+              "scenario": "rds-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-06": {
+              "scenario": "rds-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-07": {
+              "scenario": "rds-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "rds-08": {
+              "scenario": "rds-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-09": {
+              "scenario": "rds-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 3
+            }
+          }
+        },
+        "5": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 60.36,
+          "tokens_total": 18970,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "rds-01": {
+              "scenario": "rds-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-02": {
+              "scenario": "rds-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "rds-03": {
+              "scenario": "rds-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-04": {
+              "scenario": "rds-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-05": {
+              "scenario": "rds-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-06": {
+              "scenario": "rds-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "rds-07": {
+              "scenario": "rds-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-08": {
+              "scenario": "rds-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "rds-09": {
+              "scenario": "rds-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": true,
+              "findings_citing": 3
+            }
+          }
+        }
+      },
+      "summary": {
+        "baseline": false,
+        "info": null,
+        "runs": 5,
+        "runs_scored": 5,
+        "cells": 45,
+        "detection": {
+          "all": {
+            "n": 40,
+            "N": 40
+          },
+          "fsbp": {
+            "n": 30,
+            "N": 30
+          },
+          "outside_fsbp": {
+            "n": 10,
+            "N": 10
+          }
+        },
+        "flaw_blocked": {
+          "all": {
+            "n": 0,
+            "N": 0
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 0
+          }
+        },
+        "false_positives": {
+          "all": {
+            "n": 5,
+            "N": 5
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 5,
+            "N": 5
+          }
+        },
+        "severity": {
+          "N": 30,
+          "exact": 16,
+          "above": 0,
+          "below": 14,
+          "mean_distance": -0.6333333333333333
+        },
+        "per_scenario": {
+          "rds-01": {
+            "LOW": 5
+          },
+          "rds-02": {
+            "MEDIUM": 5
+          },
+          "rds-03": {
+            "LOW": 5
+          },
+          "rds-04": {
+            "CRITICAL": 1,
+            "HIGH": 4
+          },
+          "rds-05": {
+            "CRITICAL": 5
+          },
+          "rds-06": {
+            "LOW": 5
+          },
+          "rds-07": {
+            "MEDIUM": 5
+          },
+          "rds-08": {
+            "MEDIUM": 5
+          },
+          "rds-09": {
+            "MEDIUM": 5
+          }
+        },
+        "identical": [
+          "rds-01",
+          "rds-02",
+          "rds-03",
+          "rds-05",
+          "rds-06",
+          "rds-07",
+          "rds-08",
+          "rds-09"
+        ],
+        "not_identical": [
+          "rds-04"
+        ],
+        "modal_agreement": 0.9777777777777777,
+        "runs_failed": [],
+        "runs_retried": [
+          {
+            "run": 4,
+            "attempts": 2,
+            "retry_errors": [
+              "Bedrock returned an incomplete review (finding 5 Severity LOW does not match the matrix result MEDIUM for Likelihood MEDIUM x Impact MEDIUM)."
+            ]
+          }
+        ],
+        "findings": [
+          8,
+          8,
+          8,
+          8,
+          8
+        ],
+        "runs_at_cap": 0,
+        "identifiers_checked": true,
+        "unknown_identifiers": 1,
+        "unknown_by_run": {
+          "2": [
+            "arn:aws:secretsmanager:...rds"
+          ]
+        },
+        "grouped": 20,
+        "grouped_cells": [
+          "rds-02 run-1",
+          "rds-03 run-1",
+          "rds-06 run-1",
+          "rds-07 run-1",
+          "rds-09 run-1",
+          "rds-02 run-2",
+          "rds-03 run-2",
+          "rds-06 run-2",
+          "rds-02 run-3",
+          "rds-03 run-3",
+          "rds-06 run-3",
+          "rds-09 run-3",
+          "rds-02 run-4",
+          "rds-03 run-4",
+          "rds-06 run-4",
+          "rds-07 run-4",
+          "rds-02 run-5",
+          "rds-03 run-5",
+          "rds-06 run-5",
+          "rds-09 run-5"
+        ],
+        "seconds": [
+          69.81,
+          69.42,
+          58.41,
+          99.63,
+          60.36
+        ],
+        "tokens": [
+          19641,
+          19716,
+          18784,
+          42759,
+          18970
+        ]
+      }
+    },
+    "prowler": {
+      "baseline": true,
+      "info": {
+        "versions": [
+          "5.44.0"
+        ],
+        "schema_versions": [
+          "1.5.0"
+        ],
+        "results": 2237,
+        "fails": 514,
+        "attributed_fails": 53,
+        "unattributed_fails": 461,
+        "muted_fails": 0,
+        "drivers": {
+          "rds-01": [
+            "rds_instance_protected_by_backup_plan",
+            "rds_instance_storage_encrypted"
+          ],
+          "rds-02": [
+            "rds_instance_protected_by_backup_plan",
+            "rds_instance_transport_encrypted"
+          ],
+          "rds-03": [
+            "iam_role_cross_service_confused_deputy_prevention",
+            "rds_instance_protected_by_backup_plan"
+          ],
+          "rds-04": [
+            "rds_instance_no_public_access"
+          ],
+          "rds-05": [
+            "rds_snapshots_public_access"
+          ],
+          "rds-06": [
+            "rds_instance_protected_by_backup_plan"
+          ],
+          "rds-07": [
+            "iam_role_cross_service_confused_deputy_prevention"
+          ],
+          "rds-08": [
+            "rds_instance_protected_by_backup_plan"
+          ],
+          "rds-09": [
+            "rds_instance_protected_by_backup_plan",
+            "rds_instance_transport_encrypted"
+          ]
+        }
+      },
+      "runs": {
+        "1": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": null,
+          "retry_errors": [],
+          "seconds": null,
+          "tokens_total": null,
+          "findings": null,
+          "at_cap": false,
+          "unknown_identifiers": null,
+          "scenarios": {
+            "rds-01": {
+              "scenario": "rds-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 6
+            },
+            "rds-02": {
+              "scenario": "rds-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 6
+            },
+            "rds-03": {
+              "scenario": "rds-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 6
+            },
+            "rds-04": {
+              "scenario": "rds-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 8
+            },
+            "rds-05": {
+              "scenario": "rds-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 8
+            },
+            "rds-06": {
+              "scenario": "rds-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 5
+            },
+            "rds-07": {
+              "scenario": "rds-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "rds-08": {
+              "scenario": "rds-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 5
+            },
+            "rds-09": {
+              "scenario": "rds-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 8
+            }
+          }
+        }
+      },
+      "summary": {
+        "baseline": true,
+        "info": {
+          "versions": [
+            "5.44.0"
+          ],
+          "schema_versions": [
+            "1.5.0"
+          ],
+          "results": 2237,
+          "fails": 514,
+          "attributed_fails": 53,
+          "unattributed_fails": 461,
+          "muted_fails": 0,
+          "drivers": {
+            "rds-01": [
+              "rds_instance_protected_by_backup_plan",
+              "rds_instance_storage_encrypted"
+            ],
+            "rds-02": [
+              "rds_instance_protected_by_backup_plan",
+              "rds_instance_transport_encrypted"
+            ],
+            "rds-03": [
+              "iam_role_cross_service_confused_deputy_prevention",
+              "rds_instance_protected_by_backup_plan"
+            ],
+            "rds-04": [
+              "rds_instance_no_public_access"
+            ],
+            "rds-05": [
+              "rds_snapshots_public_access"
+            ],
+            "rds-06": [
+              "rds_instance_protected_by_backup_plan"
+            ],
+            "rds-07": [
+              "iam_role_cross_service_confused_deputy_prevention"
+            ],
+            "rds-08": [
+              "rds_instance_protected_by_backup_plan"
+            ],
+            "rds-09": [
+              "rds_instance_protected_by_backup_plan",
+              "rds_instance_transport_encrypted"
+            ]
+          }
+        },
+        "runs": 1,
+        "runs_scored": 1,
+        "cells": 9,
+        "detection": {
+          "all": {
+            "n": 8,
+            "N": 8
+          },
+          "fsbp": {
+            "n": 6,
+            "N": 6
+          },
+          "outside_fsbp": {
+            "n": 2,
+            "N": 2
+          }
+        },
+        "flaw_blocked": {
+          "all": {
+            "n": 0,
+            "N": 0
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 0
+          }
+        },
+        "false_positives": {
+          "all": {
+            "n": 1,
+            "N": 1
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 1,
+            "N": 1
+          }
+        },
+        "severity": {
+          "N": 6,
+          "exact": 2,
+          "above": 3,
+          "below": 1,
+          "mean_distance": 0.3333333333333333
+        },
+        "per_scenario": {
+          "rds-01": {
+            "HIGH": 1
+          },
+          "rds-02": {
+            "HIGH": 1
+          },
+          "rds-03": {
+            "HIGH": 1
+          },
+          "rds-04": {
+            "CRITICAL": 1
+          },
+          "rds-05": {
+            "CRITICAL": 1
+          },
+          "rds-06": {
+            "HIGH": 1
+          },
+          "rds-07": {
+            "HIGH": 1
+          },
+          "rds-08": {
+            "HIGH": 1
+          },
+          "rds-09": {
+            "HIGH": 1
+          }
+        },
+        "identical": [
+          "rds-01",
+          "rds-02",
+          "rds-03",
+          "rds-04",
+          "rds-05",
+          "rds-06",
+          "rds-07",
+          "rds-08",
+          "rds-09"
+        ],
+        "not_identical": [],
+        "modal_agreement": 1.0,
+        "runs_failed": [],
+        "runs_retried": [],
+        "findings": [
+          null
+        ],
+        "runs_at_cap": 0,
+        "identifiers_checked": false,
+        "unknown_identifiers": 0,
+        "unknown_by_run": {},
+        "grouped": 0,
+        "grouped_cells": [],
+        "seconds": [],
+        "tokens": []
+      }
+    }
+  }
+}

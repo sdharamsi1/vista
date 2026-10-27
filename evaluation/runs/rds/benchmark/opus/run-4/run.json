@@ -1,0 +1,28 @@
+{
+  "bedrock_region": "us-east-1",
+  "error": null,
+  "finished_at": "2026-10-21T01:43:01.546889+00:00",
+  "model_id": "us.anthropic.claude-opus-5",
+  "payload_file": "runs/rds/benchmark/payload.json",
+  "payload_sha256": "ae40e3b5a328e287a27b92c8e540ec55a918cb5b5be2a06853efe7af72aa534b",
+  "regions": [
+    "us-east-1"
+  ],
+  "resource_count": 10,
+  "retry_errors": [
+    "Bedrock returned an incomplete review (finding 5 Severity LOW does not match the matrix result MEDIUM for Likelihood MEDIUM x Impact MEDIUM)."
+  ],
+  "review_seconds": 99.63,
+  "service": "rds",
+  "source": "replay",
+  "started_at": "2026-10-21T01:41:21.920087+00:00",
+  "status": "ok",
+  "tokens": {
+    "attempts": 2,
+    "cache_read": 0,
+    "cache_write": 0,
+    "input": 33169,
+    "output": 9590
+  },
+  "vista_version": "0.1.0"
+}

@@ -1,0 +1,78 @@
+Service: s3 | runs: evaluation/runs/s3/benchmark | tier: all
+Scored scenarios: 11
+Tools: gpt (5/5 runs scored), opus (5/5 runs scored), prowler (Prowler scan)
+
+== Detection and false positives
+measure                                   gpt           opus          prowler
+cells scored                              55            55            11
+detection (flaw), all                     45/45 (100%)  44/45 (98%)   9/9 (100%)
+detection (flaw), fsbp                    35/35 (100%)  35/35 (100%)  7/7 (100%)
+detection (flaw), outside_fsbp            10/10 (100%)  9/10 (90%)    2/2 (100%)
+flaw_blocked report rate, all             -             -             -
+flaw_blocked report rate, fsbp            -             -             -
+flaw_blocked report rate, outside_fsbp    -             -             -
+false positives (hardened), all           10/10 (100%)  0/10 (0%)     2/2 (100%)
+false positives (hardened), fsbp          -             -             -
+false positives (hardened), outside_fsbp  10/10 (100%)  0/10 (0%)     2/2 (100%)
+
+== Severity relative to FSBP (fsbp scenarios; not reported = NONE)
+measure               gpt          opus         prowler
+fsbp cells            35           35           7
+same as FSBP          6/35 (17%)   6/35 (17%)   7/7 (100%)
+above FSBP            0/35 (0%)    0/35 (0%)    0/7 (0%)
+below FSBP            29/35 (83%)  29/35 (83%)  0/7 (0%)
+mean signed distance  -0.97        -1.11        0.00
+FSBP severity is fixed per control and does not reflect deployed context; Prowler's check severities follow FSBP's. This describes where each tool sits, not accuracy.
+
+== Consistency across runs (Vista)
+measure                                  gpt                         opus                               prowler
+scored runs                              5                           5                                  deterministic
+scenarios, identical severity every run  7/11 (64%)                  6/11 (55%)                         deterministic
+mean modal agreement                     0.927 (93%)                 0.891 (89%)                        deterministic
+not identical                            s3-02, s3-03, s3-04, s3-05  s3-01, s3-03, s3-04, s3-05, s3-08  deterministic
+
+== Runs, format, and cost (Vista)
+measure                              gpt                         opus                        prowler
+runs scored                          5/5                         5/5                         n/a
+findings per run                     5-7 (median 6)              8-10 (median 9)             n/a
+runs at the 10-finding cap           0/5                         2/5                         n/a
+unknown identifiers cited            0                           0                           n/a
+cells scored from a grouped finding  37                          14                          n/a
+review seconds                       40-62s (median 49)          71-85s (median 78)          n/a
+total tokens per run                 11323-13234 (median 12221)  19874-21158 (median 20491)  n/a
+  grouped, gpt: s3-01 run-1, s3-04 run-1, s3-06 run-1, s3-07 run-1, s3-09 run-1, s3-10 run-1, s3-01 run-2, s3-03 run-2, s3-04 run-2, s3-06 run-2, s3-07 run-2, s3-08 run-2, s3-09 run-2, s3-10 run-2, s3-01 run-3, s3-03 run-3, s3-04 run-3, s3-06 run-3, s3-07 run-3, s3-08 run-3, s3-09 run-3, s3-10 run-3, s3-01 run-4, s3-03 run-4, s3-06 run-4, s3-07 run-4, s3-08 run-4, s3-09 run-4, s3-10 run-4, s3-01 run-5, s3-03 run-5, s3-04 run-5, s3-06 run-5, s3-07 run-5, s3-08 run-5, s3-09 run-5, s3-10 run-5
+  grouped, opus: s3-06 run-1, s3-07 run-1, s3-04 run-2, s3-06 run-2, s3-07 run-2, s3-08 run-2, s3-06 run-3, s3-07 run-3, s3-06 run-4, s3-07 run-4, s3-04 run-5, s3-06 run-5, s3-07 run-5, s3-08 run-5
+
+== Retries and failures
+gpt: runs failed 0/5; runs retried 0/5
+opus: runs failed 0/5; runs retried 0/5
+
+== Prowler 5.44.0
+OCSF schema version: 1.5.0
+Results: 2237; FAIL: 514; FAILs attributed to a scenario: 80; not attributed (other resources, account-level, or informational): 434; muted (Suppressed, still scored): 0
+Check(s) at the top severity, per scenario:
+  s3-01: s3_bucket_no_mfa_delete
+  s3-02: s3_bucket_public_access, s3_bucket_public_list_acl
+  s3-03: s3_bucket_no_mfa_delete
+  s3-04: s3_bucket_public_access
+  s3-05: s3_bucket_policy_public_write_access, s3_bucket_public_access
+  s3-06: s3_bucket_public_access
+  s3-07: s3_bucket_public_access
+  s3-08: s3_bucket_public_access
+  s3-09: s3_bucket_no_mfa_delete
+  s3-10: s3_bucket_no_mfa_delete
+  s3-11: s3_bucket_no_mfa_delete, s3_bucket_object_versioning, s3_bucket_server_access_logging_enabled
+
+== Per scenario (severity over runs)
+scenario  condition  coverage      fsbp_severity  gpt                opus                    prowler     context
+s3-01     flaw       outside_fsbp  -              MEDIUMx5           LOWx4 MEDIUMx1          MEDIUMx1    -
+s3-02     flaw       fsbp          CRITICAL       MEDIUMx4 HIGHx1    HIGHx5                  CRITICALx1  The AllUsers grant is READ on the bucket, which permits listing object keys; neither the grant nor the bucket policy grants reading object data.
+s3-03     flaw       outside_fsbp  -              MEDIUMx4 HIGHx1    NONEx1 MEDIUMx3 HIGHx1  MEDIUMx1    -
+s3-04     flaw       fsbp          CRITICAL       MEDIUMx1 HIGHx4    HIGHx4 CRITICALx1       CRITICALx1  -
+s3-05     flaw       fsbp          CRITICAL       HIGHx4 CRITICALx1  HIGHx1 CRITICALx4       CRITICALx1  -
+s3-06     flaw       fsbp          CRITICAL       HIGHx5             MEDIUMx5                CRITICALx1  Static website hosting is enabled on the bucket; Amazon S3 website endpoints do not support HTTPS.
+s3-07     flaw       fsbp          CRITICAL       HIGHx5             MEDIUMx5                CRITICALx1  The anonymous grant covers only objects whose keys begin with public/.
+s3-08     flaw       fsbp          CRITICAL       HIGHx5             HIGHx4 CRITICALx1       CRITICALx1  -
+s3-09     hardened   outside_fsbp  -              MEDIUMx5           NONEx5                  MEDIUMx1    -
+s3-10     hardened   outside_fsbp  -              MEDIUMx5           NONEx5                  MEDIUMx1    -
+s3-11     flaw       fsbp          MEDIUM         MEDIUMx5           LOWx5                   MEDIUMx1    -

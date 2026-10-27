@@ -1,0 +1,2077 @@
+{
+  "service": "s3",
+  "tier": null,
+  "scored": [
+    "s3-01",
+    "s3-02",
+    "s3-03",
+    "s3-04",
+    "s3-05",
+    "s3-06",
+    "s3-07",
+    "s3-08",
+    "s3-09",
+    "s3-10",
+    "s3-11"
+  ],
+  "skipped": [],
+  "tools": {
+    "gpt": {
+      "baseline": false,
+      "runs": {
+        "1": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 59.51,
+          "tokens_total": 13124,
+          "findings": 7,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "s3-01": {
+              "scenario": "s3-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-02": {
+              "scenario": "s3-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-03": {
+              "scenario": "s3-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-04": {
+              "scenario": "s3-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-05": {
+              "scenario": "s3-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-06": {
+              "scenario": "s3-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-07": {
+              "scenario": "s3-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-08": {
+              "scenario": "s3-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-09": {
+              "scenario": "s3-09",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-10": {
+              "scenario": "s3-10",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-11": {
+              "scenario": "s3-11",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            }
+          }
+        },
+        "2": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 49.08,
+          "tokens_total": 12221,
+          "findings": 5,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "s3-01": {
+              "scenario": "s3-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-02": {
+              "scenario": "s3-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-03": {
+              "scenario": "s3-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-04": {
+              "scenario": "s3-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-05": {
+              "scenario": "s3-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-06": {
+              "scenario": "s3-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-07": {
+              "scenario": "s3-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-08": {
+              "scenario": "s3-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-09": {
+              "scenario": "s3-09",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-10": {
+              "scenario": "s3-10",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-11": {
+              "scenario": "s3-11",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            }
+          }
+        },
+        "3": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 41.88,
+          "tokens_total": 11613,
+          "findings": 5,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "s3-01": {
+              "scenario": "s3-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-02": {
+              "scenario": "s3-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-03": {
+              "scenario": "s3-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-04": {
+              "scenario": "s3-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-05": {
+              "scenario": "s3-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-06": {
+              "scenario": "s3-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-07": {
+              "scenario": "s3-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-08": {
+              "scenario": "s3-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-09": {
+              "scenario": "s3-09",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-10": {
+              "scenario": "s3-10",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-11": {
+              "scenario": "s3-11",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            }
+          }
+        },
+        "4": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 62.05,
+          "tokens_total": 13234,
+          "findings": 7,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "s3-01": {
+              "scenario": "s3-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-02": {
+              "scenario": "s3-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-03": {
+              "scenario": "s3-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-04": {
+              "scenario": "s3-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-05": {
+              "scenario": "s3-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-06": {
+              "scenario": "s3-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-07": {
+              "scenario": "s3-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-08": {
+              "scenario": "s3-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-09": {
+              "scenario": "s3-09",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-10": {
+              "scenario": "s3-10",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-11": {
+              "scenario": "s3-11",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            }
+          }
+        },
+        "5": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 39.78,
+          "tokens_total": 11323,
+          "findings": 6,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "s3-01": {
+              "scenario": "s3-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-02": {
+              "scenario": "s3-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-03": {
+              "scenario": "s3-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-04": {
+              "scenario": "s3-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-05": {
+              "scenario": "s3-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-06": {
+              "scenario": "s3-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 3
+            },
+            "s3-07": {
+              "scenario": "s3-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-08": {
+              "scenario": "s3-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-09": {
+              "scenario": "s3-09",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-10": {
+              "scenario": "s3-10",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "s3-11": {
+              "scenario": "s3-11",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            }
+          }
+        }
+      },
+      "summary": {
+        "baseline": false,
+        "info": null,
+        "runs": 5,
+        "runs_scored": 5,
+        "cells": 55,
+        "detection": {
+          "all": {
+            "n": 45,
+            "N": 45
+          },
+          "fsbp": {
+            "n": 35,
+            "N": 35
+          },
+          "outside_fsbp": {
+            "n": 10,
+            "N": 10
+          }
+        },
+        "flaw_blocked": {
+          "all": {
+            "n": 0,
+            "N": 0
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 0
+          }
+        },
+        "false_positives": {
+          "all": {
+            "n": 10,
+            "N": 10
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 10,
+            "N": 10
+          }
+        },
+        "severity": {
+          "N": 35,
+          "exact": 6,
+          "above": 0,
+          "below": 29,
+          "mean_distance": -0.9714285714285714
+        },
+        "per_scenario": {
+          "s3-01": {
+            "MEDIUM": 5
+          },
+          "s3-02": {
+            "MEDIUM": 4,
+            "HIGH": 1
+          },
+          "s3-03": {
+            "HIGH": 1,
+            "MEDIUM": 4
+          },
+          "s3-04": {
+            "HIGH": 4,
+            "MEDIUM": 1
+          },
+          "s3-05": {
+            "HIGH": 4,
+            "CRITICAL": 1
+          },
+          "s3-06": {
+            "HIGH": 5
+          },
+          "s3-07": {
+            "HIGH": 5
+          },
+          "s3-08": {
+            "HIGH": 5
+          },
+          "s3-09": {
+            "MEDIUM": 5
+          },
+          "s3-10": {
+            "MEDIUM": 5
+          },
+          "s3-11": {
+            "MEDIUM": 5
+          }
+        },
+        "identical": [
+          "s3-01",
+          "s3-06",
+          "s3-07",
+          "s3-08",
+          "s3-09",
+          "s3-10",
+          "s3-11"
+        ],
+        "not_identical": [
+          "s3-02",
+          "s3-03",
+          "s3-04",
+          "s3-05"
+        ],
+        "modal_agreement": 0.9272727272727272,
+        "runs_failed": [],
+        "runs_retried": [],
+        "findings": [
+          7,
+          5,
+          5,
+          7,
+          6
+        ],
+        "runs_at_cap": 0,
+        "identifiers_checked": true,
+        "unknown_identifiers": 0,
+        "unknown_by_run": {},
+        "grouped": 37,
+        "grouped_cells": [
+          "s3-01 run-1",
+          "s3-04 run-1",
+          "s3-06 run-1",
+          "s3-07 run-1",
+          "s3-09 run-1",
+          "s3-10 run-1",
+          "s3-01 run-2",
+          "s3-03 run-2",
+          "s3-04 run-2",
+          "s3-06 run-2",
+          "s3-07 run-2",
+          "s3-08 run-2",
+          "s3-09 run-2",
+          "s3-10 run-2",
+          "s3-01 run-3",
+          "s3-03 run-3",
+          "s3-04 run-3",
+          "s3-06 run-3",
+          "s3-07 run-3",
+          "s3-08 run-3",
+          "s3-09 run-3",
+          "s3-10 run-3",
+          "s3-01 run-4",
+          "s3-03 run-4",
+          "s3-06 run-4",
+          "s3-07 run-4",
+          "s3-08 run-4",
+          "s3-09 run-4",
+          "s3-10 run-4",
+          "s3-01 run-5",
+          "s3-03 run-5",
+          "s3-04 run-5",
+          "s3-06 run-5",
+          "s3-07 run-5",
+          "s3-08 run-5",
+          "s3-09 run-5",
+          "s3-10 run-5"
+        ],
+        "seconds": [
+          59.51,
+          49.08,
+          41.88,
+          62.05,
+          39.78
+        ],
+        "tokens": [
+          13124,
+          12221,
+          11613,
+          13234,
+          11323
+        ]
+      }
+    },
+    "opus": {
+      "baseline": false,
+      "runs": {
+        "1": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 73.42,
+          "tokens_total": 20087,
+          "findings": 9,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "s3-01": {
+              "scenario": "s3-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "s3-02": {
+              "scenario": "s3-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-03": {
+              "scenario": "s3-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "s3-04": {
+              "scenario": "s3-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-05": {
+              "scenario": "s3-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-06": {
+              "scenario": "s3-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-07": {
+              "scenario": "s3-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-08": {
+              "scenario": "s3-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-09": {
+              "scenario": "s3-09",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "s3-10": {
+              "scenario": "s3-10",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "s3-11": {
+              "scenario": "s3-11",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            }
+          }
+        },
+        "2": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 71.45,
+          "tokens_total": 19874,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "s3-01": {
+              "scenario": "s3-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "s3-02": {
+              "scenario": "s3-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-03": {
+              "scenario": "s3-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "s3-04": {
+              "scenario": "s3-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-05": {
+              "scenario": "s3-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-06": {
+              "scenario": "s3-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": true,
+              "findings_citing": 3
+            },
+            "s3-07": {
+              "scenario": "s3-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-08": {
+              "scenario": "s3-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-09": {
+              "scenario": "s3-09",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "s3-10": {
+              "scenario": "s3-10",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "s3-11": {
+              "scenario": "s3-11",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            }
+          }
+        },
+        "3": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 79.32,
+          "tokens_total": 20781,
+          "findings": 10,
+          "at_cap": true,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "s3-01": {
+              "scenario": "s3-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "s3-02": {
+              "scenario": "s3-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-03": {
+              "scenario": "s3-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "s3-04": {
+              "scenario": "s3-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-05": {
+              "scenario": "s3-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-06": {
+              "scenario": "s3-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-07": {
+              "scenario": "s3-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-08": {
+              "scenario": "s3-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-09": {
+              "scenario": "s3-09",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "s3-10": {
+              "scenario": "s3-10",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "s3-11": {
+              "scenario": "s3-11",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            }
+          }
+        },
+        "4": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 77.6,
+          "tokens_total": 20491,
+          "findings": 10,
+          "at_cap": true,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "s3-01": {
+              "scenario": "s3-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "s3-02": {
+              "scenario": "s3-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-03": {
+              "scenario": "s3-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "s3-04": {
+              "scenario": "s3-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-05": {
+              "scenario": "s3-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-06": {
+              "scenario": "s3-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": true,
+              "findings_citing": 3
+            },
+            "s3-07": {
+              "scenario": "s3-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-08": {
+              "scenario": "s3-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-09": {
+              "scenario": "s3-09",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "s3-10": {
+              "scenario": "s3-10",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "s3-11": {
+              "scenario": "s3-11",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            }
+          }
+        },
+        "5": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 85.33,
+          "tokens_total": 21158,
+          "findings": 9,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "s3-01": {
+              "scenario": "s3-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "s3-02": {
+              "scenario": "s3-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-03": {
+              "scenario": "s3-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "s3-04": {
+              "scenario": "s3-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-05": {
+              "scenario": "s3-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "s3-06": {
+              "scenario": "s3-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-07": {
+              "scenario": "s3-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "CRITICAL",
+              "distance": -2,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-08": {
+              "scenario": "s3-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": true,
+              "findings_citing": 2
+            },
+            "s3-09": {
+              "scenario": "s3-09",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "s3-10": {
+              "scenario": "s3-10",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "s3-11": {
+              "scenario": "s3-11",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            }
+          }
+        }
+      },
+      "summary": {
+        "baseline": false,
+        "info": null,
+        "runs": 5,
+        "runs_scored": 5,
+        "cells": 55,
+        "detection": {
+          "all": {
+            "n": 44,
+            "N": 45
+          },
+          "fsbp": {
+            "n": 35,
+            "N": 35
+          },
+          "outside_fsbp": {
+            "n": 9,
+            "N": 10
+          }
+        },
+        "flaw_blocked": {
+          "all": {
+            "n": 0,
+            "N": 0
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 0
+          }
+        },
+        "false_positives": {
+          "all": {
+            "n": 0,
+            "N": 10
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 10
+          }
+        },
+        "severity": {
+          "N": 35,
+          "exact": 6,
+          "above": 0,
+          "below": 29,
+          "mean_distance": -1.1142857142857143
+        },
+        "per_scenario": {
+          "s3-01": {
+            "LOW": 4,
+            "MEDIUM": 1
+          },
+          "s3-02": {
+            "HIGH": 5
+          },
+          "s3-03": {
+            "MEDIUM": 3,
+            "NONE": 1,
+            "HIGH": 1
+          },
+          "s3-04": {
+            "HIGH": 4,
+            "CRITICAL": 1
+          },
+          "s3-05": {
+            "HIGH": 1,
+            "CRITICAL": 4
+          },
+          "s3-06": {
+            "MEDIUM": 5
+          },
+          "s3-07": {
+            "MEDIUM": 5
+          },
+          "s3-08": {
+            "HIGH": 4,
+            "CRITICAL": 1
+          },
+          "s3-09": {
+            "NONE": 5
+          },
+          "s3-10": {
+            "NONE": 5
+          },
+          "s3-11": {
+            "LOW": 5
+          }
+        },
+        "identical": [
+          "s3-02",
+          "s3-06",
+          "s3-07",
+          "s3-09",
+          "s3-10",
+          "s3-11"
+        ],
+        "not_identical": [
+          "s3-01",
+          "s3-03",
+          "s3-04",
+          "s3-05",
+          "s3-08"
+        ],
+        "modal_agreement": 0.8909090909090909,
+        "runs_failed": [],
+        "runs_retried": [],
+        "findings": [
+          9,
+          8,
+          10,
+          10,
+          9
+        ],
+        "runs_at_cap": 2,
+        "identifiers_checked": true,
+        "unknown_identifiers": 0,
+        "unknown_by_run": {},
+        "grouped": 14,
+        "grouped_cells": [
+          "s3-06 run-1",
+          "s3-07 run-1",
+          "s3-04 run-2",
+          "s3-06 run-2",
+          "s3-07 run-2",
+          "s3-08 run-2",
+          "s3-06 run-3",
+          "s3-07 run-3",
+          "s3-06 run-4",
+          "s3-07 run-4",
+          "s3-04 run-5",
+          "s3-06 run-5",
+          "s3-07 run-5",
+          "s3-08 run-5"
+        ],
+        "seconds": [
+          73.42,
+          71.45,
+          79.32,
+          77.6,
+          85.33
+        ],
+        "tokens": [
+          20087,
+          19874,
+          20781,
+          20491,
+          21158
+        ]
+      }
+    },
+    "prowler": {
+      "baseline": true,
+      "info": {
+        "versions": [
+          "5.44.0"
+        ],
+        "schema_versions": [
+          "1.5.0"
+        ],
+        "results": 2237,
+        "fails": 514,
+        "attributed_fails": 80,
+        "unattributed_fails": 434,
+        "muted_fails": 0,
+        "drivers": {
+          "s3-01": [
+            "s3_bucket_no_mfa_delete"
+          ],
+          "s3-02": [
+            "s3_bucket_public_access",
+            "s3_bucket_public_list_acl"
+          ],
+          "s3-03": [
+            "s3_bucket_no_mfa_delete"
+          ],
+          "s3-04": [
+            "s3_bucket_public_access"
+          ],
+          "s3-05": [
+            "s3_bucket_policy_public_write_access",
+            "s3_bucket_public_access"
+          ],
+          "s3-06": [
+            "s3_bucket_public_access"
+          ],
+          "s3-07": [
+            "s3_bucket_public_access"
+          ],
+          "s3-08": [
+            "s3_bucket_public_access"
+          ],
+          "s3-09": [
+            "s3_bucket_no_mfa_delete"
+          ],
+          "s3-10": [
+            "s3_bucket_no_mfa_delete"
+          ],
+          "s3-11": [
+            "s3_bucket_no_mfa_delete",
+            "s3_bucket_object_versioning",
+            "s3_bucket_server_access_logging_enabled"
+          ]
+        }
+      },
+      "runs": {
+        "1": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": null,
+          "retry_errors": [],
+          "seconds": null,
+          "tokens_total": null,
+          "findings": null,
+          "at_cap": false,
+          "unknown_identifiers": null,
+          "scenarios": {
+            "s3-01": {
+              "scenario": "s3-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 5
+            },
+            "s3-02": {
+              "scenario": "s3-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 9
+            },
+            "s3-03": {
+              "scenario": "s3-03",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 5
+            },
+            "s3-04": {
+              "scenario": "s3-04",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 8
+            },
+            "s3-05": {
+              "scenario": "s3-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 9
+            },
+            "s3-06": {
+              "scenario": "s3-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 10
+            },
+            "s3-07": {
+              "scenario": "s3-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 9
+            },
+            "s3-08": {
+              "scenario": "s3-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 9
+            },
+            "s3-09": {
+              "scenario": "s3-09",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 5
+            },
+            "s3-10": {
+              "scenario": "s3-10",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 4
+            },
+            "s3-11": {
+              "scenario": "s3-11",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 7
+            }
+          }
+        }
+      },
+      "summary": {
+        "baseline": true,
+        "info": {
+          "versions": [
+            "5.44.0"
+          ],
+          "schema_versions": [
+            "1.5.0"
+          ],
+          "results": 2237,
+          "fails": 514,
+          "attributed_fails": 80,
+          "unattributed_fails": 434,
+          "muted_fails": 0,
+          "drivers": {
+            "s3-01": [
+              "s3_bucket_no_mfa_delete"
+            ],
+            "s3-02": [
+              "s3_bucket_public_access",
+              "s3_bucket_public_list_acl"
+            ],
+            "s3-03": [
+              "s3_bucket_no_mfa_delete"
+            ],
+            "s3-04": [
+              "s3_bucket_public_access"
+            ],
+            "s3-05": [
+              "s3_bucket_policy_public_write_access",
+              "s3_bucket_public_access"
+            ],
+            "s3-06": [
+              "s3_bucket_public_access"
+            ],
+            "s3-07": [
+              "s3_bucket_public_access"
+            ],
+            "s3-08": [
+              "s3_bucket_public_access"
+            ],
+            "s3-09": [
+              "s3_bucket_no_mfa_delete"
+            ],
+            "s3-10": [
+              "s3_bucket_no_mfa_delete"
+            ],
+            "s3-11": [
+              "s3_bucket_no_mfa_delete",
+              "s3_bucket_object_versioning",
+              "s3_bucket_server_access_logging_enabled"
+            ]
+          }
+        },
+        "runs": 1,
+        "runs_scored": 1,
+        "cells": 11,
+        "detection": {
+          "all": {
+            "n": 9,
+            "N": 9
+          },
+          "fsbp": {
+            "n": 7,
+            "N": 7
+          },
+          "outside_fsbp": {
+            "n": 2,
+            "N": 2
+          }
+        },
+        "flaw_blocked": {
+          "all": {
+            "n": 0,
+            "N": 0
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 0
+          }
+        },
+        "false_positives": {
+          "all": {
+            "n": 2,
+            "N": 2
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 2,
+            "N": 2
+          }
+        },
+        "severity": {
+          "N": 7,
+          "exact": 7,
+          "above": 0,
+          "below": 0,
+          "mean_distance": 0
+        },
+        "per_scenario": {
+          "s3-01": {
+            "MEDIUM": 1
+          },
+          "s3-02": {
+            "CRITICAL": 1
+          },
+          "s3-03": {
+            "MEDIUM": 1
+          },
+          "s3-04": {
+            "CRITICAL": 1
+          },
+          "s3-05": {
+            "CRITICAL": 1
+          },
+          "s3-06": {
+            "CRITICAL": 1
+          },
+          "s3-07": {
+            "CRITICAL": 1
+          },
+          "s3-08": {
+            "CRITICAL": 1
+          },
+          "s3-09": {
+            "MEDIUM": 1
+          },
+          "s3-10": {
+            "MEDIUM": 1
+          },
+          "s3-11": {
+            "MEDIUM": 1
+          }
+        },
+        "identical": [
+          "s3-01",
+          "s3-02",
+          "s3-03",
+          "s3-04",
+          "s3-05",
+          "s3-06",
+          "s3-07",
+          "s3-08",
+          "s3-09",
+          "s3-10",
+          "s3-11"
+        ],
+        "not_identical": [],
+        "modal_agreement": 1.0,
+        "runs_failed": [],
+        "runs_retried": [],
+        "findings": [
+          null
+        ],
+        "runs_at_cap": 0,
+        "identifiers_checked": false,
+        "unknown_identifiers": 0,
+        "unknown_by_run": {},
+        "grouped": 0,
+        "grouped_cells": [],
+        "seconds": [],
+        "tokens": []
+      }
+    }
+  }
+}

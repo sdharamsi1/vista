@@ -2,8 +2,8 @@
 
 - [getting-started.md](getting-started.md) — requirements, install, running a scan, repeatable
   runs, and CLI options
-- [evaluation.md](evaluation.md) — evaluation method and steps, and how `score.py` scores Vista and
-  Prowler
+- [evaluation.md](evaluation.md) — evaluation method and steps, the saved results in
+  `evaluation/runs/`, and how `score.py` scores Vista and Prowler
 - [output.md](output.md) — services, regions, review format, and severity
 - [iam-permissions.md](iam-permissions.md) — IAM permissions for each service
 - [payloads/ec2.md](payloads/ec2.md) — EC2 facts payload

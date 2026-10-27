@@ -1,0 +1,1793 @@
+{
+  "service": "apigateway",
+  "tier": null,
+  "scored": [
+    "apigw-01",
+    "apigw-02",
+    "apigw-03",
+    "apigw-04",
+    "apigw-05",
+    "apigw-06",
+    "apigw-07",
+    "apigw-08",
+    "apigw-09"
+  ],
+  "skipped": [],
+  "tools": {
+    "gpt": {
+      "baseline": false,
+      "runs": {
+        "1": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 66.57,
+          "tokens_total": 12749,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "apigw-01": {
+              "scenario": "apigw-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-02": {
+              "scenario": "apigw-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-03": {
+              "scenario": "apigw-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-04": {
+              "scenario": "apigw-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "apigw-05": {
+              "scenario": "apigw-05",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "apigw-06": {
+              "scenario": "apigw-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-07": {
+              "scenario": "apigw-07",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-08": {
+              "scenario": "apigw-08",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-09": {
+              "scenario": "apigw-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 1
+            }
+          }
+        },
+        "2": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 45.1,
+          "tokens_total": 11152,
+          "findings": 7,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "apigw-01": {
+              "scenario": "apigw-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-02": {
+              "scenario": "apigw-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-03": {
+              "scenario": "apigw-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-04": {
+              "scenario": "apigw-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "apigw-05": {
+              "scenario": "apigw-05",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "apigw-06": {
+              "scenario": "apigw-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "apigw-07": {
+              "scenario": "apigw-07",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-08": {
+              "scenario": "apigw-08",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-09": {
+              "scenario": "apigw-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 1
+            }
+          }
+        },
+        "3": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 59.86,
+          "tokens_total": 12386,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "apigw-01": {
+              "scenario": "apigw-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-02": {
+              "scenario": "apigw-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-03": {
+              "scenario": "apigw-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-04": {
+              "scenario": "apigw-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "apigw-05": {
+              "scenario": "apigw-05",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "apigw-06": {
+              "scenario": "apigw-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-07": {
+              "scenario": "apigw-07",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-08": {
+              "scenario": "apigw-08",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-09": {
+              "scenario": "apigw-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 1
+            }
+          }
+        },
+        "4": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 63.5,
+          "tokens_total": 12737,
+          "findings": 7,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "apigw-01": {
+              "scenario": "apigw-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-02": {
+              "scenario": "apigw-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-03": {
+              "scenario": "apigw-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-04": {
+              "scenario": "apigw-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "apigw-05": {
+              "scenario": "apigw-05",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "apigw-06": {
+              "scenario": "apigw-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-07": {
+              "scenario": "apigw-07",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-08": {
+              "scenario": "apigw-08",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-09": {
+              "scenario": "apigw-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "MEDIUM",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 0
+            }
+          }
+        },
+        "5": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 53.68,
+          "tokens_total": 11779,
+          "findings": 7,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "apigw-01": {
+              "scenario": "apigw-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-02": {
+              "scenario": "apigw-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-03": {
+              "scenario": "apigw-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-04": {
+              "scenario": "apigw-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "apigw-05": {
+              "scenario": "apigw-05",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "apigw-06": {
+              "scenario": "apigw-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-07": {
+              "scenario": "apigw-07",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-08": {
+              "scenario": "apigw-08",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-09": {
+              "scenario": "apigw-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": true,
+              "findings_citing": 1
+            }
+          }
+        }
+      },
+      "summary": {
+        "baseline": false,
+        "info": null,
+        "runs": 5,
+        "runs_scored": 5,
+        "cells": 45,
+        "detection": {
+          "all": {
+            "n": 39,
+            "N": 40
+          },
+          "fsbp": {
+            "n": 9,
+            "N": 10
+          },
+          "outside_fsbp": {
+            "n": 30,
+            "N": 30
+          }
+        },
+        "flaw_blocked": {
+          "all": {
+            "n": 0,
+            "N": 0
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 0
+          }
+        },
+        "false_positives": {
+          "all": {
+            "n": 4,
+            "N": 5
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 4,
+            "N": 5
+          }
+        },
+        "severity": {
+          "N": 10,
+          "exact": 0,
+          "above": 9,
+          "below": 1,
+          "mean_distance": 0.7
+        },
+        "per_scenario": {
+          "apigw-01": {
+            "LOW": 5
+          },
+          "apigw-02": {
+            "MEDIUM": 1,
+            "LOW": 4
+          },
+          "apigw-03": {
+            "HIGH": 5
+          },
+          "apigw-04": {
+            "CRITICAL": 1,
+            "HIGH": 4
+          },
+          "apigw-05": {
+            "CRITICAL": 1,
+            "HIGH": 4
+          },
+          "apigw-06": {
+            "HIGH": 1,
+            "NONE": 1,
+            "MEDIUM": 3
+          },
+          "apigw-07": {
+            "HIGH": 1,
+            "MEDIUM": 4
+          },
+          "apigw-08": {
+            "HIGH": 1,
+            "MEDIUM": 4
+          },
+          "apigw-09": {
+            "HIGH": 4,
+            "NONE": 1
+          }
+        },
+        "identical": [
+          "apigw-01",
+          "apigw-03"
+        ],
+        "not_identical": [
+          "apigw-02",
+          "apigw-04",
+          "apigw-05",
+          "apigw-06",
+          "apigw-07",
+          "apigw-08",
+          "apigw-09"
+        ],
+        "modal_agreement": 0.8222222222222223,
+        "runs_failed": [],
+        "runs_retried": [],
+        "findings": [
+          8,
+          7,
+          8,
+          7,
+          7
+        ],
+        "runs_at_cap": 0,
+        "identifiers_checked": true,
+        "unknown_identifiers": 0,
+        "unknown_by_run": {},
+        "grouped": 11,
+        "grouped_cells": [
+          "apigw-04 run-1",
+          "apigw-05 run-1",
+          "apigw-04 run-2",
+          "apigw-05 run-2",
+          "apigw-04 run-3",
+          "apigw-05 run-3",
+          "apigw-04 run-4",
+          "apigw-05 run-4",
+          "apigw-04 run-5",
+          "apigw-05 run-5",
+          "apigw-09 run-5"
+        ],
+        "seconds": [
+          66.57,
+          45.1,
+          59.86,
+          63.5,
+          53.68
+        ],
+        "tokens": [
+          12749,
+          11152,
+          12386,
+          12737,
+          11779
+        ]
+      }
+    },
+    "opus": {
+      "baseline": false,
+      "runs": {
+        "1": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 63.7,
+          "tokens_total": 18273,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "apigw-01": {
+              "scenario": "apigw-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-02": {
+              "scenario": "apigw-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-03": {
+              "scenario": "apigw-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-04": {
+              "scenario": "apigw-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-05": {
+              "scenario": "apigw-05",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-06": {
+              "scenario": "apigw-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "apigw-07": {
+              "scenario": "apigw-07",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-08": {
+              "scenario": "apigw-08",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-09": {
+              "scenario": "apigw-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 1
+            }
+          }
+        },
+        "2": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 68.54,
+          "tokens_total": 18573,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "apigw-01": {
+              "scenario": "apigw-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-02": {
+              "scenario": "apigw-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-03": {
+              "scenario": "apigw-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-04": {
+              "scenario": "apigw-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-05": {
+              "scenario": "apigw-05",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-06": {
+              "scenario": "apigw-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "apigw-07": {
+              "scenario": "apigw-07",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-08": {
+              "scenario": "apigw-08",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-09": {
+              "scenario": "apigw-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 1
+            }
+          }
+        },
+        "3": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 69.99,
+          "tokens_total": 18552,
+          "findings": 7,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "apigw-01": {
+              "scenario": "apigw-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-02": {
+              "scenario": "apigw-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-03": {
+              "scenario": "apigw-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-04": {
+              "scenario": "apigw-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "apigw-05": {
+              "scenario": "apigw-05",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-06": {
+              "scenario": "apigw-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "apigw-07": {
+              "scenario": "apigw-07",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-08": {
+              "scenario": "apigw-08",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-09": {
+              "scenario": "apigw-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": true,
+              "findings_citing": 1
+            }
+          }
+        },
+        "4": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 72.93,
+          "tokens_total": 18768,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "apigw-01": {
+              "scenario": "apigw-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-02": {
+              "scenario": "apigw-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-03": {
+              "scenario": "apigw-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-04": {
+              "scenario": "apigw-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-05": {
+              "scenario": "apigw-05",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-06": {
+              "scenario": "apigw-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "apigw-07": {
+              "scenario": "apigw-07",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-08": {
+              "scenario": "apigw-08",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-09": {
+              "scenario": "apigw-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 1
+            }
+          }
+        },
+        "5": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 78.94,
+          "tokens_total": 19188,
+          "findings": 7,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "apigw-01": {
+              "scenario": "apigw-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-02": {
+              "scenario": "apigw-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-03": {
+              "scenario": "apigw-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-04": {
+              "scenario": "apigw-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "apigw-05": {
+              "scenario": "apigw-05",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "apigw-06": {
+              "scenario": "apigw-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "apigw-07": {
+              "scenario": "apigw-07",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-08": {
+              "scenario": "apigw-08",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "apigw-09": {
+              "scenario": "apigw-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 1
+            }
+          }
+        }
+      },
+      "summary": {
+        "baseline": false,
+        "info": null,
+        "runs": 5,
+        "runs_scored": 5,
+        "cells": 45,
+        "detection": {
+          "all": {
+            "n": 40,
+            "N": 40
+          },
+          "fsbp": {
+            "n": 10,
+            "N": 10
+          },
+          "outside_fsbp": {
+            "n": 30,
+            "N": 30
+          }
+        },
+        "flaw_blocked": {
+          "all": {
+            "n": 0,
+            "N": 0
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 0
+          }
+        },
+        "false_positives": {
+          "all": {
+            "n": 0,
+            "N": 5
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 5
+          }
+        },
+        "severity": {
+          "N": 10,
+          "exact": 5,
+          "above": 5,
+          "below": 0,
+          "mean_distance": 0.5
+        },
+        "per_scenario": {
+          "apigw-01": {
+            "LOW": 5
+          },
+          "apigw-02": {
+            "MEDIUM": 5
+          },
+          "apigw-03": {
+            "MEDIUM": 5
+          },
+          "apigw-04": {
+            "HIGH": 5
+          },
+          "apigw-05": {
+            "CRITICAL": 4,
+            "HIGH": 1
+          },
+          "apigw-06": {
+            "NONE": 5
+          },
+          "apigw-07": {
+            "MEDIUM": 5
+          },
+          "apigw-08": {
+            "HIGH": 4,
+            "MEDIUM": 1
+          },
+          "apigw-09": {
+            "HIGH": 5
+          }
+        },
+        "identical": [
+          "apigw-01",
+          "apigw-02",
+          "apigw-03",
+          "apigw-04",
+          "apigw-06",
+          "apigw-07",
+          "apigw-09"
+        ],
+        "not_identical": [
+          "apigw-05",
+          "apigw-08"
+        ],
+        "modal_agreement": 0.9555555555555556,
+        "runs_failed": [],
+        "runs_retried": [],
+        "findings": [
+          8,
+          8,
+          7,
+          8,
+          7
+        ],
+        "runs_at_cap": 0,
+        "identifiers_checked": true,
+        "unknown_identifiers": 0,
+        "unknown_by_run": {},
+        "grouped": 4,
+        "grouped_cells": [
+          "apigw-04 run-3",
+          "apigw-09 run-3",
+          "apigw-04 run-5",
+          "apigw-05 run-5"
+        ],
+        "seconds": [
+          63.7,
+          68.54,
+          69.99,
+          72.93,
+          78.94
+        ],
+        "tokens": [
+          18273,
+          18573,
+          18552,
+          18768,
+          19188
+        ]
+      }
+    },
+    "prowler": {
+      "baseline": true,
+      "info": {
+        "versions": [
+          "5.44.0"
+        ],
+        "schema_versions": [
+          "1.5.0"
+        ],
+        "results": 2237,
+        "fails": 514,
+        "attributed_fails": 37,
+        "unattributed_fails": 477,
+        "muted_fails": 0,
+        "drivers": {
+          "apigw-01": [
+            "apigateway_restapi_client_certificate_enabled",
+            "apigateway_restapi_public",
+            "apigateway_restapi_public_with_authorizer"
+          ],
+          "apigw-02": [
+            "apigateway_restapi_client_certificate_enabled",
+            "apigateway_restapi_public",
+            "apigateway_restapi_public_with_authorizer"
+          ],
+          "apigw-03": [
+            "apigateway_restapi_client_certificate_enabled",
+            "apigateway_restapi_public",
+            "apigateway_restapi_public_with_authorizer",
+            "apigateway_restapi_waf_acl_attached"
+          ],
+          "apigw-04": [
+            "apigateway_restapi_authorizers_enabled",
+            "apigateway_restapi_client_certificate_enabled",
+            "apigateway_restapi_public",
+            "apigateway_restapi_public_with_authorizer"
+          ],
+          "apigw-05": [
+            "apigateway_restapi_authorizers_enabled",
+            "apigateway_restapi_client_certificate_enabled",
+            "apigateway_restapi_public",
+            "apigateway_restapi_public_with_authorizer"
+          ],
+          "apigw-06": [
+            "apigateway_restapi_client_certificate_enabled",
+            "apigateway_restapi_public"
+          ],
+          "apigw-07": [
+            "apigateway_restapi_authorizers_enabled",
+            "apigateway_restapi_client_certificate_enabled",
+            "apigateway_restapi_public",
+            "apigateway_restapi_public_with_authorizer"
+          ],
+          "apigw-08": [
+            "apigateway_restapi_authorizers_enabled",
+            "apigateway_restapi_client_certificate_enabled",
+            "apigateway_restapi_public",
+            "apigateway_restapi_public_with_authorizer"
+          ],
+          "apigw-09": [
+            "apigatewayv2_api_authorizers_enabled"
+          ]
+        }
+      },
+      "runs": {
+        "1": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": null,
+          "retry_errors": [],
+          "seconds": null,
+          "tokens_total": null,
+          "findings": null,
+          "at_cap": false,
+          "unknown_identifiers": null,
+          "scenarios": {
+            "apigw-01": {
+              "scenario": "apigw-01",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 4
+            },
+            "apigw-02": {
+              "scenario": "apigw-02",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 4
+            },
+            "apigw-03": {
+              "scenario": "apigw-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 5
+            },
+            "apigw-04": {
+              "scenario": "apigw-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 5
+            },
+            "apigw-05": {
+              "scenario": "apigw-05",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 5
+            },
+            "apigw-06": {
+              "scenario": "apigw-06",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 3
+            },
+            "apigw-07": {
+              "scenario": "apigw-07",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 5
+            },
+            "apigw-08": {
+              "scenario": "apigw-08",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 5
+            },
+            "apigw-09": {
+              "scenario": "apigw-09",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "MEDIUM",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            }
+          }
+        }
+      },
+      "summary": {
+        "baseline": true,
+        "info": {
+          "versions": [
+            "5.44.0"
+          ],
+          "schema_versions": [
+            "1.5.0"
+          ],
+          "results": 2237,
+          "fails": 514,
+          "attributed_fails": 37,
+          "unattributed_fails": 477,
+          "muted_fails": 0,
+          "drivers": {
+            "apigw-01": [
+              "apigateway_restapi_client_certificate_enabled",
+              "apigateway_restapi_public",
+              "apigateway_restapi_public_with_authorizer"
+            ],
+            "apigw-02": [
+              "apigateway_restapi_client_certificate_enabled",
+              "apigateway_restapi_public",
+              "apigateway_restapi_public_with_authorizer"
+            ],
+            "apigw-03": [
+              "apigateway_restapi_client_certificate_enabled",
+              "apigateway_restapi_public",
+              "apigateway_restapi_public_with_authorizer",
+              "apigateway_restapi_waf_acl_attached"
+            ],
+            "apigw-04": [
+              "apigateway_restapi_authorizers_enabled",
+              "apigateway_restapi_client_certificate_enabled",
+              "apigateway_restapi_public",
+              "apigateway_restapi_public_with_authorizer"
+            ],
+            "apigw-05": [
+              "apigateway_restapi_authorizers_enabled",
+              "apigateway_restapi_client_certificate_enabled",
+              "apigateway_restapi_public",
+              "apigateway_restapi_public_with_authorizer"
+            ],
+            "apigw-06": [
+              "apigateway_restapi_client_certificate_enabled",
+              "apigateway_restapi_public"
+            ],
+            "apigw-07": [
+              "apigateway_restapi_authorizers_enabled",
+              "apigateway_restapi_client_certificate_enabled",
+              "apigateway_restapi_public",
+              "apigateway_restapi_public_with_authorizer"
+            ],
+            "apigw-08": [
+              "apigateway_restapi_authorizers_enabled",
+              "apigateway_restapi_client_certificate_enabled",
+              "apigateway_restapi_public",
+              "apigateway_restapi_public_with_authorizer"
+            ],
+            "apigw-09": [
+              "apigatewayv2_api_authorizers_enabled"
+            ]
+          }
+        },
+        "runs": 1,
+        "runs_scored": 1,
+        "cells": 9,
+        "detection": {
+          "all": {
+            "n": 8,
+            "N": 8
+          },
+          "fsbp": {
+            "n": 2,
+            "N": 2
+          },
+          "outside_fsbp": {
+            "n": 6,
+            "N": 6
+          }
+        },
+        "flaw_blocked": {
+          "all": {
+            "n": 0,
+            "N": 0
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 0
+          }
+        },
+        "false_positives": {
+          "all": {
+            "n": 1,
+            "N": 1
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 1,
+            "N": 1
+          }
+        },
+        "severity": {
+          "N": 2,
+          "exact": 2,
+          "above": 0,
+          "below": 0,
+          "mean_distance": 0
+        },
+        "per_scenario": {
+          "apigw-01": {
+            "MEDIUM": 1
+          },
+          "apigw-02": {
+            "MEDIUM": 1
+          },
+          "apigw-03": {
+            "MEDIUM": 1
+          },
+          "apigw-04": {
+            "MEDIUM": 1
+          },
+          "apigw-05": {
+            "MEDIUM": 1
+          },
+          "apigw-06": {
+            "MEDIUM": 1
+          },
+          "apigw-07": {
+            "MEDIUM": 1
+          },
+          "apigw-08": {
+            "MEDIUM": 1
+          },
+          "apigw-09": {
+            "MEDIUM": 1
+          }
+        },
+        "identical": [
+          "apigw-01",
+          "apigw-02",
+          "apigw-03",
+          "apigw-04",
+          "apigw-05",
+          "apigw-06",
+          "apigw-07",
+          "apigw-08",
+          "apigw-09"
+        ],
+        "not_identical": [],
+        "modal_agreement": 1.0,
+        "runs_failed": [],
+        "runs_retried": [],
+        "findings": [
+          null
+        ],
+        "runs_at_cap": 0,
+        "identifiers_checked": false,
+        "unknown_identifiers": 0,
+        "unknown_by_run": {},
+        "grouped": 0,
+        "grouped_cells": [],
+        "seconds": [],
+        "tokens": []
+      }
+    }
+  }
+}

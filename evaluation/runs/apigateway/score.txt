@@ -1,0 +1,74 @@
+Service: apigateway | runs: evaluation/runs/apigateway/benchmark | tier: all
+Scored scenarios: 9
+Tools: gpt (5/5 runs scored), opus (5/5 runs scored), prowler (Prowler scan)
+
+== Detection and false positives
+measure                                   gpt           opus          prowler
+cells scored                              45            45            9
+detection (flaw), all                     39/40 (98%)   40/40 (100%)  8/8 (100%)
+detection (flaw), fsbp                    9/10 (90%)    10/10 (100%)  2/2 (100%)
+detection (flaw), outside_fsbp            30/30 (100%)  30/30 (100%)  6/6 (100%)
+flaw_blocked report rate, all             -             -             -
+flaw_blocked report rate, fsbp            -             -             -
+flaw_blocked report rate, outside_fsbp    -             -             -
+false positives (hardened), all           4/5 (80%)     0/5 (0%)      1/1 (100%)
+false positives (hardened), fsbp          -             -             -
+false positives (hardened), outside_fsbp  4/5 (80%)     0/5 (0%)      1/1 (100%)
+
+== Severity relative to FSBP (fsbp scenarios; not reported = NONE)
+measure               gpt         opus        prowler
+fsbp cells            10          10          2
+same as FSBP          0/10 (0%)   5/10 (50%)  2/2 (100%)
+above FSBP            9/10 (90%)  5/10 (50%)  0/2 (0%)
+below FSBP            1/10 (10%)  0/10 (0%)   0/2 (0%)
+mean signed distance  0.70        0.50        0.00
+FSBP severity is fixed per control and does not reflect deployed context; Prowler's check severities follow FSBP's. This describes where each tool sits, not accuracy.
+
+== Consistency across runs (Vista)
+measure                                  gpt                                                                   opus                prowler
+scored runs                              5                                                                     5                   deterministic
+scenarios, identical severity every run  2/9 (22%)                                                             7/9 (78%)           deterministic
+mean modal agreement                     0.822 (82%)                                                           0.956 (96%)         deterministic
+not identical                            apigw-02, apigw-04, apigw-05, apigw-06, apigw-07, apigw-08, apigw-09  apigw-05, apigw-08  deterministic
+
+== Runs, format, and cost (Vista)
+measure                              gpt                         opus                        prowler
+runs scored                          5/5                         5/5                         n/a
+findings per run                     7-8 (median 7)              7-8 (median 8)              n/a
+runs at the 10-finding cap           0/5                         0/5                         n/a
+unknown identifiers cited            0                           0                           n/a
+cells scored from a grouped finding  11                          4                           n/a
+review seconds                       45-67s (median 60)          64-79s (median 70)          n/a
+total tokens per run                 11152-12749 (median 12386)  18273-19188 (median 18573)  n/a
+  grouped, gpt: apigw-04 run-1, apigw-05 run-1, apigw-04 run-2, apigw-05 run-2, apigw-04 run-3, apigw-05 run-3, apigw-04 run-4, apigw-05 run-4, apigw-04 run-5, apigw-05 run-5, apigw-09 run-5
+  grouped, opus: apigw-04 run-3, apigw-09 run-3, apigw-04 run-5, apigw-05 run-5
+
+== Retries and failures
+gpt: runs failed 0/5; runs retried 0/5
+opus: runs failed 0/5; runs retried 0/5
+
+== Prowler 5.44.0
+OCSF schema version: 1.5.0
+Results: 2237; FAIL: 514; FAILs attributed to a scenario: 37; not attributed (other resources, account-level, or informational): 477; muted (Suppressed, still scored): 0
+Check(s) at the top severity, per scenario:
+  apigw-01: apigateway_restapi_client_certificate_enabled, apigateway_restapi_public, apigateway_restapi_public_with_authorizer
+  apigw-02: apigateway_restapi_client_certificate_enabled, apigateway_restapi_public, apigateway_restapi_public_with_authorizer
+  apigw-03: apigateway_restapi_client_certificate_enabled, apigateway_restapi_public, apigateway_restapi_public_with_authorizer, apigateway_restapi_waf_acl_attached
+  apigw-04: apigateway_restapi_authorizers_enabled, apigateway_restapi_client_certificate_enabled, apigateway_restapi_public, apigateway_restapi_public_with_authorizer
+  apigw-05: apigateway_restapi_authorizers_enabled, apigateway_restapi_client_certificate_enabled, apigateway_restapi_public, apigateway_restapi_public_with_authorizer
+  apigw-06: apigateway_restapi_client_certificate_enabled, apigateway_restapi_public
+  apigw-07: apigateway_restapi_authorizers_enabled, apigateway_restapi_client_certificate_enabled, apigateway_restapi_public, apigateway_restapi_public_with_authorizer
+  apigw-08: apigateway_restapi_authorizers_enabled, apigateway_restapi_client_certificate_enabled, apigateway_restapi_public, apigateway_restapi_public_with_authorizer
+  apigw-09: apigatewayv2_api_authorizers_enabled
+
+== Per scenario (severity over runs)
+scenario  condition  coverage      fsbp_severity  gpt                     opus               prowler   context
+apigw-01  flaw       outside_fsbp  -              LOWx5                   LOWx5              MEDIUMx1  -
+apigw-02  flaw       outside_fsbp  -              LOWx4 MEDIUMx1          MEDIUMx5           MEDIUMx1  -
+apigw-03  flaw       fsbp          MEDIUM         HIGHx5                  MEDIUMx5           MEDIUMx1  -
+apigw-04  flaw       outside_fsbp  -              HIGHx4 CRITICALx1       HIGHx5             MEDIUMx1  -
+apigw-05  flaw       outside_fsbp  -              HIGHx4 CRITICALx1       HIGHx1 CRITICALx4  MEDIUMx1  -
+apigw-06  hardened   outside_fsbp  -              NONEx1 MEDIUMx3 HIGHx1  NONEx5             MEDIUMx1  -
+apigw-07  flaw       outside_fsbp  -              MEDIUMx4 HIGHx1         MEDIUMx5           MEDIUMx1  -
+apigw-08  flaw       outside_fsbp  -              MEDIUMx4 HIGHx1         MEDIUMx1 HIGHx4    MEDIUMx1  The REST API resource policy allows execute-api:Invoke for Principal * and explicitly denies it when aws:SourceIp is not in var.office_cidr (default 203.0.113.0/24).
+apigw-09  flaw       fsbp          MEDIUM         NONEx1 HIGHx4           HIGHx5             MEDIUMx1  -

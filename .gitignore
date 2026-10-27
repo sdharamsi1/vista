@@ -17,4 +17,7 @@ __pycache__/
 *.egg-info/
 intent.txt
 *.intent.txt
-runs/
+/runs/
+!evaluation/**/*.json
+evaluation/runs/prowler/compliance/*
+!evaluation/runs/prowler/compliance/prowler-output_aws_foundational_security_best_practices_aws.csv

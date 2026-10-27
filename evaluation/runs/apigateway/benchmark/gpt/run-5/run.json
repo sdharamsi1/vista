@@ -1,0 +1,26 @@
+{
+  "bedrock_region": "us-east-1",
+  "error": null,
+  "finished_at": "2026-10-21T01:35:40.762084+00:00",
+  "model_id": "us.openai.gpt-5.6-sol",
+  "payload_file": "runs/apigateway/benchmark/payload.json",
+  "payload_sha256": "d3cf0e755e68eb1422e1ab0f98f776db9056fe57bd1a551e42f77a3344b17d65",
+  "regions": [
+    "us-east-1"
+  ],
+  "resource_count": 9,
+  "retry_errors": [],
+  "review_seconds": 53.68,
+  "service": "apigateway",
+  "source": "replay",
+  "started_at": "2026-10-21T01:34:47.080858+00:00",
+  "status": "ok",
+  "tokens": {
+    "attempts": 1,
+    "cache_read": 7271,
+    "cache_write": 0,
+    "input": 2,
+    "output": 4506
+  },
+  "vista_version": "0.1.0"
+}

@@ -1,0 +1,77 @@
+Service: ec2 | runs: evaluation/runs/ec2/benchmark | tier: all
+Scored scenarios: 11
+Tools: gpt (5/5 runs scored), opus (5/5 runs scored), prowler (Prowler scan)
+
+== Detection and false positives
+measure                                   gpt           opus          prowler
+cells scored                              55            55            11
+detection (flaw), all                     34/45 (76%)   35/45 (78%)   9/9 (100%)
+detection (flaw), fsbp                    24/35 (69%)   25/35 (71%)   7/7 (100%)
+detection (flaw), outside_fsbp            10/10 (100%)  10/10 (100%)  2/2 (100%)
+flaw_blocked report rate, all             0/5 (0%)      5/5 (100%)    1/1 (100%)
+flaw_blocked report rate, fsbp            0/5 (0%)      5/5 (100%)    1/1 (100%)
+flaw_blocked report rate, outside_fsbp    -             -             -
+false positives (hardened), all           0/5 (0%)      0/5 (0%)      1/1 (100%)
+false positives (hardened), fsbp          -             -             -
+false positives (hardened), outside_fsbp  0/5 (0%)      0/5 (0%)      1/1 (100%)
+
+== Severity relative to FSBP (fsbp scenarios; not reported = NONE)
+measure               gpt          opus         prowler
+fsbp cells            40           40           8
+same as FSBP          7/40 (18%)   10/40 (25%)  6/8 (75%)
+above FSBP            0/40 (0%)    0/40 (0%)    2/8 (25%)
+below FSBP            33/40 (82%)  30/40 (75%)  0/8 (0%)
+mean signed distance  -1.65        -1.27        0.25
+FSBP severity is fixed per control and does not reflect deployed context; Prowler's check severities follow FSBP's. This describes where each tool sits, not accuracy.
+
+== Consistency across runs (Vista)
+measure                                  gpt             opus         prowler
+scored runs                              5               5            deterministic
+scenarios, identical severity every run  9/11 (82%)      10/11 (91%)  deterministic
+mean modal agreement                     0.927 (93%)     0.982 (98%)  deterministic
+not identical                            ec2-02, ec2-05  ec2-03       deterministic
+
+== Runs, format, and cost (Vista)
+measure                              gpt                         opus                        prowler
+runs scored                          5/5                         5/5                         n/a
+findings per run                     6-8 (median 7)              7-8 (median 8)              n/a
+runs at the 10-finding cap           0/5                         0/5                         n/a
+unknown identifiers cited            0                           0                           n/a
+cells scored from a grouped finding  0                           5                           n/a
+review seconds                       53-62s (median 58)          82-93s (median 84)          n/a
+total tokens per run                 25542-26298 (median 25787)  39467-40406 (median 39892)  n/a
+  grouped, opus: ec2-04 run-1, ec2-10 run-1, ec2-03 run-2, ec2-03 run-3, ec2-03 run-5
+
+== Retries and failures
+gpt: runs failed 0/5; runs retried 0/5
+opus: runs failed 0/5; runs retried 0/5
+
+== Prowler 5.44.0
+OCSF schema version: 1.5.0
+Results: 2237; FAIL: 514; FAILs attributed to a scenario: 79; not attributed (other resources, account-level, or informational): 435; muted (Suppressed, still scored): 0
+Check(s) at the top severity, per scenario:
+  ec2-01: ec2_ebs_volume_encryption, ec2_ebs_volume_snapshots_exists, ec2_networkacl_allow_ingress_any_port
+  ec2-02: ec2_ebs_volume_snapshots_exists, ec2_networkacl_allow_ingress_any_port, ec2_securitygroup_allow_ingress_from_internet_to_any_port
+  ec2-03: ec2_ebs_volume_snapshots_exists, ec2_instance_imdsv2_enabled, ec2_networkacl_allow_ingress_any_port, iam_role_cross_service_confused_deputy_prevention
+  ec2-04: ec2_ebs_volume_snapshots_exists, ec2_networkacl_allow_ingress_any_port, iam_inline_policy_allows_privilege_escalation, iam_role_cross_service_confused_deputy_prevention
+  ec2-05: ec2_instance_port_ssh_exposed_to_internet
+  ec2-06: ec2_ebs_volume_snapshots_exists, ec2_networkacl_allow_ingress_any_port, iam_role_cross_service_confused_deputy_prevention
+  ec2-07: ec2_ebs_volume_snapshots_exists, ec2_instance_imdsv2_enabled, ec2_networkacl_allow_ingress_any_port, iam_role_cross_service_confused_deputy_prevention
+  ec2-08: ec2_ebs_volume_snapshots_exists, ec2_instance_internet_facing_with_instance_profile, ec2_networkacl_allow_ingress_any_port, iam_role_cross_service_confused_deputy_prevention
+  ec2-09: ec2_ebs_volume_snapshots_exists, ec2_networkacl_allow_ingress_any_port, ec2_securitygroup_allow_ingress_from_internet_to_any_port
+  ec2-10: ec2_ebs_volume_snapshots_exists, ec2_networkacl_allow_ingress_any_port, iam_role_cross_service_confused_deputy_prevention
+  ec2-11: ec2_ebs_volume_snapshots_exists, ec2_networkacl_allow_ingress_any_port, iam_role_cross_service_confused_deputy_prevention
+
+== Per scenario (severity over runs)
+scenario  condition     coverage      fsbp_severity  gpt                           opus            prowler     context
+ec2-01    flaw          fsbp          MEDIUM         LOWx5                         LOWx5           HIGHx1      -
+ec2-02    flaw          fsbp          HIGH           NONEx1 LOWx1 MEDIUMx2 HIGHx1  MEDIUMx5        HIGHx1      -
+ec2-03    flaw          fsbp          HIGH           LOWx5                         LOWx1 MEDIUMx4  HIGHx1      -
+ec2-04    flaw          outside_fsbp  -              HIGHx5                        HIGHx5          HIGHx1      -
+ec2-05    flaw          fsbp          CRITICAL       HIGHx4 CRITICALx1             CRITICALx5      CRITICALx1  -
+ec2-06    flaw          fsbp          MEDIUM         NONEx5                        NONEx5          HIGHx1      -
+ec2-07    flaw          fsbp          HIGH           HIGHx5                        HIGHx5          HIGHx1      -
+ec2-08    flaw          fsbp          HIGH           NONEx5                        NONEx5          HIGHx1      The security group's only inbound rule allows TCP 22 from var.office_cidr (default 203.0.113.0/24, the RFC 5737 TEST-NET-3 range).
+ec2-09    flaw_blocked  fsbp          HIGH           NONEx5                        LOWx5           HIGHx1      The ops subnet's network ACL rule 90 denies inbound TCP 9100 from 0.0.0.0/0 before rule 100 allows all other traffic; the security group has no other inbound rule.
+ec2-10    flaw          outside_fsbp  -              HIGHx5                        HIGHx5          HIGHx1      -
+ec2-11    hardened      outside_fsbp  -              NONEx5                        NONEx5          HIGHx1      -

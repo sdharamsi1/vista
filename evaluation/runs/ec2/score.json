@@ -1,0 +1,2065 @@
+{
+  "service": "ec2",
+  "tier": null,
+  "scored": [
+    "ec2-01",
+    "ec2-02",
+    "ec2-03",
+    "ec2-04",
+    "ec2-05",
+    "ec2-06",
+    "ec2-07",
+    "ec2-08",
+    "ec2-09",
+    "ec2-10",
+    "ec2-11"
+  ],
+  "skipped": [],
+  "tools": {
+    "gpt": {
+      "baseline": false,
+      "runs": {
+        "1": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 53.16,
+          "tokens_total": 25542,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "ec2-01": {
+              "scenario": "ec2-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-02": {
+              "scenario": "ec2-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "HIGH",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-03": {
+              "scenario": "ec2-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "HIGH",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-04": {
+              "scenario": "ec2-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-05": {
+              "scenario": "ec2-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-06": {
+              "scenario": "ec2-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "MEDIUM",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-07": {
+              "scenario": "ec2-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "ec2-08": {
+              "scenario": "ec2-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-09": {
+              "scenario": "ec2-09",
+              "condition": "flaw_blocked",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-10": {
+              "scenario": "ec2-10",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-11": {
+              "scenario": "ec2-11",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            }
+          }
+        },
+        "2": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 56.39,
+          "tokens_total": 25659,
+          "findings": 7,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "ec2-01": {
+              "scenario": "ec2-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-02": {
+              "scenario": "ec2-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "HIGH",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-03": {
+              "scenario": "ec2-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "HIGH",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-04": {
+              "scenario": "ec2-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-05": {
+              "scenario": "ec2-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-06": {
+              "scenario": "ec2-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "MEDIUM",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-07": {
+              "scenario": "ec2-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-08": {
+              "scenario": "ec2-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-09": {
+              "scenario": "ec2-09",
+              "condition": "flaw_blocked",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-10": {
+              "scenario": "ec2-10",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-11": {
+              "scenario": "ec2-11",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            }
+          }
+        },
+        "3": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 62.3,
+          "tokens_total": 26298,
+          "findings": 7,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "ec2-01": {
+              "scenario": "ec2-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-02": {
+              "scenario": "ec2-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "HIGH",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-03": {
+              "scenario": "ec2-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "HIGH",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-04": {
+              "scenario": "ec2-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-05": {
+              "scenario": "ec2-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-06": {
+              "scenario": "ec2-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "MEDIUM",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-07": {
+              "scenario": "ec2-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-08": {
+              "scenario": "ec2-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-09": {
+              "scenario": "ec2-09",
+              "condition": "flaw_blocked",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-10": {
+              "scenario": "ec2-10",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-11": {
+              "scenario": "ec2-11",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            }
+          }
+        },
+        "4": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 60.88,
+          "tokens_total": 26222,
+          "findings": 7,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "ec2-01": {
+              "scenario": "ec2-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-02": {
+              "scenario": "ec2-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-03": {
+              "scenario": "ec2-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "HIGH",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-04": {
+              "scenario": "ec2-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-05": {
+              "scenario": "ec2-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-06": {
+              "scenario": "ec2-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "MEDIUM",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-07": {
+              "scenario": "ec2-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-08": {
+              "scenario": "ec2-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-09": {
+              "scenario": "ec2-09",
+              "condition": "flaw_blocked",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-10": {
+              "scenario": "ec2-10",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-11": {
+              "scenario": "ec2-11",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            }
+          }
+        },
+        "5": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 57.87,
+          "tokens_total": 25787,
+          "findings": 6,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "ec2-01": {
+              "scenario": "ec2-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-02": {
+              "scenario": "ec2-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-03": {
+              "scenario": "ec2-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "HIGH",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-04": {
+              "scenario": "ec2-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-05": {
+              "scenario": "ec2-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "CRITICAL",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-06": {
+              "scenario": "ec2-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "MEDIUM",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-07": {
+              "scenario": "ec2-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-08": {
+              "scenario": "ec2-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-09": {
+              "scenario": "ec2-09",
+              "condition": "flaw_blocked",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-10": {
+              "scenario": "ec2-10",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-11": {
+              "scenario": "ec2-11",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            }
+          }
+        }
+      },
+      "summary": {
+        "baseline": false,
+        "info": null,
+        "runs": 5,
+        "runs_scored": 5,
+        "cells": 55,
+        "detection": {
+          "all": {
+            "n": 34,
+            "N": 45
+          },
+          "fsbp": {
+            "n": 24,
+            "N": 35
+          },
+          "outside_fsbp": {
+            "n": 10,
+            "N": 10
+          }
+        },
+        "flaw_blocked": {
+          "all": {
+            "n": 0,
+            "N": 5
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 5
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 0
+          }
+        },
+        "false_positives": {
+          "all": {
+            "n": 0,
+            "N": 5
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 5
+          }
+        },
+        "severity": {
+          "N": 40,
+          "exact": 7,
+          "above": 0,
+          "below": 33,
+          "mean_distance": -1.65
+        },
+        "per_scenario": {
+          "ec2-01": {
+            "LOW": 5
+          },
+          "ec2-02": {
+            "LOW": 1,
+            "MEDIUM": 2,
+            "HIGH": 1,
+            "NONE": 1
+          },
+          "ec2-03": {
+            "LOW": 5
+          },
+          "ec2-04": {
+            "HIGH": 5
+          },
+          "ec2-05": {
+            "HIGH": 4,
+            "CRITICAL": 1
+          },
+          "ec2-06": {
+            "NONE": 5
+          },
+          "ec2-07": {
+            "HIGH": 5
+          },
+          "ec2-08": {
+            "NONE": 5
+          },
+          "ec2-09": {
+            "NONE": 5
+          },
+          "ec2-10": {
+            "HIGH": 5
+          },
+          "ec2-11": {
+            "NONE": 5
+          }
+        },
+        "identical": [
+          "ec2-01",
+          "ec2-03",
+          "ec2-04",
+          "ec2-06",
+          "ec2-07",
+          "ec2-08",
+          "ec2-09",
+          "ec2-10",
+          "ec2-11"
+        ],
+        "not_identical": [
+          "ec2-02",
+          "ec2-05"
+        ],
+        "modal_agreement": 0.9272727272727272,
+        "runs_failed": [],
+        "runs_retried": [],
+        "findings": [
+          8,
+          7,
+          7,
+          7,
+          6
+        ],
+        "runs_at_cap": 0,
+        "identifiers_checked": true,
+        "unknown_identifiers": 0,
+        "unknown_by_run": {},
+        "grouped": 0,
+        "grouped_cells": [],
+        "seconds": [
+          53.16,
+          56.39,
+          62.3,
+          60.88,
+          57.87
+        ],
+        "tokens": [
+          25542,
+          25659,
+          26298,
+          26222,
+          25787
+        ]
+      }
+    },
+    "opus": {
+      "baseline": false,
+      "runs": {
+        "1": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 84.46,
+          "tokens_total": 39892,
+          "findings": 7,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "ec2-01": {
+              "scenario": "ec2-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-02": {
+              "scenario": "ec2-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "HIGH",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-03": {
+              "scenario": "ec2-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "HIGH",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-04": {
+              "scenario": "ec2-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "ec2-05": {
+              "scenario": "ec2-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-06": {
+              "scenario": "ec2-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "MEDIUM",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-07": {
+              "scenario": "ec2-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-08": {
+              "scenario": "ec2-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-09": {
+              "scenario": "ec2-09",
+              "condition": "flaw_blocked",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "HIGH",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-10": {
+              "scenario": "ec2-10",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "ec2-11": {
+              "scenario": "ec2-11",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            }
+          }
+        },
+        "2": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 87.54,
+          "tokens_total": 39995,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "ec2-01": {
+              "scenario": "ec2-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-02": {
+              "scenario": "ec2-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "HIGH",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-03": {
+              "scenario": "ec2-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "HIGH",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "ec2-04": {
+              "scenario": "ec2-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-05": {
+              "scenario": "ec2-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-06": {
+              "scenario": "ec2-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "MEDIUM",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-07": {
+              "scenario": "ec2-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "ec2-08": {
+              "scenario": "ec2-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-09": {
+              "scenario": "ec2-09",
+              "condition": "flaw_blocked",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "HIGH",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-10": {
+              "scenario": "ec2-10",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-11": {
+              "scenario": "ec2-11",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            }
+          }
+        },
+        "3": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 92.86,
+          "tokens_total": 40406,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "ec2-01": {
+              "scenario": "ec2-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-02": {
+              "scenario": "ec2-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "HIGH",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-03": {
+              "scenario": "ec2-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "HIGH",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "ec2-04": {
+              "scenario": "ec2-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-05": {
+              "scenario": "ec2-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-06": {
+              "scenario": "ec2-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "MEDIUM",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-07": {
+              "scenario": "ec2-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "ec2-08": {
+              "scenario": "ec2-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-09": {
+              "scenario": "ec2-09",
+              "condition": "flaw_blocked",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "HIGH",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-10": {
+              "scenario": "ec2-10",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-11": {
+              "scenario": "ec2-11",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            }
+          }
+        },
+        "4": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 83.49,
+          "tokens_total": 39467,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "ec2-01": {
+              "scenario": "ec2-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-02": {
+              "scenario": "ec2-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "HIGH",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-03": {
+              "scenario": "ec2-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "HIGH",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-04": {
+              "scenario": "ec2-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-05": {
+              "scenario": "ec2-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-06": {
+              "scenario": "ec2-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "MEDIUM",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-07": {
+              "scenario": "ec2-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-08": {
+              "scenario": "ec2-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-09": {
+              "scenario": "ec2-09",
+              "condition": "flaw_blocked",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "HIGH",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-10": {
+              "scenario": "ec2-10",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-11": {
+              "scenario": "ec2-11",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            }
+          }
+        },
+        "5": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": 1,
+          "retry_errors": [],
+          "seconds": 82.15,
+          "tokens_total": 39605,
+          "findings": 8,
+          "at_cap": false,
+          "unknown_identifiers": [],
+          "scenarios": {
+            "ec2-01": {
+              "scenario": "ec2-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "MEDIUM",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-02": {
+              "scenario": "ec2-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "HIGH",
+              "distance": -1,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-03": {
+              "scenario": "ec2-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "MEDIUM",
+              "fsbp_severity": "HIGH",
+              "distance": -1,
+              "grouped": true,
+              "findings_citing": 1
+            },
+            "ec2-04": {
+              "scenario": "ec2-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-05": {
+              "scenario": "ec2-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-06": {
+              "scenario": "ec2-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "MEDIUM",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-07": {
+              "scenario": "ec2-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 2
+            },
+            "ec2-08": {
+              "scenario": "ec2-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": "HIGH",
+              "distance": -3,
+              "grouped": false,
+              "findings_citing": 0
+            },
+            "ec2-09": {
+              "scenario": "ec2-09",
+              "condition": "flaw_blocked",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "LOW",
+              "fsbp_severity": "HIGH",
+              "distance": -2,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-10": {
+              "scenario": "ec2-10",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 1
+            },
+            "ec2-11": {
+              "scenario": "ec2-11",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": false,
+              "severity": "NONE",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 0
+            }
+          }
+        }
+      },
+      "summary": {
+        "baseline": false,
+        "info": null,
+        "runs": 5,
+        "runs_scored": 5,
+        "cells": 55,
+        "detection": {
+          "all": {
+            "n": 35,
+            "N": 45
+          },
+          "fsbp": {
+            "n": 25,
+            "N": 35
+          },
+          "outside_fsbp": {
+            "n": 10,
+            "N": 10
+          }
+        },
+        "flaw_blocked": {
+          "all": {
+            "n": 5,
+            "N": 5
+          },
+          "fsbp": {
+            "n": 5,
+            "N": 5
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 0
+          }
+        },
+        "false_positives": {
+          "all": {
+            "n": 0,
+            "N": 5
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 5
+          }
+        },
+        "severity": {
+          "N": 40,
+          "exact": 10,
+          "above": 0,
+          "below": 30,
+          "mean_distance": -1.275
+        },
+        "per_scenario": {
+          "ec2-01": {
+            "LOW": 5
+          },
+          "ec2-02": {
+            "MEDIUM": 5
+          },
+          "ec2-03": {
+            "MEDIUM": 4,
+            "LOW": 1
+          },
+          "ec2-04": {
+            "HIGH": 5
+          },
+          "ec2-05": {
+            "CRITICAL": 5
+          },
+          "ec2-06": {
+            "NONE": 5
+          },
+          "ec2-07": {
+            "HIGH": 5
+          },
+          "ec2-08": {
+            "NONE": 5
+          },
+          "ec2-09": {
+            "LOW": 5
+          },
+          "ec2-10": {
+            "HIGH": 5
+          },
+          "ec2-11": {
+            "NONE": 5
+          }
+        },
+        "identical": [
+          "ec2-01",
+          "ec2-02",
+          "ec2-04",
+          "ec2-05",
+          "ec2-06",
+          "ec2-07",
+          "ec2-08",
+          "ec2-09",
+          "ec2-10",
+          "ec2-11"
+        ],
+        "not_identical": [
+          "ec2-03"
+        ],
+        "modal_agreement": 0.9818181818181818,
+        "runs_failed": [],
+        "runs_retried": [],
+        "findings": [
+          7,
+          8,
+          8,
+          8,
+          8
+        ],
+        "runs_at_cap": 0,
+        "identifiers_checked": true,
+        "unknown_identifiers": 0,
+        "unknown_by_run": {},
+        "grouped": 5,
+        "grouped_cells": [
+          "ec2-04 run-1",
+          "ec2-10 run-1",
+          "ec2-03 run-2",
+          "ec2-03 run-3",
+          "ec2-03 run-5"
+        ],
+        "seconds": [
+          84.46,
+          87.54,
+          92.86,
+          83.49,
+          82.15
+        ],
+        "tokens": [
+          39892,
+          39995,
+          40406,
+          39467,
+          39605
+        ]
+      }
+    },
+    "prowler": {
+      "baseline": true,
+      "info": {
+        "versions": [
+          "5.44.0"
+        ],
+        "schema_versions": [
+          "1.5.0"
+        ],
+        "results": 2237,
+        "fails": 514,
+        "attributed_fails": 79,
+        "unattributed_fails": 435,
+        "muted_fails": 0,
+        "drivers": {
+          "ec2-01": [
+            "ec2_ebs_volume_encryption",
+            "ec2_ebs_volume_snapshots_exists",
+            "ec2_networkacl_allow_ingress_any_port"
+          ],
+          "ec2-02": [
+            "ec2_ebs_volume_snapshots_exists",
+            "ec2_networkacl_allow_ingress_any_port",
+            "ec2_securitygroup_allow_ingress_from_internet_to_any_port"
+          ],
+          "ec2-03": [
+            "ec2_ebs_volume_snapshots_exists",
+            "ec2_instance_imdsv2_enabled",
+            "ec2_networkacl_allow_ingress_any_port",
+            "iam_role_cross_service_confused_deputy_prevention"
+          ],
+          "ec2-04": [
+            "ec2_ebs_volume_snapshots_exists",
+            "ec2_networkacl_allow_ingress_any_port",
+            "iam_inline_policy_allows_privilege_escalation",
+            "iam_role_cross_service_confused_deputy_prevention"
+          ],
+          "ec2-05": [
+            "ec2_instance_port_ssh_exposed_to_internet"
+          ],
+          "ec2-06": [
+            "ec2_ebs_volume_snapshots_exists",
+            "ec2_networkacl_allow_ingress_any_port",
+            "iam_role_cross_service_confused_deputy_prevention"
+          ],
+          "ec2-07": [
+            "ec2_ebs_volume_snapshots_exists",
+            "ec2_instance_imdsv2_enabled",
+            "ec2_networkacl_allow_ingress_any_port",
+            "iam_role_cross_service_confused_deputy_prevention"
+          ],
+          "ec2-08": [
+            "ec2_ebs_volume_snapshots_exists",
+            "ec2_instance_internet_facing_with_instance_profile",
+            "ec2_networkacl_allow_ingress_any_port",
+            "iam_role_cross_service_confused_deputy_prevention"
+          ],
+          "ec2-09": [
+            "ec2_ebs_volume_snapshots_exists",
+            "ec2_networkacl_allow_ingress_any_port",
+            "ec2_securitygroup_allow_ingress_from_internet_to_any_port"
+          ],
+          "ec2-10": [
+            "ec2_ebs_volume_snapshots_exists",
+            "ec2_networkacl_allow_ingress_any_port",
+            "iam_role_cross_service_confused_deputy_prevention"
+          ],
+          "ec2-11": [
+            "ec2_ebs_volume_snapshots_exists",
+            "ec2_networkacl_allow_ingress_any_port",
+            "iam_role_cross_service_confused_deputy_prevention"
+          ]
+        }
+      },
+      "runs": {
+        "1": {
+          "status": "ok",
+          "scored": true,
+          "error": null,
+          "attempts": null,
+          "retry_errors": [],
+          "seconds": null,
+          "tokens_total": null,
+          "findings": null,
+          "at_cap": false,
+          "unknown_identifiers": null,
+          "scenarios": {
+            "ec2-01": {
+              "scenario": "ec2-01",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 9
+            },
+            "ec2-02": {
+              "scenario": "ec2-02",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 10
+            },
+            "ec2-03": {
+              "scenario": "ec2-03",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 9
+            },
+            "ec2-04": {
+              "scenario": "ec2-04",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 9
+            },
+            "ec2-05": {
+              "scenario": "ec2-05",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "CRITICAL",
+              "fsbp_severity": "CRITICAL",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 13
+            },
+            "ec2-06": {
+              "scenario": "ec2-06",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "MEDIUM",
+              "distance": 1,
+              "grouped": false,
+              "findings_citing": 12
+            },
+            "ec2-07": {
+              "scenario": "ec2-07",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 13
+            },
+            "ec2-08": {
+              "scenario": "ec2-08",
+              "condition": "flaw",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 9
+            },
+            "ec2-09": {
+              "scenario": "ec2-09",
+              "condition": "flaw_blocked",
+              "coverage": "fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": "HIGH",
+              "distance": 0,
+              "grouped": false,
+              "findings_citing": 10
+            },
+            "ec2-10": {
+              "scenario": "ec2-10",
+              "condition": "flaw",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 7
+            },
+            "ec2-11": {
+              "scenario": "ec2-11",
+              "condition": "hardened",
+              "coverage": "outside_fsbp",
+              "reported": true,
+              "severity": "HIGH",
+              "fsbp_severity": null,
+              "distance": null,
+              "grouped": false,
+              "findings_citing": 7
+            }
+          }
+        }
+      },
+      "summary": {
+        "baseline": true,
+        "info": {
+          "versions": [
+            "5.44.0"
+          ],
+          "schema_versions": [
+            "1.5.0"
+          ],
+          "results": 2237,
+          "fails": 514,
+          "attributed_fails": 79,
+          "unattributed_fails": 435,
+          "muted_fails": 0,
+          "drivers": {
+            "ec2-01": [
+              "ec2_ebs_volume_encryption",
+              "ec2_ebs_volume_snapshots_exists",
+              "ec2_networkacl_allow_ingress_any_port"
+            ],
+            "ec2-02": [
+              "ec2_ebs_volume_snapshots_exists",
+              "ec2_networkacl_allow_ingress_any_port",
+              "ec2_securitygroup_allow_ingress_from_internet_to_any_port"
+            ],
+            "ec2-03": [
+              "ec2_ebs_volume_snapshots_exists",
+              "ec2_instance_imdsv2_enabled",
+              "ec2_networkacl_allow_ingress_any_port",
+              "iam_role_cross_service_confused_deputy_prevention"
+            ],
+            "ec2-04": [
+              "ec2_ebs_volume_snapshots_exists",
+              "ec2_networkacl_allow_ingress_any_port",
+              "iam_inline_policy_allows_privilege_escalation",
+              "iam_role_cross_service_confused_deputy_prevention"
+            ],
+            "ec2-05": [
+              "ec2_instance_port_ssh_exposed_to_internet"
+            ],
+            "ec2-06": [
+              "ec2_ebs_volume_snapshots_exists",
+              "ec2_networkacl_allow_ingress_any_port",
+              "iam_role_cross_service_confused_deputy_prevention"
+            ],
+            "ec2-07": [
+              "ec2_ebs_volume_snapshots_exists",
+              "ec2_instance_imdsv2_enabled",
+              "ec2_networkacl_allow_ingress_any_port",
+              "iam_role_cross_service_confused_deputy_prevention"
+            ],
+            "ec2-08": [
+              "ec2_ebs_volume_snapshots_exists",
+              "ec2_instance_internet_facing_with_instance_profile",
+              "ec2_networkacl_allow_ingress_any_port",
+              "iam_role_cross_service_confused_deputy_prevention"
+            ],
+            "ec2-09": [
+              "ec2_ebs_volume_snapshots_exists",
+              "ec2_networkacl_allow_ingress_any_port",
+              "ec2_securitygroup_allow_ingress_from_internet_to_any_port"
+            ],
+            "ec2-10": [
+              "ec2_ebs_volume_snapshots_exists",
+              "ec2_networkacl_allow_ingress_any_port",
+              "iam_role_cross_service_confused_deputy_prevention"
+            ],
+            "ec2-11": [
+              "ec2_ebs_volume_snapshots_exists",
+              "ec2_networkacl_allow_ingress_any_port",
+              "iam_role_cross_service_confused_deputy_prevention"
+            ]
+          }
+        },
+        "runs": 1,
+        "runs_scored": 1,
+        "cells": 11,
+        "detection": {
+          "all": {
+            "n": 9,
+            "N": 9
+          },
+          "fsbp": {
+            "n": 7,
+            "N": 7
+          },
+          "outside_fsbp": {
+            "n": 2,
+            "N": 2
+          }
+        },
+        "flaw_blocked": {
+          "all": {
+            "n": 1,
+            "N": 1
+          },
+          "fsbp": {
+            "n": 1,
+            "N": 1
+          },
+          "outside_fsbp": {
+            "n": 0,
+            "N": 0
+          }
+        },
+        "false_positives": {
+          "all": {
+            "n": 1,
+            "N": 1
+          },
+          "fsbp": {
+            "n": 0,
+            "N": 0
+          },
+          "outside_fsbp": {
+            "n": 1,
+            "N": 1
+          }
+        },
+        "severity": {
+          "N": 8,
+          "exact": 6,
+          "above": 2,
+          "below": 0,
+          "mean_distance": 0.25
+        },
+        "per_scenario": {
+          "ec2-01": {
+            "HIGH": 1
+          },
+          "ec2-02": {
+            "HIGH": 1
+          },
+          "ec2-03": {
+            "HIGH": 1
+          },
+          "ec2-04": {
+            "HIGH": 1
+          },
+          "ec2-05": {
+            "CRITICAL": 1
+          },
+          "ec2-06": {
+            "HIGH": 1
+          },
+          "ec2-07": {
+            "HIGH": 1
+          },
+          "ec2-08": {
+            "HIGH": 1
+          },
+          "ec2-09": {
+            "HIGH": 1
+          },
+          "ec2-10": {
+            "HIGH": 1
+          },
+          "ec2-11": {
+            "HIGH": 1
+          }
+        },
+        "identical": [
+          "ec2-01",
+          "ec2-02",
+          "ec2-03",
+          "ec2-04",
+          "ec2-05",
+          "ec2-06",
+          "ec2-07",
+          "ec2-08",
+          "ec2-09",
+          "ec2-10",
+          "ec2-11"
+        ],
+        "not_identical": [],
+        "modal_agreement": 1.0,
+        "runs_failed": [],
+        "runs_retried": [],
+        "findings": [
+          null
+        ],
+        "runs_at_cap": 0,
+        "identifiers_checked": false,
+        "unknown_identifiers": 0,
+        "unknown_by_run": {},
+        "grouped": 0,
+        "grouped_cells": [],
+        "seconds": [],
+        "tokens": []
+      }
+    }
+  }
+}

@@ -1,0 +1,77 @@
+Service: rds | runs: evaluation/runs/rds/benchmark | tier: all
+Scored scenarios: 9
+Tools: gpt (5/5 runs scored), opus (5/5 runs scored), prowler (Prowler scan)
+
+== Detection and false positives
+measure                                   gpt           opus          prowler
+cells scored                              45            45            9
+detection (flaw), all                     38/40 (95%)   40/40 (100%)  8/8 (100%)
+detection (flaw), fsbp                    30/30 (100%)  30/30 (100%)  6/6 (100%)
+detection (flaw), outside_fsbp            8/10 (80%)    10/10 (100%)  2/2 (100%)
+flaw_blocked report rate, all             -             -             -
+flaw_blocked report rate, fsbp            -             -             -
+flaw_blocked report rate, outside_fsbp    -             -             -
+false positives (hardened), all           3/5 (60%)     5/5 (100%)    1/1 (100%)
+false positives (hardened), fsbp          -             -             -
+false positives (hardened), outside_fsbp  3/5 (60%)     5/5 (100%)    1/1 (100%)
+
+== Severity relative to FSBP (fsbp scenarios; not reported = NONE)
+measure               gpt          opus         prowler
+fsbp cells            30           30           6
+same as FSBP          11/30 (37%)  16/30 (53%)  2/6 (33%)
+above FSBP            0/30 (0%)    0/30 (0%)    3/6 (50%)
+below FSBP            19/30 (63%)  14/30 (47%)  1/6 (17%)
+mean signed distance  -0.80        -0.63        0.33
+FSBP severity is fixed per control and does not reflect deployed context; Prowler's check severities follow FSBP's. This describes where each tool sits, not accuracy.
+
+== Consistency across runs (Vista)
+measure                                  gpt                                             opus         prowler
+scored runs                              5                                               5            deterministic
+scenarios, identical severity every run  3/9 (33%)                                       8/9 (89%)    deterministic
+mean modal agreement                     0.733 (73%)                                     0.978 (98%)  deterministic
+not identical                            rds-01, rds-02, rds-03, rds-06, rds-07, rds-09  rds-04       deterministic
+
+== Runs, format, and cost (Vista)
+measure                              gpt                         opus                        prowler
+runs scored                          5/5                         5/5                         n/a
+findings per run                     6-7 (median 7)              8-8 (median 8)              n/a
+runs at the 10-finding cap           0/5                         0/5                         n/a
+unknown identifiers cited            0                           1                           n/a
+cells scored from a grouped finding  17                          20                          n/a
+review seconds                       44-51s (median 45)          58-100s (median 69)         n/a
+total tokens per run                 12054-12826 (median 12311)  18784-42759 (median 19641)  n/a
+  grouped, gpt: rds-02 run-1, rds-03 run-1, rds-06 run-1, rds-09 run-1, rds-02 run-2, rds-02 run-3, rds-09 run-3, rds-02 run-4, rds-03 run-4, rds-06 run-4, rds-09 run-4, rds-01 run-5, rds-02 run-5, rds-03 run-5, rds-06 run-5, rds-08 run-5, rds-09 run-5
+  unknown identifiers, opus run-2: arn:aws:secretsmanager:...rds
+  grouped, opus: rds-02 run-1, rds-03 run-1, rds-06 run-1, rds-07 run-1, rds-09 run-1, rds-02 run-2, rds-03 run-2, rds-06 run-2, rds-02 run-3, rds-03 run-3, rds-06 run-3, rds-09 run-3, rds-02 run-4, rds-03 run-4, rds-06 run-4, rds-07 run-4, rds-02 run-5, rds-03 run-5, rds-06 run-5, rds-09 run-5
+
+== Retries and failures
+gpt: runs failed 0/5; runs retried 0/5
+opus: runs failed 0/5; runs retried 1/5
+  retried opus run-4 (2 attempts)
+    opus run-4: Bedrock returned an incomplete review (finding 5 Severity LOW does not match the matrix result MEDIUM for Likelihood MEDIUM x Impact MEDIUM).
+
+== Prowler 5.44.0
+OCSF schema version: 1.5.0
+Results: 2237; FAIL: 514; FAILs attributed to a scenario: 53; not attributed (other resources, account-level, or informational): 461; muted (Suppressed, still scored): 0
+Check(s) at the top severity, per scenario:
+  rds-01: rds_instance_protected_by_backup_plan, rds_instance_storage_encrypted
+  rds-02: rds_instance_protected_by_backup_plan, rds_instance_transport_encrypted
+  rds-03: iam_role_cross_service_confused_deputy_prevention, rds_instance_protected_by_backup_plan
+  rds-04: rds_instance_no_public_access
+  rds-05: rds_snapshots_public_access
+  rds-06: rds_instance_protected_by_backup_plan
+  rds-07: iam_role_cross_service_confused_deputy_prevention
+  rds-08: rds_instance_protected_by_backup_plan
+  rds-09: rds_instance_protected_by_backup_plan, rds_instance_transport_encrypted
+
+== Per scenario (severity over runs)
+scenario  condition  coverage      fsbp_severity  gpt                    opus               prowler     context
+rds-01    flaw       fsbp          MEDIUM         LOWx4 MEDIUMx1         LOWx5              HIGHx1      -
+rds-02    flaw       outside_fsbp  -              LOWx4 MEDIUMx1         MEDIUMx5           HIGHx1      -
+rds-03    flaw       outside_fsbp  -              NONEx2 LOWx2 MEDIUMx1  LOWx5              HIGHx1      -
+rds-04    flaw       fsbp          CRITICAL       HIGHx5                 HIGHx4 CRITICALx1  CRITICALx1  -
+rds-05    flaw       fsbp          CRITICAL       CRITICALx5             CRITICALx5         CRITICALx1  -
+rds-06    hardened   outside_fsbp  -              NONEx2 LOWx2 MEDIUMx1  LOWx5              HIGHx1      -
+rds-07    flaw       fsbp          MEDIUM         LOWx2 MEDIUMx3         MEDIUMx5           HIGHx1      -
+rds-08    flaw       fsbp          CRITICAL       MEDIUMx5               MEDIUMx5           HIGHx1      Its security group allows TCP 5432 only from one /32 address, cidrhost(var.office_cidr, 10) (default 203.0.113.10/32).
+rds-09    flaw       fsbp          MEDIUM         LOWx3 MEDIUMx2         MEDIUMx5           HIGHx1      -
